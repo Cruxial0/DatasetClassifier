@@ -15,6 +15,7 @@ from src.config_handler import ConfigHandler
 class ImageScorer(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.default_scores = ['score_9', 'score_8_up', 'score_7_up', 'score_6_up', 'score_5_up', 'score_4_up', 'discard']
         self.db = Database()
         self.config_handler = ConfigHandler()
         self.custom_shortcuts = {}
@@ -31,7 +32,6 @@ class ImageScorer(QMainWindow):
         self.current_index = -1
         self.preloaded_images = {}
         self.hide_scored_images = False
-        self.default_scores = ['score_9_up', 'score_8_up', 'score_7_up', 'score_6_up', 'discard']
         self.load_config()
         # self.load_workspace()
 
@@ -205,7 +205,7 @@ class ImageScorer(QMainWindow):
         layout = QVBoxLayout()
 
         self.score_layout = QHBoxLayout()
-        score_buttons = ['score_9_up', 'score_8_up', 'score_7_up', 'score_6_up', 'discard']
+        score_buttons = self.default_scores
         for score in score_buttons:
             button = QPushButton(score)
             button.setObjectName(score)
@@ -493,10 +493,10 @@ class ImageScorer(QMainWindow):
         
         self.category_add_button.setStyleSheet(f"background-color: {accent_color}; color: white;")
         
-        for score in ['score_9_up', 'score_8_up', 'score_7_up', 'score_6_up']:
-            button = self.findChild(QPushButton, score)
-            if button:
-                button.setStyleSheet(f"background-color: {accent_color}; color: white;")
+        # for score in self.default_scores:
+        #     button = self.findChild(QPushButton, score)
+        #     if button:
+        #         button.setStyleSheet(f"background-color: {accent_color}; color: white;")
         
         self.progress_bar.setStyleSheet(f"""
             QProgressBar {{
