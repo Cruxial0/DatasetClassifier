@@ -1,17 +1,20 @@
 # DatasetClassifier
 A simple tool to help you speed up your workflow when manually scoring and categorizing images.
 
-## Explanation
-DatasetClassifier is a simple image browser, with a few extra features. It uses PonyDiffusion's rating convention to score images from `score_9` to `score_6_up`.
+# DatasetClassifier
 
-![image](https://github.com/user-attachments/assets/20d55a39-b5c4-438c-b7a2-1f9ddef0e3f6)
+## Overview
+DatasetClassifier is an efficient image browser with advanced classification features. It utilizes PonyDiffusion's rating convention to score images from `score_9` to `score_4_up`.
 
+![DatasetClassifier Interface](https://github.com/user-attachments/assets/20d55a39-b5c4-438c-b7a2-1f9ddef0e3f6)
 
-This image shows how the main application works.
-At the top, you select your input folder (where your images are) and your output folder (where your images end up)
-In the middle, you have your image browser and categories. The image browser just shows you the image you're classifying, while categories allow you to further group your images into smaller subsets. By default, an image with a category will be copied to **both** the main scoring folder, aswell as the category folder(s).
+## Key Features
+1. **Simple Interface**: Select input and output folders at the top of the application.
+2. **Image Browser**: Central panel displays the current image for classification.
+3. **Categorization**: Assign multiple categories to each image for detailed organization.
+4. **Flexible Output**: Images are saved in both the main scoring folder and respective category folders.
 
-Here is a visual representation using the example image above
+## File Structure Example
 ```
 📁 output
   ├─ score_8_up
@@ -20,12 +23,14 @@ Here is a visual representation using the example image above
   │   ├─ white background
   │   └─ image.png
   └─ score_9
- ```
+```
 
-DatasetClassifier works with a keyboard-only philosophy. Nearly everything has keybinds, all of which are configurable through the `config.yaml` file.
-Here is a list of default keybinds:
+## Keyboard-Centric Design
+DatasetClassifier prioritizes efficiency with a keyboard-driven interface. All functions have customizable keybinds, configured through the `config.yaml` file.
+
+### Default Keybinds
 ```yaml
-# scoring
+# Scoring
 score_9: '1'
 score_8_up: '2'
 score_7_up: '3'
@@ -34,7 +39,7 @@ score_5_up: '5'
 score_4_up: '6'
 discard: 'ESC'
 
-# categories
+# Categories
 custom_1: Alt+1
 custom_2: Alt+2
 custom_3: Alt+3
@@ -46,10 +51,12 @@ custom_8: Alt+8
 custom_9: Alt+9
 custom_10: Alt+0
 
-# image browser
+# Image Navigation
 image_next: Right
 image_previous: Left
 ```
+
+Customize your workflow by modifying these keybinds in the configuration file to suit your preferences.
 
 ## Installation
 ### Windows
