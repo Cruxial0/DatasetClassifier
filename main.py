@@ -206,7 +206,7 @@ class ImageScorer(QMainWindow):
     def score_image(self, score):
         if self.image_handler.score_image(score, self.default_scores):
             self.update_button_colors()
-            if score not in self.default_scores and self.config_handler.get_auto_scroll_on_scoring():
+            if score in self.default_scores and self.config_handler.get_auto_scroll_on_scoring():
                 self.load_next_image()
 
     def load_next_image(self):

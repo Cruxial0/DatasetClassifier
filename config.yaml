@@ -1,5 +1,5 @@
 auto_scroll_on_category: true
-auto_scroll_on_scoring: true
+auto_scroll_on_scoring: false
 colors:
   accent_color: '#007bff'
   alternate_color: '#D2691E'
@@ -14,7 +14,7 @@ keybindings:
   custom_7: Alt+7
   custom_8: Alt+8
   custom_9: Alt+9
-  discard: 'ESC'
+  discard: ESC
   image_next: Right
   image_previous: Left
   score_4_up: '6'
