@@ -1,0 +1,26 @@
+auto_scroll_on_category: true
+auto_scroll_on_scoring: true
+colors:
+  accent_color: '#007bff'
+  alternate_color: '#D2691E'
+keybindings:
+  custom_1: Alt+1
+  custom_10: Alt+0
+  custom_2: Alt+2
+  custom_3: Alt+3
+  custom_4: Alt+4
+  custom_5: Alt+5
+  custom_6: Alt+6
+  custom_7: Alt+7
+  custom_8: Alt+8
+  custom_9: Alt+9
+  discard: '5'
+  image_next: Right
+  image_previous: Left
+  score_6_up: '4'
+  score_7_up: '3'
+  score_8_up: '2'
+  score_9_up: '1'
+treat_categories_as_scoring: false
+use_copy_custom: true
+use_copy_default: false
