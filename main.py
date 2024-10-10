@@ -1,12 +1,13 @@
 import os
 import sys
-from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QMessageBox, QMainWindow, QApplication, QWidget)
+from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QMessageBox, QMainWindow, QApplication, QWidget, QLabel)
 from PyQt6.QtGui import QKeySequence, QShortcut, QAction
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt, QTimer, QSize
 from src.database import Database
 from src.config_handler import ConfigHandler
 from src.ui_components import UIComponents
 from src.image_handler import ImageHandler
+from src.utils import key_to_unicode
 
 class ImageScorer(QMainWindow):
     def __init__(self):
@@ -20,6 +21,8 @@ class ImageScorer(QMainWindow):
         self.custom_shortcuts = {}
         self.category_buttons = []
         self.hide_scored_images = False
+        self.alt_pressed = False
+        self.ctrl_pressed = False
         self.initUI()
         self.load_config()
 
@@ -140,12 +143,18 @@ class ImageScorer(QMainWindow):
             remove_button.setMaximumWidth(30)
             remove_button.clicked.connect(lambda _, b=button: self.remove_category_button(b))
             
+            keybind_label = QLabel()
+            keybind_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            keybind_label.setFixedWidth(30)  # Set a fixed width of 30px
+            keybind_label.setStyleSheet("min-width: 30px; max-width: 30px;")  # Ensure the width is exactly 30px
+            
             button_layout = QHBoxLayout()
+            button_layout.addWidget(keybind_label)
             button_layout.addWidget(button)
             button_layout.addWidget(remove_button)
             
             self.category_button_layout.addLayout(button_layout)
-            self.category_buttons.append((button, remove_button))
+            self.category_buttons.append((button, remove_button, keybind_label))
             self.apply_keybindings()
 
     def load_images(self):
@@ -171,6 +180,27 @@ class ImageScorer(QMainWindow):
             self.progress_bar.setValue(current * 100 // total)
             self.progress_label.setText(f"{current}/{total}")
 
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Alt:
+            self.alt_pressed = True
+            self.update_button_colors()
+        elif event.key() == Qt.Key.Key_Control:
+            self.ctrl_pressed = True
+            self.update_button_colors()
+        else:
+            super().keyPressEvent(event)
+
+    def keyReleaseEvent(self, event):
+        if event.key() == Qt.Key.Key_Alt:
+            self.alt_pressed = False
+            self.update_button_colors()
+        elif event.key() == Qt.Key.Key_Control:
+            self.ctrl_pressed = False
+            self.update_button_colors()
+        else:
+            super().keyReleaseEvent(event)
+
     def update_button_colors(self):
         current_image = self.image_handler.get_current_image_path()
         if not current_image:
@@ -180,28 +210,40 @@ class ImageScorer(QMainWindow):
         accent_color = self.config_handler.get_color('accent_color')
         alternate_color = self.config_handler.get_color('alternate_color')
         warning_color = self.config_handler.get_color('warning_color')
+        select_color = self.config_handler.get_color('select_color')
         
         # Update default score buttons
         for i in range(self.score_layout.count()):
             button = self.score_layout.itemAt(i).widget()
             if isinstance(button, QPushButton):
-                if button.text() in current_scores:
-                    if button.text() == 'discard':
+                # if self.alt_pressed and button.objectName().startswith("custom_"):
+                #     button.setStyleSheet(f"background-color: {alternate_color}; color: white;")
+                if button.objectName() in current_scores:
+                    if button.objectName() == 'discard':
                         button.setStyleSheet(f"background-color: {warning_color}; color: white;")
                     else:
                         button.setStyleSheet(f"background-color: {accent_color}; color: white;")
                 else:
-                    if button.text() == 'discard':
+                    if button.objectName() == 'discard':
                         button.setStyleSheet(f"background-color: {alternate_color}; color: white;")
                     else:
                         button.setStyleSheet("")
 
         # Update category buttons
-        for button, _ in self.category_buttons:
-            if button.text() in current_scores:
+        for button, remove_button, _ in self.category_buttons:
+            if self.alt_pressed and not self.ctrl_pressed:
+                if button.text() not in current_scores:
+                    button.setStyleSheet(f"background-color: {select_color}; color: white;")
+                else:
+                    button.setStyleSheet(f"background-color: {warning_color}; color: white;")
+            elif self.ctrl_pressed:
+                remove_button.setStyleSheet(f"background-color: {warning_color}; color: white;")
+            elif button.text() in current_scores:
                 button.setStyleSheet(f"background-color: {alternate_color}; color: white;")
+                remove_button.setStyleSheet("")
             else:
-                button.setStyleSheet(f"color: white;")
+                button.setStyleSheet("")
+                remove_button.setStyleSheet("")
 
     def score_image(self, score):
         if self.image_handler.score_image(score, self.default_scores):
@@ -240,15 +282,19 @@ class ImageScorer(QMainWindow):
                 shortcut.activated.connect(lambda checked=False, s=action: self.score_image(s))
                 button = self.findChild(QPushButton, action)
                 if button:
+                    unicode = key_to_unicode(key)
+                    if not f"({unicode})" in button.text():
+                        button.setText(f"({unicode})        {button.text()}")
                     button.setToolTip(f"Shortcut: {key}")
             elif action.startswith('custom_'):
                 index = int(action.split('_')[1]) - 1
                 if index < len(self.category_buttons):
-                    button, _ = self.category_buttons[index]
-                    shortcut = QShortcut(QKeySequence(key), self)
+                    button, _, keybind_label = self.category_buttons[index]
+                    shortcut = QShortcut(QKeySequence(f"ALT+{key}"), self)
                     shortcut.activated.connect(lambda checked=False, b=button: self.score_image(b.text()))
                     self.custom_shortcuts[action] = shortcut
-                    button.setToolTip(f"Shortcut: {key}")
+                    button.setToolTip(f"Shortcut: ALT+{key}")
+                    keybind_label.setText(f"{key}")
 
     def apply_accent_color(self):
         accent_color = self.config_handler.get_color('accent_color')
@@ -275,6 +321,42 @@ class ImageScorer(QMainWindow):
         
         self.progress_label.setStyleSheet(f"color: {accent_color};")
 
+    def add_category_button(self):
+        if len(self.category_buttons) < 10:
+            name = self.category_input.text()
+            if name and not any(button[0].text() == name for button in self.category_buttons):
+                button = QPushButton(name)
+                button.clicked.connect(lambda _, s=name: self.score_image(s))
+                remove_button = QPushButton("-")
+                remove_button.setMaximumWidth(30)
+                remove_button.clicked.connect(lambda _, b=button: self.remove_category_button(b))
+                
+                keybind_label = QLabel()
+                keybind_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+                keybind_label.setFixedWidth(40)  # Set a fixed width of 30px
+                keybind_label.setStyleSheet("min-width: 40px; max-width: 40px;")  # Ensure the width is exactly 30px
+                
+                button_layout = QHBoxLayout()
+                button_layout.addWidget(keybind_label)
+                button_layout.addWidget(button)
+                button_layout.addWidget(remove_button)
+                
+                self.category_button_layout.addLayout(button_layout)
+                self.category_buttons.append((button, remove_button, keybind_label))
+                self.category_input.clear()
+                self.apply_keybindings()
+
+    def remove_category_button(self, button):
+        for i, (category_button, remove_button, keybind_label) in enumerate(self.category_buttons):
+            if category_button == button:
+                self.category_button_layout.itemAt(i).layout().itemAt(0).widget().deleteLater()
+                self.category_button_layout.itemAt(i).layout().itemAt(1).widget().deleteLater()
+                self.category_button_layout.itemAt(i).layout().itemAt(2).widget().deleteLater()
+                self.category_button_layout.itemAt(i).layout().deleteLater()
+                self.category_buttons.pop(i)
+                break
+        self.apply_keybindings()
+
     def toggle_use_copy_category(self):
         self.use_copy_category = self.use_copy_category_action.isChecked()
         self.config_handler.set_use_copy_category(self.use_copy_category)
@@ -298,39 +380,9 @@ class ImageScorer(QMainWindow):
     def check_category_button_name(self):
         name = self.category_input.text()
         if name and any(button[0].text() == name for button in self.category_buttons):
-            self.category_add_button.setStyleSheet(f"background-color: {self.config_handler.get_color('alternate_color')}; color: white;")
+            self.category_add_button.setStyleSheet(f"background-color: {self.config_handler.get_color('warning_color')}; color: white;")
         else:
             self.category_add_button.setStyleSheet(f"background-color: {self.config_handler.get_color('accent_color')}; color: white;")
-
-    def add_category_button(self):
-        if len(self.category_buttons) < 10:
-            name = self.category_input.text()
-            if name and not any(button[0].text() == name for button in self.category_buttons):
-                button = QPushButton(name)
-                button.clicked.connect(lambda _, s=name: self.score_image(s))
-                remove_button = QPushButton("-")
-                remove_button.setMaximumWidth(30)
-                remove_button.clicked.connect(lambda _, b=button: self.remove_category_button(b))
-                
-                button_layout = QHBoxLayout()
-                button_layout.addWidget(button)
-                button_layout.addWidget(remove_button)
-                
-                self.category_button_layout.addLayout(button_layout)
-                self.category_buttons.append((button, remove_button))
-                self.category_input.clear()
-                self.apply_keybindings()
-
-    def remove_category_button(self, button):
-        for i, (category_button, remove_button) in enumerate(self.category_buttons):
-            if category_button == button:
-                self.category_button_layout.itemAt(i).layout().itemAt(0).widget().deleteLater()
-                self.category_button_layout.itemAt(i).layout().itemAt(1).widget().deleteLater()
-                self.category_button_layout.itemAt(i).layout().deleteLater()
-                self.category_buttons.pop(i)
-                break
-        self.apply_keybindings()
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

@@ -19,7 +19,7 @@ class ImageHandler:
         self.image_list = [f for f in os.listdir(input_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))]
         if hide_scored_images:
             self.image_list = [img for img in self.image_list if not self.db.is_image_scored(os.path.join(self.input_folder, img))]
-        self.current_index = 0
+        self.current_index = 0 if self.image_list else -1
         self.preload_images()
 
     def preload_images(self):
@@ -32,7 +32,7 @@ class ImageHandler:
                 self.preloaded_images[i] = QPixmap(image_path)
 
     def get_current_image_path(self):
-        if self.current_index < len(self.image_list):
+        if 0 <= self.current_index < len(self.image_list):
             return os.path.join(self.input_folder, self.image_list[self.current_index])
         return None
 
