@@ -1,7 +1,10 @@
 auto_scroll_on_scoring: true
 colors:
-  accent_color: '#007bff'
-  alternate_color: '#D2691E'
+  accent_color: "#5a9bd8"
+  alternate_color: "#b08463"
+  warning_color: "#d93f00"
+  select_color: "#8c949a"
+  add_color: "#6b8e6b"
 keybindings:
   custom_1: A
   custom_10: ;

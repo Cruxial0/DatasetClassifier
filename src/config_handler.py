@@ -2,10 +2,11 @@ from typing import Literal
 import yaml
 
 default_colors = {
-    "accent_color": '#007bff',
-    "alternate_color": '#D2691E',
-    "warning_color": '#FF4500',
-    "select_color": '#6c757d'
+    "accent_color": "#5a9bd8",
+    "alternate_color": "#b08463",
+    "warning_color": "#d93f00",
+    "select_color": "#8c949a",
+    "add_color": "#6b8e6b"
 }
 
 class ConfigHandler:
@@ -23,12 +24,12 @@ class ConfigHandler:
     def get_keybindings(self):
         return self.config.get('keybindings', {})
 
-    def get_color(self, color: Literal["accent_color", "alternate_color", "warning_color", "select_color"]):
+    def get_color(self, color: Literal["accent_color", "alternate_color", "warning_color", "select_color", "add_color"]):
         colors = self.config.get('colors', {})
         # Return the color if found in the config's colors section; otherwise, return the default
         return colors.get(color, default_colors[color])
     
-    def set_color(self, color: Literal["accent_color", "alternate_color", "warning_color", "select_color"], hex_code):
+    def set_color(self, color: Literal["accent_color", "alternate_color", "warning_color", "select_color", "add_color"], hex_code):
         colors = self.config.get('colors', {})
         colors[color] = hex_code
         self.config['colors'] = colors

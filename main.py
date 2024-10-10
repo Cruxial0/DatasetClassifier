@@ -9,6 +9,7 @@ from src.config_handler import ConfigHandler
 from src.ui_components import UIComponents
 from src.image_handler import ImageHandler
 from src.utils import key_to_unicode
+from src.theme import set_dark_mode
 
 class ImageScorer(QMainWindow):
     def __init__(self):
@@ -233,6 +234,7 @@ class ImageScorer(QMainWindow):
         alternate_color = self.config_handler.get_color('alternate_color')
         warning_color = self.config_handler.get_color('warning_color')
         select_color = self.config_handler.get_color('select_color')
+        add_color = self.config_handler.get_color('add_color')
         
         # Update default score buttons
         for i in range(self.score_layout.count()):
@@ -262,7 +264,7 @@ class ImageScorer(QMainWindow):
             
             if self.alt_pressed and not self.ctrl_pressed:
                 if not is_active:
-                    button.setStyleSheet(f"background-color: {select_color}; color: white;")
+                    button.setStyleSheet(f"background-color: {add_color}; color: white;")
                 else:
                     button.setStyleSheet(f"background-color: {warning_color}; color: white;")
             elif self.ctrl_pressed:
@@ -448,6 +450,7 @@ class ImageScorer(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    set_dark_mode(app)
     ex = ImageScorer()
     ex.show()
     sys.exit(app.exec())
