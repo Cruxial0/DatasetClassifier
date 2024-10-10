@@ -51,9 +51,9 @@ class ImageScorer(QMainWindow):
         self.treat_categories_as_scoring_action, self.auto_scroll_on_scoring_action = actions
 
         view_menu.addAction(self.hide_scored_action)
-        options_menu.addAction(self.use_copy_category_action)
-        options_menu.addAction(self.use_copy_default_action)
-        options_menu.addAction(self.treat_categories_as_scoring_action)
+        # options_menu.addAction(self.use_copy_category_action)
+        # options_menu.addAction(self.use_copy_default_action)
+        # options_menu.addAction(self.treat_categories_as_scoring_action)
         options_menu.addAction(self.auto_scroll_on_scoring_action)
 
         self.hide_scored_action.triggered.connect(self.toggle_hide_scored_images)
