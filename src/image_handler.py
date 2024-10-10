@@ -38,6 +38,7 @@ class ImageHandler:
 
     def get_current_image(self):
         self.current_image = self.get_current_image_path()
+        
         if self.current_image:
             if self.current_index in self.preloaded_images:
                 return self.preloaded_images[self.current_index]
@@ -57,71 +58,93 @@ class ImageHandler:
             return True
         return False
 
-    def score_image(self, score, default_scores):
+    def score_image(self, score, categories):
         if self.current_image and self.output_folder:
-            is_category = score not in default_scores
-            current_scores = self.db.get_image_scores(self.current_image)
+            current_score, current_categories = self.db.get_image_score(self.current_image)
             
-            if score in current_scores:
-                self.db.remove_score(self.current_image, score)
-                self.remove_image_file(score, default_scores)
-            else:
-                if is_category:
-                    self.handle_category_scoring(score, current_scores, default_scores)
+            # Update categories
+            new_categories = current_categories.copy()
+            if isinstance(categories, list):
+                for category in categories:
+                    if category in new_categories:
+                        new_categories.remove(category)
+                    else:
+                        new_categories.append(category)
+            elif isinstance(categories, str):
+                if categories in new_categories:
+                    new_categories.remove(categories)
                 else:
-                    self.handle_default_scoring(score, current_scores, default_scores)
+                    new_categories.append(categories)
+            
+            # Update score
+            new_score = score if score else current_score
 
+            if current_score:
+                # Image already has a score, update categories and move files if necessary
+                if new_score != current_score:
+                    # Move the image in the score folder
+                    old_score_path = os.path.join(self.output_folder, current_score, os.path.basename(self.current_image))
+                    new_score_path = os.path.join(self.output_folder, new_score, os.path.basename(self.current_image))
+                    if os.path.exists(old_score_path):
+                        create_directory(os.path.dirname(new_score_path))
+                        shutil.move(old_score_path, new_score_path)
+                    else:
+                        # If the image doesn't exist in the old score folder, copy from source
+                        create_directory(os.path.dirname(new_score_path))
+                        shutil.copy2(self.current_image, new_score_path)
+
+                # Handle category changes
+                for category in set(current_categories + new_categories):
+                    old_path = os.path.join(self.output_folder, current_score, category, os.path.basename(self.current_image))
+                    new_path = os.path.join(self.output_folder, new_score, category, os.path.basename(self.current_image))
+                    
+                    if category in current_categories and category in new_categories:
+                        # Category unchanged, just move the file if score changed
+                        if new_score != current_score and os.path.exists(old_path):
+                            create_directory(os.path.dirname(new_path))
+                            shutil.move(old_path, new_path)
+                    elif category in current_categories and category not in new_categories:
+                        # Category removed, delete the file
+                        if os.path.exists(old_path):
+                            os.remove(old_path)
+                    elif category not in current_categories and category in new_categories:
+                        # Category added, copy the file
+                        create_directory(os.path.dirname(new_path))
+                        shutil.copy2(self.current_image, new_path)
+                
+                # Remove old score folder if empty
+                if new_score != current_score:
+                    old_score_folder = os.path.join(self.output_folder, current_score)
+                    if os.path.exists(old_score_folder) and not os.listdir(old_score_folder):
+                        os.rmdir(old_score_folder)
+            elif new_score:
+                # Image doesn't have a score, but now we're adding one
+                dest_folder = os.path.join(self.output_folder, new_score)
+                self.copy_image_to_folder(dest_folder)  # Copy to score folder
+                for category in new_categories:
+                    category_folder = os.path.join(dest_folder, category)
+                    self.copy_image_to_folder(category_folder)
+            else:
+                # No score, just updating categories in the database
+                pass
+
+            # Update database
+            dest_path = os.path.join(self.output_folder, new_score, os.path.basename(self.current_image)) if new_score else None
+            self.db.add_or_update_score(self.current_image, dest_path, new_score, new_categories)
+            
             return True
         return False
-
-    def handle_category_scoring(self, category, current_scores, default_scores):
-        if self.config_handler.get_treat_categories_as_scoring():
-            dest_folder = os.path.join(self.output_folder, category)
-        else:
-            default_score = next((score for score in current_scores if score in default_scores), default_scores[0])
-            dest_folder = os.path.join(self.output_folder, default_score, category)
-
-        self.copy_image_to_folder(dest_folder)
-        self.db.add_score(self.current_image, os.path.join(dest_folder, os.path.basename(self.current_image)), category)
-
-    def handle_default_scoring(self, score, current_scores, default_scores):
-        dest_folder = os.path.join(self.output_folder, score)
-        self.copy_image_to_folder(dest_folder)
-        self.db.add_score(self.current_image, os.path.join(dest_folder, os.path.basename(self.current_image)), score)
-
-        for old_score in current_scores:
-            if old_score in default_scores:
-                self.remove_image_file(old_score, default_scores)
-                self.db.remove_score(self.current_image, old_score)
-            else:  # It's a category
-                if not self.config_handler.get_treat_categories_as_scoring():
-                    old_default_score = next((s for s in current_scores if s in default_scores), None)
-                    if old_default_score:
-                        old_category_folder = os.path.join(self.output_folder, old_default_score, old_score)
-                        new_category_folder = os.path.join(dest_folder, old_score)
-                        old_image_path = os.path.join(old_category_folder, os.path.basename(self.current_image))
-                        new_image_path = os.path.join(new_category_folder, os.path.basename(self.current_image))
-                        
-                        if os.path.exists(old_image_path):
-                            create_directory(new_category_folder)
-                            shutil.move(old_image_path, new_image_path)
-                        
-                        self.db.update_score(self.current_image, old_score, new_image_path)
 
     def copy_image_to_folder(self, dest_folder):
         create_directory(dest_folder)
         dest_file = os.path.join(dest_folder, os.path.basename(self.current_image))
         shutil.copy2(self.current_image, dest_file)
 
-    def remove_image_file(self, score, default_scores):
-        if self.config_handler.get_treat_categories_as_scoring() or score in default_scores:
+    def remove_image_file(self, score):
+        if score:
             dest_file = os.path.join(self.output_folder, score, os.path.basename(self.current_image))
-        else:
-            default_score = next((s for s in self.db.get_image_scores(self.current_image) if s in default_scores), default_scores[0])
-            dest_file = os.path.join(self.output_folder, default_score, score, os.path.basename(self.current_image))
-        
-        if os.path.exists(dest_file):
-            os.remove(dest_file)
+            if os.path.exists(dest_file):
+                os.remove(dest_file)
 
     def set_output_folder(self, folder):
         self.output_folder = folder
@@ -130,3 +153,14 @@ class ImageHandler:
         if self.image_list:
             return (self.current_index + 1, len(self.image_list))
         return (0, 0)
+
+    def sync_filesystem_with_database(self):
+        all_scores = self.db.get_all_scores()
+        for source_path, dest_path, score, categories in all_scores:
+            if not os.path.exists(source_path):
+                self.db.remove_score(source_path)
+            elif not os.path.exists(dest_path):
+                dest_folder = os.path.join(self.output_folder, score, *categories)
+                new_dest_path = os.path.join(dest_folder, os.path.basename(source_path))
+                self.copy_image_to_folder(dest_folder)
+                self.db.add_or_update_score(source_path, new_dest_path, score, categories)

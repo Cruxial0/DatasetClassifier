@@ -3,6 +3,7 @@ import sys
 from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QMessageBox, QMainWindow, QApplication, QWidget, QLabel)
 from PyQt6.QtGui import QKeySequence, QShortcut, QAction
 from PyQt6.QtCore import Qt, QTimer, QSize
+from src.button_states import ButtonStateManager
 from src.database import Database
 from src.config_handler import ConfigHandler
 from src.ui_components import UIComponents
@@ -15,6 +16,7 @@ class ImageScorer(QMainWindow):
         self.default_scores = ['score_9', 'score_8_up', 'score_7_up', 'score_6_up', 'score_5_up', 'score_4_up', 'discard']
         self.db = Database()
         self.config_handler = ConfigHandler()
+        self.button_states = ButtonStateManager()
         self.score_layout = None
         self.treat_categories_as_scoring = self.config_handler.get_treat_categories_as_scoring()
         self.image_handler = ImageHandler(self.db, self.config_handler)
@@ -44,7 +46,7 @@ class ImageScorer(QMainWindow):
         view_menu = menu_bar.addMenu('View')
         options_menu = menu_bar.addMenu('Options')
 
-        actions = UIComponents.create_menu_actions()
+        actions = UIComponents.create_menu_actions(self.config_handler)
         self.hide_scored_action, self.use_copy_category_action, self.use_copy_default_action, \
         self.treat_categories_as_scoring_action, self.auto_scroll_on_scoring_action = actions
 
@@ -61,7 +63,8 @@ class ImageScorer(QMainWindow):
         self.auto_scroll_on_scoring_action.triggered.connect(self.toggle_auto_scroll_on_scoring)
 
     def create_directory_selection(self):
-        layout, self.input_path, self.output_path, input_button, output_button = UIComponents.create_directory_selection()
+        layout, self.input_path, self.output_path, input_button, output_button = UIComponents.create_directory_selection(self.button_states.input_enabled)
+        self.button_states.declare_button_group([self.output_path, output_button], 'input')
         input_button.clicked.connect(lambda: self.select_directory('input'))
         output_button.clicked.connect(lambda: self.select_directory('output'))
         return layout
@@ -69,22 +72,26 @@ class ImageScorer(QMainWindow):
     def create_middle_row(self):
         layout = QHBoxLayout()
         
-        image_viewer_layout, self.prev_button, self.image_label, self.next_button = UIComponents.create_image_viewer()
+        image_viewer_layout, self.prev_button, self.image_label, self.next_button = UIComponents.create_image_viewer(self.button_states.image_enabled)
         layout.addLayout(image_viewer_layout, 7)
 
         self.prev_button.clicked.connect(self.load_previous_image)
         self.next_button.clicked.connect(self.load_next_image)
 
-        category_buttons_layout, self.category_input, self.category_add_button, self.category_button_layout = UIComponents.create_category_buttons()
+        category_buttons_layout, self.category_input, self.category_add_button, self.category_button_layout = UIComponents.create_category_buttons(self.button_states.category_enabled)
         layout.addLayout(category_buttons_layout, 3)
 
         self.category_input.textChanged.connect(self.check_category_button_name)
         self.category_add_button.clicked.connect(self.add_category_button)
 
+        self.button_states.declare_button_group([self.prev_button, self.next_button], 'image')
+        self.button_states.declare_button_group([self.category_input, self.category_add_button], 'category')
+
         return layout
 
     def create_scoring_buttons(self):
-        layout, self.score_buttons, self.progress_bar, self.progress_label = UIComponents.create_scoring_buttons(self.default_scores)
+        layout, self.score_buttons, self.progress_bar, self.progress_label = UIComponents.create_scoring_buttons(self.default_scores, self.button_states.score_enabled)
+        self.button_states.declare_button_group(self.score_buttons, 'score')
         self.score_layout = layout.itemAt(0).layout()  # Store the score_layout
         for button in self.score_buttons:
             button.clicked.connect(lambda checked, s=button.text(): self.on_score_button_click(s, button))
@@ -104,11 +111,26 @@ class ImageScorer(QMainWindow):
         if folder:
             if dir_type == 'input':
                 self.input_path.setText(folder)
+                self.button_states.toggle_button_group(True, 'input')
+                self.button_states.toggle_button_group(True, 'image')
                 self.load_images()
+                
             else:
                 self.output_path.setText(folder)
                 self.image_handler.set_output_folder(folder)
+                self.rebuild_database(self.input_path.text(), folder)
                 self.check_for_custom_scorings(folder)
+                self.button_states.toggle_button_group(True, 'category')
+                self.button_states.toggle_button_group(True, 'score')
+                self.update_button_colors()
+
+    def rebuild_database(self, input_folder, output_folder):
+        if self.db.rebuild_from_sidecar():
+            QMessageBox.information(self, "Database Rebuilt", "Database has been rebuilt from the sidecar file.")
+        else:
+            self.db.rebuild_from_filesystem(input_folder, output_folder)
+            QMessageBox.information(self, "Database Rebuilt", "Database has been rebuilt from the filesystem.")
+        self.db.write_sidecar()
 
     def check_for_custom_scorings(self, folder):
         custom_scorings = []
@@ -205,8 +227,8 @@ class ImageScorer(QMainWindow):
         current_image = self.image_handler.get_current_image_path()
         if not current_image:
             return
-
-        current_scores = self.db.get_image_scores(current_image)
+        
+        current_score, current_categories = self.db.get_image_score(current_image)
         accent_color = self.config_handler.get_color('accent_color')
         alternate_color = self.config_handler.get_color('alternate_color')
         warning_color = self.config_handler.get_color('warning_color')
@@ -216,9 +238,8 @@ class ImageScorer(QMainWindow):
         for i in range(self.score_layout.count()):
             button = self.score_layout.itemAt(i).widget()
             if isinstance(button, QPushButton):
-                # if self.alt_pressed and button.objectName().startswith("custom_"):
-                #     button.setStyleSheet(f"background-color: {alternate_color}; color: white;")
-                if button.objectName() in current_scores:
+                if not button.isEnabled(): continue
+                if button.objectName() == current_score:
                     if button.objectName() == 'discard':
                         button.setStyleSheet(f"background-color: {warning_color}; color: white;")
                     else:
@@ -228,28 +249,68 @@ class ImageScorer(QMainWindow):
                         button.setStyleSheet(f"background-color: {alternate_color}; color: white;")
                     else:
                         button.setStyleSheet("")
-
+        
         # Update category buttons
         for button, remove_button, _ in self.category_buttons:
+            if not button.isEnabled(): continue
+            is_active = button.text() in current_categories
+            
+            if is_active:
+                button.setStyleSheet(f"background-color: {alternate_color}; color: white;")
+            else:
+                button.setStyleSheet("")
+            
             if self.alt_pressed and not self.ctrl_pressed:
-                if button.text() not in current_scores:
+                if not is_active:
                     button.setStyleSheet(f"background-color: {select_color}; color: white;")
                 else:
                     button.setStyleSheet(f"background-color: {warning_color}; color: white;")
             elif self.ctrl_pressed:
                 remove_button.setStyleSheet(f"background-color: {warning_color}; color: white;")
-            elif button.text() in current_scores:
-                button.setStyleSheet(f"background-color: {alternate_color}; color: white;")
-                remove_button.setStyleSheet("")
             else:
-                button.setStyleSheet("")
                 remove_button.setStyleSheet("")
 
     def score_image(self, score):
-        if self.image_handler.score_image(score, self.default_scores):
-            self.update_button_colors()
-            if score in self.default_scores and self.config_handler.get_auto_scroll_on_scoring():
-                self.load_next_image()
+        current_image_path = self.image_handler.get_current_image_path()
+        if current_image_path:
+            current_score, _ = self.db.get_image_score(current_image_path)
+            
+            if score in self.default_scores:
+                new_score = score
+                new_categories = []
+            else:
+                new_score = current_score
+                new_categories = [score]
+
+            if self.image_handler.score_image(new_score, new_categories):
+                self.update_button_colors()
+                if score in self.default_scores and self.config_handler.get_auto_scroll_on_scoring():
+                    self.load_next_image()
+
+    def check_for_custom_scorings(self, folder):
+        custom_scorings = []
+        if not self.treat_categories_as_scoring:
+            for default_score in self.default_scores:
+                default_score_folder = os.path.join(folder, default_score)
+                if os.path.isdir(default_score_folder):
+                    for item in os.listdir(default_score_folder):
+                        if os.path.isdir(os.path.join(default_score_folder, item)) and item not in self.default_scores:
+                            custom_scorings.append(item)
+        else:
+            for item in os.listdir(folder):
+                if os.path.isdir(os.path.join(folder, item)) and item not in self.default_scores:
+                    custom_scorings.append(item)
+        
+        custom_scorings = list(set(custom_scorings))  # Remove duplicates
+        
+        if custom_scorings:
+            reply = QMessageBox.question(self, 'Custom Scorings Detected', 
+                                         "Custom Scorings were detected. Do you want to import them?",
+                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
+                                         QMessageBox.StandardButton.No)
+            if reply == QMessageBox.StandardButton.Yes:
+                for scoring in custom_scorings:
+                    self.add_category_button_from_import(scoring)
 
     def load_next_image(self):
         if self.image_handler.load_next_image():
@@ -371,6 +432,7 @@ class ImageScorer(QMainWindow):
         self.treat_categories_as_scoring = self.treat_categories_as_scoring_action.isChecked()
         self.config_handler.set_treat_categories_as_scoring(self.treat_categories_as_scoring)
         self.config_handler.save_config()
+        # Loop through all scorings
 
     def toggle_auto_scroll_on_scoring(self):
         self.auto_scroll_on_scoring = self.auto_scroll_on_scoring_action.isChecked()
