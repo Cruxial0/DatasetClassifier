@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import sys
 from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QMessageBox, QMainWindow, QApplication, QWidget, QLabel)
 from PyQt6.QtGui import QKeySequence, QShortcut, QAction
@@ -10,16 +11,17 @@ from src.ui_components import UIComponents
 from src.image_handler import ImageHandler
 from src.utils import key_to_unicode
 from src.theme import set_dark_mode
+from src.windows.export_popup import ExportPopup
 
 class ImageScorer(QMainWindow):
     def __init__(self):
         super().__init__()
         self.default_scores = ['score_9', 'score_8_up', 'score_7_up', 'score_6_up', 'score_5_up', 'score_4_up', 'discard']
-        self.db = Database()
+        self.db = None
         self.config_handler = ConfigHandler()
         self.button_states = ButtonStateManager()
         self.score_layout = None
-        self.treat_categories_as_scoring = self.config_handler.get_treat_categories_as_scoring()
+        self.workspace_loaded = False
         self.image_handler = ImageHandler(self.db, self.config_handler)
         self.custom_shortcuts = {}
         self.category_buttons = []
@@ -44,24 +46,29 @@ class ImageScorer(QMainWindow):
 
     def create_menu_bar(self):
         menu_bar = self.menuBar()
+        file_menu = menu_bar.addMenu('File')
         view_menu = menu_bar.addMenu('View')
         options_menu = menu_bar.addMenu('Options')
 
-        actions = UIComponents.create_menu_actions(self.config_handler)
-        self.hide_scored_action, self.use_copy_category_action, self.use_copy_default_action, \
-        self.treat_categories_as_scoring_action, self.auto_scroll_on_scoring_action = actions
+        file_menu.setToolTipsVisible(True)
+        view_menu.setToolTipsVisible(True)
+        options_menu.setToolTipsVisible(True)
 
+        actions = UIComponents.create_menu_actions(self.config_handler)
+        self.hide_scored_action, self.treat_categories_as_scoring_action, self.auto_scroll_on_scoring_action,  \
+        self.export_action, self.write_to_filesystem_action = actions  
+
+        file_menu.addAction(self.export_action)
         view_menu.addAction(self.hide_scored_action)
-        # options_menu.addAction(self.use_copy_category_action)
-        # options_menu.addAction(self.use_copy_default_action)
         # options_menu.addAction(self.treat_categories_as_scoring_action)
         options_menu.addAction(self.auto_scroll_on_scoring_action)
+        options_menu.addAction(self.write_to_filesystem_action)
 
         self.hide_scored_action.triggered.connect(self.toggle_hide_scored_images)
-        self.use_copy_category_action.triggered.connect(self.toggle_use_copy_category)
-        self.use_copy_default_action.triggered.connect(self.toggle_use_copy_default)
-        self.treat_categories_as_scoring_action.triggered.connect(self.toggle_treat_categories_as_scoring)
+        # self.treat_categories_as_scoring_action.triggered.connect(self.toggle_treat_categories_as_scoring)
         self.auto_scroll_on_scoring_action.triggered.connect(self.toggle_auto_scroll_on_scoring)
+        self.write_to_filesystem_action.triggered.connect(self.toggle_write_to_filesystem)
+        self.export_action.triggered.connect(self.open_export_window)
 
     def create_directory_selection(self):
         layout, self.input_path, self.output_path, input_button, output_button = UIComponents.create_directory_selection(self.button_states.input_enabled)
@@ -69,6 +76,13 @@ class ImageScorer(QMainWindow):
         input_button.clicked.connect(lambda: self.select_directory('input'))
         output_button.clicked.connect(lambda: self.select_directory('output'))
         return layout
+    
+    def open_export_window(self):
+        self.export_window = ExportPopup(self.export, self.category_buttons)
+        self.export_window.show()
+
+    def export(self, data):
+        print(f"{data}")
 
     def create_middle_row(self):
         layout = QHBoxLayout()
@@ -98,14 +112,12 @@ class ImageScorer(QMainWindow):
             button.clicked.connect(lambda checked, s=button.text(): self.on_score_button_click(s, button))
         return layout
 
+    
+
     def on_score_button_click(self, score, button):
         accent_color = self.config_handler.get_color('accent_color')
         button.setStyleSheet(f"background-color: {accent_color};")
         QTimer.singleShot(150, lambda: self.score_image(score))
-
-    def toggle_hide_scored_images(self):
-        self.hide_scored_images = self.hide_scored_action.isChecked()
-        self.load_images()
 
     def select_directory(self, dir_type):
         folder = QFileDialog.getExistingDirectory(self, f"Select {dir_type.capitalize()} Directory")
@@ -119,19 +131,24 @@ class ImageScorer(QMainWindow):
             else:
                 self.output_path.setText(folder)
                 self.image_handler.set_output_folder(folder)
-                self.rebuild_database(self.input_path.text(), folder)
+                self.rebuild_database(self.input_path.text(), folder) # todo: move to another thread
                 self.check_for_custom_scorings(folder)
                 self.button_states.toggle_button_group(True, 'category')
                 self.button_states.toggle_button_group(True, 'score')
+                self.workspace_loaded = True
                 self.update_button_colors()
 
     def rebuild_database(self, input_folder, output_folder):
-        if self.db.rebuild_from_sidecar():
-            QMessageBox.information(self, "Database Rebuilt", "Database has been rebuilt from the sidecar file.")
-        else:
+        db_path = Path(output_folder).joinpath('images_scores.db')
+        if not db_path.exists():
+            self.db = Database(db_path=str(db_path))
             self.db.rebuild_from_filesystem(input_folder, output_folder)
             QMessageBox.information(self, "Database Rebuilt", "Database has been rebuilt from the filesystem.")
-        self.db.write_sidecar()
+        else:
+            self.db = Database(db_path=str(db_path))
+        
+        self.image_handler.set_db(self.db)
+        
 
     def check_for_custom_scorings(self, folder):
         custom_scorings = []
@@ -225,6 +242,8 @@ class ImageScorer(QMainWindow):
             super().keyReleaseEvent(event)
 
     def update_button_colors(self):
+        if not self.db:
+            return
         current_image = self.image_handler.get_current_image_path()
         if not current_image:
             return
@@ -286,12 +305,12 @@ class ImageScorer(QMainWindow):
 
             if self.image_handler.score_image(new_score, new_categories):
                 self.update_button_colors()
-                if score in self.default_scores and self.config_handler.get_auto_scroll_on_scoring():
+                if score in self.default_scores and self.config_handler.get_option('auto_scroll_on_scoring'):
                     self.load_next_image()
 
     def check_for_custom_scorings(self, folder):
         custom_scorings = []
-        if not self.treat_categories_as_scoring:
+        if not self.config_handler.get_option('treat_categories_as_scoring'):
             for default_score in self.default_scores:
                 default_score_folder = os.path.join(folder, default_score)
                 if os.path.isdir(default_score_folder):
@@ -420,25 +439,27 @@ class ImageScorer(QMainWindow):
                 break
         self.apply_keybindings()
 
-    def toggle_use_copy_category(self):
-        self.use_copy_category = self.use_copy_category_action.isChecked()
-        self.config_handler.set_use_copy_category(self.use_copy_category)
+    def toggle_hide_scored_images(self):
+        self.hide_scored_images = self.hide_scored_action.isChecked()
+        self.config_handler.set_option('hide_scored_images', self.hide_scored_images)
         self.config_handler.save_config()
-
-    def toggle_use_copy_default(self):
-        self.use_copy_default = self.use_copy_default_action.isChecked()
-        self.config_handler.set_use_copy_default(self.use_copy_default)
-        self.config_handler.save_config()
+        if self.workspace_loaded:
+            self.load_images()
 
     def toggle_treat_categories_as_scoring(self):
         self.treat_categories_as_scoring = self.treat_categories_as_scoring_action.isChecked()
-        self.config_handler.set_treat_categories_as_scoring(self.treat_categories_as_scoring)
+        self.config_handler.set_option('treat_categories_as_scoring', self.treat_categories_as_scoring)
         self.config_handler.save_config()
         # Loop through all scorings
 
     def toggle_auto_scroll_on_scoring(self):
         self.auto_scroll_on_scoring = self.auto_scroll_on_scoring_action.isChecked()
-        self.config_handler.set_auto_scroll_on_scoring(self.auto_scroll_on_scoring)
+        self.config_handler.set_option('auto_scroll_on_scoring', self.auto_scroll_on_scoring)
+        self.config_handler.save_config()
+
+    def toggle_write_to_filesystem(self):
+        self.write_to_filesystem = self.write_to_filesystem_action.isChecked()
+        self.config_handler.set_option('write_to_filesystem', self.write_to_filesystem)
         self.config_handler.save_config()
 
     def check_category_button_name(self):

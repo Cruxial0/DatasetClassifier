@@ -9,6 +9,13 @@ default_colors = {
     "add_color": "#6b8e6b"
 }
 
+default_options = {
+    "hide_scored_images": False,
+    "auto_scroll_on_scoring": True,
+    "treat_categories_as_scoring": False,
+    "write_to_filesystem": False
+}
+
 class ConfigHandler:
     def __init__(self, config_file='config.yaml'):
         self.config_file = config_file
@@ -34,29 +41,14 @@ class ConfigHandler:
         colors[color] = hex_code
         self.config['colors'] = colors
 
-    def get_use_copy_category(self):
-        return self.config.get('use_copy_custom')
+    def get_option(self, option):
+        options = self.config.get('options', {})
+        return options.get(option, default_options[option])
     
-    def get_use_copy_default(self):
-        return self.config.get('use_copy_default')
-
-    def get_treat_categories_as_scoring(self):
-        return self.config.get('treat_categories_as_scoring', False)
-
-    def set_use_copy_category(self, value):
-        self.config['use_copy_custom'] = value
-
-    def set_use_copy_default(self, value):
-        self.config['use_copy_default'] = value
-
-    def set_treat_categories_as_scoring(self, value):
-        self.config['treat_categories_as_scoring'] = value
-
-    def get_auto_scroll_on_scoring(self):
-        return self.config.get('auto_scroll_on_scoring', False)
-
-    def set_auto_scroll_on_scoring(self, value):
-        self.config['auto_scroll_on_scoring'] = value
+    def set_option(self, option, value):
+        options = self.config.get('options', {})
+        options[option] = value
+        self.config['options'] = options
 
     def save_config(self):
         with open(self.config_file, 'w') as f:

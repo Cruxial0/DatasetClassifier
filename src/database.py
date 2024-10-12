@@ -3,12 +3,11 @@ from pathlib import Path
 import sqlite3
 
 class Database:
-    def __init__(self, db_path='db/image_scores.db', sidecar_path='db/sidecar.json'):
+    def __init__(self, db_path='db/image_scores.db'):
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(self.db_path.absolute().as_posix())
         self.cursor = self.conn.cursor()
-        self.sidecar_path = Path(sidecar_path)
         self.init_database()
 
     def init_database(self):
@@ -27,19 +26,8 @@ class Database:
         self.cursor.execute('DELETE FROM scores')
         self.conn.commit()
 
-    def rebuild_from_sidecar(self):
-        return False # Temporary, might change later
-        if self.sidecar_path.exists():
-            with open(self.sidecar_path, 'r') as f:
-                data = json.load(f)
-            self.wipe_database()
-            for entry in data:
-                self.add_or_update_score(entry['source_path'], entry['dest_path'], entry['score'], entry['categories'])
-            return True
-        return False
-
     def rebuild_from_filesystem(self, input_directory, output_directory):
-        self.wipe_database()
+        # self.wipe_database()
         input_path = Path(input_directory)
         output_path = Path(output_directory)
         

@@ -19,7 +19,7 @@ def set_dark_mode(app):
     palette.setColor(QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
     
     # Light gray for tooltips
-    palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(200, 200, 200))
+    palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(65, 65, 65))
     palette.setColor(QPalette.ColorRole.ToolTipText, QColor(200, 200, 200))
     
     # Light gray for text

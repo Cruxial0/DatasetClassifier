@@ -1,10 +1,9 @@
-auto_scroll_on_scoring: true
 colors:
-  accent_color: "#5a9bd8"
-  alternate_color: "#b08463"
-  warning_color: "#d93f00"
-  select_color: "#8c949a"
-  add_color: "#6b8e6b"
+  accent_color: '#5a9bd8'
+  add_color: '#6b8e6b'
+  alternate_color: '#b08463'
+  select_color: '#8c949a'
+  warning_color: '#d93f00'
 keybindings:
   custom_1: A
   custom_10: ;
@@ -25,6 +24,7 @@ keybindings:
   score_7_up: D
   score_8_up: S
   score_9: A
-treat_categories_as_scoring: false
-use_copy_custom: true
-use_copy_default: false
+options:
+  auto_scroll_on_scoring: true
+  hide_scored_images: false
+  write_to_filesystem: false

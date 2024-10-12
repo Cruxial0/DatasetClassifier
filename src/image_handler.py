@@ -14,6 +14,9 @@ class ImageHandler:
         self.current_image = None
         self.preloaded_images = {}
 
+    def set_db(self, db):
+        self.db = db
+
     def load_images(self, input_folder, hide_scored_images):
         self.input_folder = input_folder
         self.image_list = [f for f in os.listdir(input_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))]
@@ -79,7 +82,7 @@ class ImageHandler:
             # Update score
             new_score = score if score else current_score
 
-            if current_score:
+            if current_score and self.config_handler.get_write_to_filesystem():
                 # Image already has a score, update categories and move files if necessary
                 if new_score != current_score:
                     # Move the image in the score folder
@@ -117,7 +120,7 @@ class ImageHandler:
                     old_score_folder = os.path.join(self.output_folder, current_score)
                     if os.path.exists(old_score_folder) and not os.listdir(old_score_folder):
                         os.rmdir(old_score_folder)
-            elif new_score:
+            elif new_score and self.config_handler.get_write_to_filesystem():
                 # Image doesn't have a score, but now we're adding one
                 dest_folder = os.path.join(self.output_folder, new_score)
                 self.copy_image_to_folder(dest_folder)  # Copy to score folder
