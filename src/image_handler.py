@@ -154,9 +154,9 @@ class ImageHandler:
     def set_output_folder(self, folder):
         self.output_folder = folder
 
-    def get_orientation(self, image_path):
+    def get_orientation(self):
         try:
-            image = Image.open(image_path)
+            image = Image.open(self.get_current_image_path())
             exif = image._getexif()
 
             if exif is not None:
