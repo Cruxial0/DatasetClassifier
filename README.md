@@ -58,7 +58,7 @@ key_1: S # score_8_up
 key_2: D # score_7_up
 key_3: F # score_6_up
 key_4: G # score_5_up
-key_5: H # score_7_up
+key_5: H # score_4_up
 key_6: J
 key_7: K
 key_8: L
