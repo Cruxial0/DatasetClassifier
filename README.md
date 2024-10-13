@@ -53,27 +53,19 @@ The application works with modifier layers. By default, all keybinds are on the 
 ### Default Keybinds
 ```yaml
 # Scoring
-score_9: A
-score_8_up: S
-score_7_up: D
-score_6_up: F
-score_5_up: G
-score_4_up: H
-discard: 'BACKSPACE'
+key_0: A # score_9
+key_1: S # score_8_up
+key_2: D # score_7_up
+key_3: F # score_6_up
+key_4: G # score_5_up
+key_5: H # score_7_up
+key_6: J
+key_7: K
+key_8: L
+key_9: ;
+discard: BACKSPACE
 
-# Categories (ALT+KEY)
-custom_1: A
-custom_2: S
-custom_3: D
-custom_4: F
-custom_5: G
-custom_6: H
-custom_7: J
-custom_8: K
-custom_9: L
-custom_10: ;
-
-# Image Navigation
+# Navigation
 image_next: Right
 image_previous: Left
 ```

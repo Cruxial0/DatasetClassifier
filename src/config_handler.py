@@ -16,6 +16,19 @@ default_options = {
     "write_to_filesystem": False
 }
 
+default_keybinds = {
+    "key_0": "A", # score_9
+    "key_1": "S", # score_8_up
+    "key_2": "D", # score_7_up
+    "key_3": "F", # score_6_up
+    "key_4": "G",# score_5_up
+    "key_5": "H", # score_7_up
+    "key_6": "J",
+    "key_7": "K",
+    "key_8": "L",
+    "key_9": ";",
+}
+
 class ConfigHandler:
     def __init__(self, config_file='config.yaml'):
         self.config_file = config_file
@@ -29,7 +42,7 @@ class ConfigHandler:
             return {}
 
     def get_keybindings(self):
-        return self.config.get('keybindings', {})
+        return self.config.get('keybindings', default_keybinds)
 
     def get_color(self, color: Literal["accent_color", "alternate_color", "warning_color", "select_color", "add_color"]):
         colors = self.config.get('colors', {})

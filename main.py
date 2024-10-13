@@ -360,17 +360,20 @@ class DatasetClassifier(QMainWindow):
                 QShortcut(QKeySequence(key), self, activated=self.load_next_image)
             elif action == 'image_previous':
                 QShortcut(QKeySequence(key), self, activated=self.load_previous_image)
-            elif action in self.default_scores:
-                shortcut = QShortcut(QKeySequence(key), self)
-                shortcut.activated.connect(lambda checked=False, s=action: self.score_image(s))
-                button = self.findChild(QPushButton, action)
-                if button:
-                    unicode = key_to_unicode(key)
-                    if not f"({unicode})" in button.text():
-                        button.setText(f"({unicode})        {button.text()}")
-                    button.setToolTip(f"Shortcut: {key}")
-            elif action.startswith('custom_'):
-                index = int(action.split('_')[1]) - 1
+            elif action.startswith('key_'):
+                print(action)
+                index = int(action.split('_')[1])
+                # Set score buttons
+                if index < len(self.default_scores) - 1:
+                    shortcut = QShortcut(QKeySequence(key), self)
+                    shortcut.activated.connect(lambda checked=False, s=self.default_scores[index]: self.score_image(s))
+                    button = self.findChild(QPushButton, self.default_scores[index])
+                    if button:
+                        unicode = key_to_unicode(key)
+                        if not f"({unicode})" in button.text():
+                            button.setText(f"({unicode})        {button.text()}")
+                        button.setToolTip(f"Shortcut: {key}")
+                # Set shortcut buttons
                 if index < len(self.category_buttons):
                     button, _, keybind_label = self.category_buttons[index]
                     shortcut = QShortcut(QKeySequence(f"ALT+{key}"), self)
@@ -378,6 +381,15 @@ class DatasetClassifier(QMainWindow):
                     self.custom_shortcuts[action] = shortcut
                     button.setToolTip(f"Shortcut: ALT+{key}")
                     keybind_label.setText(f"{key}")
+            elif action == 'discard':
+                shortcut = QShortcut(QKeySequence(key), self)
+                shortcut.activated.connect(lambda checked=False, s='discard': self.score_image(s))
+                button = self.findChild(QPushButton, 'discard')
+                if button:
+                    unicode = key_to_unicode(key)
+                    if not f"({unicode})" in button.text():
+                        button.setText(f"({unicode})        {button.text()}")
+                    button.setToolTip(f"Shortcut: {key}")
 
     def apply_accent_color(self):
         accent_color = self.config_handler.get_color('accent_color')

@@ -5,26 +5,20 @@ colors:
   select_color: '#8c949a'
   warning_color: '#d93f00'
 keybindings:
-  custom_1: A
-  custom_10: ;
-  custom_2: S
-  custom_3: D
-  custom_4: F
-  custom_5: G
-  custom_6: H
-  custom_7: J
-  custom_8: K
-  custom_9: L
+  key_0: A # score_9
+  key_1: S # score_8_up
+  key_2: D # score_7_up
+  key_3: F # score_6_up
+  key_4: G # score_5_up
+  key_5: H # score_7_up
+  key_6: J
+  key_7: K
+  key_8: L
+  key_9: ;
   discard: BACKSPACE
   image_next: Right
   image_previous: Left
-  score_4_up: H
-  score_5_up: G
-  score_6_up: F
-  score_7_up: D
-  score_8_up: S
-  score_9: A
 options:
   auto_scroll_on_scoring: true
-  hide_scored_images: false
+  hide_scored_images: true
   write_to_filesystem: false
