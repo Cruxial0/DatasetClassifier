@@ -87,6 +87,8 @@ Customize your workflow by modifying these keybinds in the configuration file to
 1. Install Python (version 3.8 or greater)
 2. Clone the repository with `git clone https://github.com/Cruxial0/DatasetClassifier.git`
 3. Run `run.bat`
+### Linux
+Not tested
 
 ## Contributing
 Contributions are welcome and encouraged!
