@@ -17,11 +17,12 @@ class Database:
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS scores
             (id INTEGER PRIMARY KEY,
-             source_path TEXT UNIQUE,
+             source_path TEXT,
              dest_path TEXT,
              score TEXT,
              categories TEXT,
-             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)
+             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+             UNIQUE(source_path, dest_path))
         ''')
         self.conn.commit()
 
@@ -76,11 +77,28 @@ class Database:
         categories_json = json.dumps(categories)
         source_path = source_path.replace('/', '\\') if source_path else None
         dest_path = dest_path.replace('/', '\\') if dest_path else None
-        self.cursor.execute('''
-            INSERT OR REPLACE INTO scores (source_path, dest_path, score, categories)
-            VALUES (?, ?, ?, ?)
-        ''', (source_path, dest_path, score, categories_json))
+        
+        # Check if a row with the current source_path exists
+        self.cursor.execute('SELECT COUNT(1) FROM scores WHERE source_path = ?', (source_path,))
+        row_exists = self.cursor.fetchone()[0]
+        
+        if row_exists:
+            # If it exists, update the score
+            self.cursor.execute('''
+                UPDATE scores
+                SET score = ?, categories = ?, dest_path = ?
+                WHERE source_path = ?
+            ''', (score, categories_json, dest_path, source_path))
+        else:
+            # If it doesn't exist, insert a new row
+            self.cursor.execute('''
+                INSERT INTO scores (source_path, dest_path, score, categories)
+                VALUES (?, ?, ?, ?)
+            ''', (source_path, dest_path, score, categories_json))
+        
         self.conn.commit()
+
+
 
     def update_categories(self, source_path, categories):
         categories_json = json.dumps(categories)
@@ -89,13 +107,6 @@ class Database:
             SET categories = ?, timestamp = CURRENT_TIMESTAMP
             WHERE source_path = ?
         ''', (categories_json, source_path.replace('/', '\\')))
-        self.conn.commit()
-
-    def remove_score(self, source_path):
-        self.cursor.execute('''
-            DELETE FROM scores
-            WHERE source_path = ?
-        ''', (source_path.replace('/', '\\'),))
         self.conn.commit()
 
     def get_image_score(self, source_path):
