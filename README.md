@@ -19,6 +19,7 @@ DatasetClassifier is an efficient image browser with advanced classification fea
 With rule based export, you can define your own rules.
 
 Here is an example of how the export window might look:
+![image](https://github.com/user-attachments/assets/26bdcf0d-728b-4866-93a0-10c6be9a92ce)
 
 Exports work with priorities. It starts with the highest priority, then works it's way down the list. All images that don't meet a rule will be exported to the base directory.
 
