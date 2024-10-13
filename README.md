@@ -1,8 +1,6 @@
 # DatasetClassifier
 A simple tool to help you speed up your workflow when manually scoring and categorizing images.
 
-# DatasetClassifier
-
 ## Overview
 DatasetClassifier is an efficient image browser with advanced classification features. It utilizes PonyDiffusion's rating convention to score images from `score_9` to `score_4_up`.
 
