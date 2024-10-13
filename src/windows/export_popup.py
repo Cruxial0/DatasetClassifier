@@ -25,9 +25,12 @@ class RuleComponent(QWidget):
         self.combo_box = MultiSelectComboBox()
         self.combo_box.addItems(categories)
         self.combo_box.setDisplayDelimiter(", ")
-        self.combo_box.setPlaceholderText("Select categories...")
+        if editable:
+            self.combo_box.setPlaceholderText("Select categories...")
         if self.rule.categories and editable:
             self.combo_box.setCurrentOptions(list(self.rule.categories))
+        else:
+            self.combo_box.setCurrentText("DEFAULT")
         self.combo_box.setEnabled(editable)
 
         self.file_path = QLineEdit(self.rule.destination)
