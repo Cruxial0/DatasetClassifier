@@ -2,6 +2,8 @@ import os
 import shutil
 from PyQt6.QtGui import QPixmap
 from src.utils import create_directory
+from PIL import Image
+from PIL.ExifTags import TAGS
 
 class ImageHandler:
     def __init__(self, db, config_handler):
@@ -151,6 +153,35 @@ class ImageHandler:
 
     def set_output_folder(self, folder):
         self.output_folder = folder
+
+    def get_orientation(self, image_path):
+        try:
+            image = Image.open(image_path)
+            exif = image._getexif()
+
+            if exif is not None:
+                for tag_id, value in exif.items():
+                    tag = TAGS.get(tag_id, tag_id)
+                    if tag == "Orientation":
+                        if value == 1:
+                            return "Normal"
+                        elif value == 3:
+                            return "Rotate 180"
+                        elif value == 6:
+                            return "Rotate 90 CW"
+                        elif value == 8:
+                            return "Rotate 270 CW"
+                        else:
+                            return f"Unknown orientation: {value}"
+            
+            return "No orientation data found"
+        
+        except Exception as e:
+            print(f"Error reading EXIF data: {e}")
+            return "Error reading orientation"
+        finally:
+            if 'image' in locals():
+                image.close()
 
     def get_progress(self):
         if self.image_list:

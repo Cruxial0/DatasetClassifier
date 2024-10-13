@@ -3,8 +3,8 @@ from pathlib import Path
 import subprocess
 import sys
 from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QMessageBox, QMainWindow, QApplication, QWidget, QLabel)
-from PyQt6.QtGui import QKeySequence, QShortcut, QAction
-from PyQt6.QtCore import Qt, QTimer, QSize
+from PyQt6.QtGui import QKeySequence, QShortcut, QTransform
+from PyQt6.QtCore import Qt, QTimer
 from src.export import ExportRule, Exporter
 from src.button_states import ButtonStateManager
 from src.database import Database
@@ -213,7 +213,25 @@ class DatasetClassifier(QMainWindow):
     def display_image(self):
         pixmap = self.image_handler.get_current_image()
         if pixmap:
-            self.image_label.setPixmap(pixmap.scaled(
+            # Get the orientation value (you'll need to implement this)
+            orientation = self.image_handler.get_orientation()
+            
+            # Create a QTransform object
+            transform = QTransform()
+            
+            # Apply rotation based on orientation
+            if orientation == "Rotate 90 CW":
+                transform.rotate(90)
+            elif orientation == "Rotate 180":
+                transform.rotate(180)
+            elif orientation == "Rotate 270 CW" or orientation == "Rotate 90 CCW":
+                transform.rotate(270)
+            
+            # Apply the transform to the pixmap
+            rotated_pixmap = pixmap.transformed(transform, Qt.TransformationMode.SmoothTransformation)
+            
+            # Set the rotated pixmap
+            self.image_label.setPixmap(rotated_pixmap.scaled(
                 self.image_label.size(), 
                 Qt.AspectRatioMode.KeepAspectRatio, 
                 Qt.TransformationMode.SmoothTransformation
