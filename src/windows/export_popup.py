@@ -51,7 +51,7 @@ class RuleComponent(QWidget):
 
     def get_data(self):
         return ExportRule(
-            categories=set(self.combo_box.getCurrentOptions()),
+            categories=set(self.combo_box.currentData()),
             destination=self.file_path.text(),
             priority=int(self.priority_label.text())
         )
