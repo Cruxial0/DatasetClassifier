@@ -15,7 +15,7 @@ from src.utils import key_to_unicode
 from src.theme import set_dark_mode
 from src.windows.export_popup import ExportPopup
 
-class ImageScorer(QMainWindow):
+class DatasetClassifier(QMainWindow):
     def __init__(self):
         super().__init__()
         self.default_scores = ['score_9', 'score_8_up', 'score_7_up', 'score_6_up', 'score_5_up', 'score_4_up', 'discard']
@@ -34,7 +34,7 @@ class ImageScorer(QMainWindow):
         self.load_config()
 
     def initUI(self):
-        self.setWindowTitle('Image Scorer')
+        self.setWindowTitle('Dataset Classifier')
         self.setGeometry(100, 100, 1000, 600)
 
         central_widget = QWidget()
@@ -455,6 +455,6 @@ class ImageScorer(QMainWindow):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     set_dark_mode(app)
-    ex = ImageScorer()
+    ex = DatasetClassifier()
     ex.show()
     sys.exit(app.exec())
