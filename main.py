@@ -1,9 +1,11 @@
 import os
 from pathlib import Path
+import subprocess
 import sys
 from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QMessageBox, QMainWindow, QApplication, QWidget, QLabel)
 from PyQt6.QtGui import QKeySequence, QShortcut, QAction
 from PyQt6.QtCore import Qt, QTimer, QSize
+from src.export import ExportRule, Exporter
 from src.button_states import ButtonStateManager
 from src.database import Database
 from src.config_handler import ConfigHandler
@@ -78,11 +80,32 @@ class ImageScorer(QMainWindow):
         return layout
     
     def open_export_window(self):
-        self.export_window = ExportPopup(self.export, self.category_buttons)
+        if not self.db:
+            return
+        self.export_window = ExportPopup(self.export, self.db.get_unique_categories())
         self.export_window.show()
 
     def export(self, data):
-        print(f"{data}")
+        exporter = Exporter(data)
+        
+        summary = f"Export path: {exporter.output_dir}"
+        for key, value in exporter.process_export(self.db.get_all_images()).items():
+            summary += f"\n - {value} images exported to '{key}'"
+
+        confirm = QMessageBox.question(self, 'Export summary', 
+                                         f"{summary}\n\nConfirm?",
+                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
+                                         QMessageBox.StandardButton.No)
+        
+        if confirm == QMessageBox.StandardButton.Yes:
+            dir_confirm = QMessageBox.question(self, 'Confirm deleting directory', 
+                                 'All files in the output directory will be deleted.\n\nConfirm?',
+                                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
+                                 QMessageBox.StandardButton.No)
+            if dir_confirm == QMessageBox.StandardButton.Yes:
+                exporter.export()
+                QMessageBox.information(self, "Workspace", "The workspace has been exported.")
+                subprocess.Popen(f'explorer "{exporter.output_dir.replace('//', '\\').replace('/', '\\')}"')
 
     def create_middle_row(self):
         layout = QHBoxLayout()
@@ -112,8 +135,6 @@ class ImageScorer(QMainWindow):
             button.clicked.connect(lambda checked, s=button.text(): self.on_score_button_click(s, button))
         return layout
 
-    
-
     def on_score_button_click(self, score, button):
         accent_color = self.config_handler.get_color('accent_color')
         button.setStyleSheet(f"background-color: {accent_color};")
@@ -132,7 +153,7 @@ class ImageScorer(QMainWindow):
                 self.output_path.setText(folder)
                 self.image_handler.set_output_folder(folder)
                 self.rebuild_database(self.input_path.text(), folder) # todo: move to another thread
-                self.check_for_custom_scorings(folder)
+                self.check_for_custom_scorings()
                 self.button_states.toggle_button_group(True, 'category')
                 self.button_states.toggle_button_group(True, 'score')
                 self.workspace_loaded = True
@@ -150,23 +171,10 @@ class ImageScorer(QMainWindow):
         self.image_handler.set_db(self.db)
         
 
-    def check_for_custom_scorings(self, folder):
-        custom_scorings = []
-        if not self.treat_categories_as_scoring:
-            for default_score in self.default_scores:
-                default_score_folder = os.path.join(folder, default_score)
-                if os.path.isdir(default_score_folder):
-                    for item in os.listdir(default_score_folder):
-                        if os.path.isdir(os.path.join(default_score_folder, item)) and item not in self.default_scores:
-                            custom_scorings.append(item)
-        else:
-            for item in os.listdir(folder):
-                if os.path.isdir(os.path.join(folder, item)) and item not in self.default_scores:
-                    custom_scorings.append(item)
+    def check_for_custom_scorings(self):       
+        custom_scorings = self.db.get_unique_categories()
         
-        custom_scorings = list(set(custom_scorings))  # Remove duplicates
-        
-        if custom_scorings:
+        if len(custom_scorings) > 0:
             reply = QMessageBox.question(self, 'Custom Scorings Detected', 
                                          "Custom Scorings were detected. Do you want to import them?",
                                          QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
@@ -307,31 +315,6 @@ class ImageScorer(QMainWindow):
                 self.update_button_colors()
                 if score in self.default_scores and self.config_handler.get_option('auto_scroll_on_scoring'):
                     self.load_next_image()
-
-    def check_for_custom_scorings(self, folder):
-        custom_scorings = []
-        if not self.config_handler.get_option('treat_categories_as_scoring'):
-            for default_score in self.default_scores:
-                default_score_folder = os.path.join(folder, default_score)
-                if os.path.isdir(default_score_folder):
-                    for item in os.listdir(default_score_folder):
-                        if os.path.isdir(os.path.join(default_score_folder, item)) and item not in self.default_scores:
-                            custom_scorings.append(item)
-        else:
-            for item in os.listdir(folder):
-                if os.path.isdir(os.path.join(folder, item)) and item not in self.default_scores:
-                    custom_scorings.append(item)
-        
-        custom_scorings = list(set(custom_scorings))  # Remove duplicates
-        
-        if custom_scorings:
-            reply = QMessageBox.question(self, 'Custom Scorings Detected', 
-                                         "Custom Scorings were detected. Do you want to import them?",
-                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
-                                         QMessageBox.StandardButton.No)
-            if reply == QMessageBox.StandardButton.Yes:
-                for scoring in custom_scorings:
-                    self.add_category_button_from_import(scoring)
 
     def load_next_image(self):
         if self.image_handler.load_next_image():

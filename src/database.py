@@ -1,6 +1,9 @@
 import json
 from pathlib import Path
 import sqlite3
+from typing import List
+
+from src.export import Image
 
 class Database:
     def __init__(self, db_path='db/image_scores.db'):
@@ -116,6 +119,35 @@ class Database:
     def get_all_scores(self):
         self.cursor.execute('SELECT source_path, dest_path, score, categories FROM scores')
         return [(row[0].replace('/', '\\'), row[1].replace('/', '\\'), row[2], json.loads(row[3])) for row in self.cursor.fetchall()]
+    
+    def get_unique_categories(self):
+        self.cursor.execute('SELECT categories FROM scores')
+        all_categories = self.cursor.fetchall()
+        
+        unique_categories = set()
+        for categories_json in all_categories:
+            categories = json.loads(categories_json[0])
+            unique_categories.update(categories)
+        
+        return list(unique_categories)
+    
+    def get_all_images(self) -> List[Image]:
+        self.cursor.execute('SELECT id, source_path, dest_path, score, categories FROM scores')
+        rows = self.cursor.fetchall()
+
+        images = []
+        for row in rows:
+            image_id, source_path, dest_path, score, categories_json = row
+            categories = json.loads(categories_json)
+            images.append(Image(
+                id=image_id,
+                source_path=source_path.replace('/', '\\'),
+                dest_path=dest_path.replace('/', '\\'),
+                score=str(score),
+                categories=categories
+            ))
+        
+        return images
 
     def write_sidecar(self):
         data = [
