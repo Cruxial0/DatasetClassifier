@@ -1,6 +1,7 @@
 import random
 import string
 import sys
+from typing import Literal
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                             QHBoxLayout, QLabel, QCheckBox, QPushButton, 
                             QStackedWidget, QComboBox, QColorDialog)
@@ -24,7 +25,7 @@ class ColorButton(QPushButton):
             f"#{self.name} {{ background-color: {self.color.name()}; }}"
         )
 
-    def chooseColor(self, color_name: str, config: ConfigHandler):
+    def chooseColor(self, color_name: str, config: ConfigHandler, callback):
         dialog = QColorDialog(self.color, self)
         if dialog.exec() == QColorDialog.DialogCode.Accepted:
             self.color = dialog.currentColor()
@@ -33,6 +34,9 @@ class ColorButton(QPushButton):
             hex_color = dialog.currentColor().name()
             config.set_color(color_name, hex_color)
             config.save_config()
+            
+            if callback:
+                callback()
 
 class KeybindWidget(QPushButton):
     keyPressed = pyqtSignal(int)
@@ -68,6 +72,11 @@ class KeybindWidget(QPushButton):
 class SettingsWindow(QMainWindow):
     def __init__(self, config: ConfigHandler):
         super().__init__()
+
+        self.scoring_updated_callback = None
+        self.colors_updated_callback = None
+        self.keybinds_updated_callback = None
+
         self.config = config
         self.setWindowTitle("Settings")
         self.setMinimumSize(800, 600)
@@ -112,6 +121,14 @@ class SettingsWindow(QMainWindow):
         first_button = nav_widget.findChild(QPushButton)
         if first_button:
             first_button.setChecked(True)
+
+    def bind_callback(self, callback, callback_type: Literal['scoring', 'colors', 'keybinds']):
+        if callback_type == 'scoring':
+            self.scoring_updated_callback = callback
+        elif callback_type == 'colors':
+            self.colors_updated_callback = callback
+        elif callback_type == 'keybinds':
+            self.keybinds_updated_callback = callback
 
     def switch_page(self, page_name):
         # Uncheck all buttons except the clicked one
@@ -195,6 +212,8 @@ class SettingsWindow(QMainWindow):
         # Update the keybindings in the config handler
         self.config.set_keybind(key_name, key)
         self.config.save_config()
+        if self.keybinds_updated_callback:
+            self.keybinds_updated_callback()
 
         # Update the UI
         for row in self.pages["Keybinds"].findChildren(QHBoxLayout):
@@ -221,7 +240,7 @@ class SettingsWindow(QMainWindow):
             label = QLabel(name)
             label.setFixedWidth(100)
             color_button = ColorButton(color)
-            color_button.clicked.connect(lambda _, cb=color_button, n=self.get_key_name(name): cb.chooseColor(n, self.config))
+            color_button.clicked.connect(lambda _, cb=color_button, n=self.get_key_name(name): cb.chooseColor(n, self.config, self.colors_updated_callback))
             row.addWidget(label)
             row.addWidget(color_button)
             row.addStretch()
@@ -279,5 +298,8 @@ class SettingsWindow(QMainWindow):
         for i, button in enumerate(self.buttons):
             button.setText(scores[i])
         
-        self.config.set_scores_preset(preset)
-        self.config.save_config()
+        if save:
+            self.config.set_scores_preset(preset)
+            self.config.save_config()
+            if self.scoring_updated_callback:
+                self.scoring_updated_callback()

@@ -86,6 +86,9 @@ class DatasetClassifier(QMainWindow):
         if not self.config_handler:
             return
         self.settings_window = SettingsWindow(self.config_handler)
+        self.settings_window.bind_callback(self.update_scoring_buttons, 'scoring')
+        self.settings_window.bind_callback(self.apply_keybindings, 'keybinds')
+        self.settings_window.bind_callback(self.update_button_colors, 'colors')
         self.settings_window.show()
 
     def open_export_window(self):
@@ -116,6 +119,14 @@ class DatasetClassifier(QMainWindow):
                 exporter.export()
                 QMessageBox.information(self, "Workspace", "The workspace has been exported.")
                 subprocess.Popen(f'explorer "{exporter.output_dir.replace('//', '\\').replace('/', '\\')}"')
+
+    def update_scoring_buttons(self):
+        _, scores = self.config_handler.get_scores()
+        for score in self.default_scores:
+            button = self.findChild(QPushButton, score)
+            if not button.objectName().startswith('score_'): continue
+            button.setText(scores[score])
+            self.apply_keybindings()
 
     def create_middle_row(self):
         layout = QHBoxLayout()
@@ -278,6 +289,14 @@ class DatasetClassifier(QMainWindow):
             super().keyReleaseEvent(event)
 
     def update_button_colors(self):
+        accent_color = self.config_handler.get_color('accent_color')
+        alternate_color = self.config_handler.get_color('alternate_color')
+        warning_color = self.config_handler.get_color('warning_color')
+        select_color = self.config_handler.get_color('select_color')
+        add_color = self.config_handler.get_color('add_color')
+
+        self.category_add_button.setStyleSheet(f"background-color: {accent_color}; color: white;")
+
         if not self.db:
             return
         current_image = self.image_handler.get_current_image_path()
@@ -285,11 +304,6 @@ class DatasetClassifier(QMainWindow):
             return
         
         current_score, current_categories = self.db.get_image_score(current_image)
-        accent_color = self.config_handler.get_color('accent_color')
-        alternate_color = self.config_handler.get_color('alternate_color')
-        warning_color = self.config_handler.get_color('warning_color')
-        select_color = self.config_handler.get_color('select_color')
-        add_color = self.config_handler.get_color('add_color')
         
         # Update default score buttons
         for i in range(self.score_layout.count()):
@@ -378,9 +392,10 @@ class DatasetClassifier(QMainWindow):
                     shortcut.activated.connect(lambda checked=False, s=self.default_scores[index]: self.score_image(s))
                     button = self.findChild(QPushButton, self.default_scores[index])
                     if button:
+                        _, scores = self.config_handler.get_scores()
                         unicode = key_to_unicode(QKeySequence(key).toString())
-                        if not f"({unicode})" in button.text():
-                            button.setText(f"({unicode})        {button.text()}")
+                        button.setText(f"({unicode})        {scores[self.default_scores[index]]}")
+                            
                         button.setToolTip(f"Shortcut: {key}")
                 # Set shortcut buttons
                 if index < len(self.category_buttons):
