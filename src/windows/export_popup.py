@@ -137,7 +137,9 @@ class ExportPopup(QWidget):
 
         options_layout = QHBoxLayout()
         self.seperate_by_score = QCheckBox('Seperate by score')
+        self.export_captions = QCheckBox('Export Captions')
         options_layout.addWidget(self.seperate_by_score)
+        options_layout.addWidget(self.export_captions)
         layout.addLayout(options_layout)
 
         # Buttons
@@ -188,7 +190,8 @@ class ExportPopup(QWidget):
             'output_directory': self.dir_input.text(),
             'rules': [component.get_data() for component in reversed(self.category_components)],
             'scores': [label for label, checkbox in self.checkboxes.items() if checkbox.isChecked()],
-            'seperate_by_score': self.seperate_by_score.isChecked()
+            'seperate_by_score': self.seperate_by_score.isChecked(),
+            'export_captions': self.export_captions.isChecked()
         }
         if data['output_directory'] == '':
             QMessageBox.warning(self, 'Invalid export', 'Select an output path before exporting')

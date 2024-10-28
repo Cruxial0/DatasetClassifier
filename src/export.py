@@ -51,6 +51,7 @@ class Exporter:
         self.export_rules = data['rules']
         self.scores = data['scores']
         self.seperate_by_score = data['seperate_by_score']
+        self.export_captions = data['export_captions']
         self.export_images = []
         self.failed_exports = 0
 
@@ -83,8 +84,25 @@ class Exporter:
     def export(self):
         self.clean_output_dir()
         for img in self.export_images:
-            Path(img.dest_path).parent.mkdir(parents=True, exist_ok=True)
+            # Create destination directory and copy image
+            dest_dir = Path(img.dest_path).parent
+            dest_dir.mkdir(parents=True, exist_ok=True)
             shutil.copy(img.source_path, img.dest_path)
+            
+            if not self.export_captions:
+                continue
+                
+            # Handle caption/txt files
+            source_stem = os.path.splitext(img.source_path)[0]
+            dest_stem = os.path.splitext(img.dest_path)[0]
+            
+            caption_extensions = ['.caption', '.txt']
+            
+            for ext in caption_extensions:
+                source_caption = Path(f"{source_stem}{ext}")
+                dest_caption = Path(f"{dest_stem}{ext}")
+                if source_caption.exists():
+                    shutil.copy(source_caption, dest_caption)
     
     def clean_output_dir(self):
         # Sourced from https://stackoverflow.com/a/185941

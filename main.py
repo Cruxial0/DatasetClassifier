@@ -14,6 +14,7 @@ from src.image_handler import ImageHandler
 from src.utils import key_to_unicode
 from src.theme import set_dark_mode
 from src.windows.export_popup import ExportPopup
+from src.windows.settings_window import SettingsWindow
 
 class DatasetClassifier(QMainWindow):
     def __init__(self):
@@ -58,9 +59,10 @@ class DatasetClassifier(QMainWindow):
 
         actions = UIComponents.create_menu_actions(self.config_handler)
         self.hide_scored_action, self.treat_categories_as_scoring_action, self.auto_scroll_on_scoring_action,  \
-        self.export_action, self.write_to_filesystem_action = actions  
+        self.export_action, self.write_to_filesystem_action, self.settings_action = actions  
 
         file_menu.addAction(self.export_action)
+        file_menu.addAction(self.settings_action)
         view_menu.addAction(self.hide_scored_action)
         # options_menu.addAction(self.treat_categories_as_scoring_action)
         options_menu.addAction(self.auto_scroll_on_scoring_action)
@@ -71,6 +73,7 @@ class DatasetClassifier(QMainWindow):
         self.auto_scroll_on_scoring_action.triggered.connect(self.toggle_auto_scroll_on_scoring)
         self.write_to_filesystem_action.triggered.connect(self.toggle_write_to_filesystem)
         self.export_action.triggered.connect(self.open_export_window)
+        self.settings_action.triggered.connect(self.open_settings_window)
 
     def create_directory_selection(self):
         layout, self.input_path, self.output_path, input_button, output_button = UIComponents.create_directory_selection(self.button_states.input_enabled)
@@ -79,12 +82,19 @@ class DatasetClassifier(QMainWindow):
         output_button.clicked.connect(lambda: self.select_directory('output'))
         return layout
     
+    def open_settings_window(self):
+        if not self.config_handler:
+            return
+        self.settings_window = SettingsWindow(self.config_handler)
+        self.settings_window.show()
+
     def open_export_window(self):
         if not self.db:
             return
         self.export_window = ExportPopup(self.export, self.db.get_unique_categories())
         self.export_window.show()
 
+    ## Callback function for Export Popup
     def export(self, data):
         exporter = Exporter(data)
         
@@ -369,7 +379,7 @@ class DatasetClassifier(QMainWindow):
                     shortcut.activated.connect(lambda checked=False, s=self.default_scores[index]: self.score_image(s))
                     button = self.findChild(QPushButton, self.default_scores[index])
                     if button:
-                        unicode = key_to_unicode(key)
+                        unicode = key_to_unicode(QKeySequence(key).toString())
                         if not f"({unicode})" in button.text():
                             button.setText(f"({unicode})        {button.text()}")
                         button.setToolTip(f"Shortcut: {key}")

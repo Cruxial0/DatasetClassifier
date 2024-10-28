@@ -21,12 +21,20 @@ default_keybinds = {
     "key_1": "S", # score_8_up
     "key_2": "D", # score_7_up
     "key_3": "F", # score_6_up
-    "key_4": "G",# score_5_up
-    "key_5": "H", # score_7_up
+    "key_4": "G", # score_5_up
+    "key_5": "H", # score_4_up
     "key_6": "J",
     "key_7": "K",
     "key_8": "L",
     "key_9": ";",
+    "discard": "BACKSPACE",
+    "image_next": "Right",
+    "image_previous": "Left"
+}
+
+default_export_options = {
+    "export_captions": False,
+    "seperate_by_score": False
 }
 
 class ConfigHandler:
@@ -43,6 +51,14 @@ class ConfigHandler:
 
     def get_keybindings(self):
         return self.config.get('keybindings', default_keybinds)
+    
+    def set_keybind(self, key, value):
+        keybinds = self.config.get('keybindings', default_keybinds)
+        keybinds[key] = value
+        self.config['keybindings'] = keybinds
+
+    def get_colors(self):
+        return self.config.get('colors', default_colors)
 
     def get_color(self, color: Literal["accent_color", "alternate_color", "warning_color", "select_color", "add_color"]):
         colors = self.config.get('colors', {})
@@ -62,6 +78,15 @@ class ConfigHandler:
         options = self.config.get('options', {})
         options[option] = value
         self.config['options'] = options
+
+    def get_export_option(self, export_option):
+        export_options = self.config.get('export_options', default_export_options)
+        return export_options.get(export_option, default_export_options[export_option])
+    
+    def set_export_option(self, export_option, value):
+        export_options = self.config.get('export_options', default_export_options)
+        export_options[export_option] = value
+        self.config['export_options'] = export_options
 
     def save_config(self):
         with open(self.config_file, 'w') as f:
