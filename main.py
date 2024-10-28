@@ -400,17 +400,18 @@ class DatasetClassifier(QMainWindow):
                 # Set shortcut buttons
                 if index < len(self.category_buttons):
                     button, _, keybind_label = self.category_buttons[index]
+                    key = QKeySequence(key)
                     shortcut = QShortcut(QKeySequence(f"ALT+{key}"), self)
                     shortcut.activated.connect(lambda checked=False, b=button: self.score_image(b.objectName()))
                     self.custom_shortcuts[action] = shortcut
-                    button.setToolTip(f"Shortcut: ALT+{key}")
-                    keybind_label.setText(f"{key}")
+                    button.setToolTip(f"Shortcut: ALT+{key.toString()}")
+                    keybind_label.setText(f"{QKeySequence(key).toString()}")
             elif action == 'discard':
                 shortcut = QShortcut(QKeySequence(key), self)
                 shortcut.activated.connect(lambda checked=False, s='discard': self.score_image(s))
                 button = self.findChild(QPushButton, 'discard')
                 if button:
-                    unicode = key_to_unicode(key)
+                    unicode = key_to_unicode(QKeySequence(key).toString())
                     if not f"({unicode})" in button.text():
                         button.setText(f"({unicode})        {button.text()}")
                     button.setToolTip(f"Shortcut: {key}")
