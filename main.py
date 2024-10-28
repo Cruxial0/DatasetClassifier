@@ -14,11 +14,12 @@ from src.image_handler import ImageHandler
 from src.utils import key_to_unicode
 from src.theme import set_dark_mode
 from src.windows.export_popup import ExportPopup
+from src.windows.settings_window import SettingsWindow
 
 class DatasetClassifier(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.default_scores = ['score_9', 'score_8_up', 'score_7_up', 'score_6_up', 'score_5_up', 'score_4_up', 'discard']
+        self.default_scores = ['score_0', 'score_1', 'score_2', 'score_3', 'score_4', 'score_5', 'discard']
         self.db = None
         self.config_handler = ConfigHandler()
         self.button_states = ButtonStateManager()
@@ -58,9 +59,10 @@ class DatasetClassifier(QMainWindow):
 
         actions = UIComponents.create_menu_actions(self.config_handler)
         self.hide_scored_action, self.treat_categories_as_scoring_action, self.auto_scroll_on_scoring_action,  \
-        self.export_action, self.write_to_filesystem_action = actions  
+        self.export_action, self.write_to_filesystem_action, self.settings_action = actions  
 
         file_menu.addAction(self.export_action)
+        file_menu.addAction(self.settings_action)
         view_menu.addAction(self.hide_scored_action)
         # options_menu.addAction(self.treat_categories_as_scoring_action)
         options_menu.addAction(self.auto_scroll_on_scoring_action)
@@ -71,6 +73,7 @@ class DatasetClassifier(QMainWindow):
         self.auto_scroll_on_scoring_action.triggered.connect(self.toggle_auto_scroll_on_scoring)
         self.write_to_filesystem_action.triggered.connect(self.toggle_write_to_filesystem)
         self.export_action.triggered.connect(self.open_export_window)
+        self.settings_action.triggered.connect(self.open_settings_window)
 
     def create_directory_selection(self):
         layout, self.input_path, self.output_path, input_button, output_button = UIComponents.create_directory_selection(self.button_states.input_enabled)
@@ -79,14 +82,24 @@ class DatasetClassifier(QMainWindow):
         output_button.clicked.connect(lambda: self.select_directory('output'))
         return layout
     
+    def open_settings_window(self):
+        if not self.config_handler:
+            return
+        self.settings_window = SettingsWindow(self.config_handler)
+        self.settings_window.bind_callback(self.update_scoring_buttons, 'scoring')
+        self.settings_window.bind_callback(self.apply_keybindings, 'keybinds')
+        self.settings_window.bind_callback(self.update_button_colors, 'colors')
+        self.settings_window.show()
+
     def open_export_window(self):
         if not self.db:
             return
-        self.export_window = ExportPopup(self.export, self.db.get_unique_categories())
+        self.export_window = ExportPopup(self.export, self.db.get_unique_categories(), self.config_handler)
         self.export_window.show()
 
+    ## Callback function for Export Popup
     def export(self, data):
-        exporter = Exporter(data)
+        exporter = Exporter(data, self.config_handler)
         
         summary = f"Export path: {exporter.output_dir}"
         for key, value in exporter.process_export(self.db.get_all_images()).items():
@@ -106,6 +119,14 @@ class DatasetClassifier(QMainWindow):
                 exporter.export()
                 QMessageBox.information(self, "Workspace", "The workspace has been exported.")
                 subprocess.Popen(f'explorer "{exporter.output_dir.replace('//', '\\').replace('/', '\\')}"')
+
+    def update_scoring_buttons(self):
+        _, scores = self.config_handler.get_scores()
+        for score in self.default_scores:
+            button = self.findChild(QPushButton, score)
+            if not button.objectName().startswith('score_'): continue
+            button.setText(scores[score])
+            self.apply_keybindings()
 
     def create_middle_row(self):
         layout = QHBoxLayout()
@@ -128,7 +149,7 @@ class DatasetClassifier(QMainWindow):
         return layout
 
     def create_scoring_buttons(self):
-        layout, self.score_buttons, self.progress_bar, self.progress_label = UIComponents.create_scoring_buttons(self.default_scores, self.button_states.score_enabled)
+        layout, self.score_buttons, self.progress_bar, self.progress_label = UIComponents.create_scoring_buttons(self.default_scores, self.button_states.score_enabled, self.config_handler)
         self.button_states.declare_button_group(self.score_buttons, 'score')
         self.score_layout = layout.itemAt(0).layout()  # Store the score_layout
         for button in self.score_buttons:
@@ -268,6 +289,14 @@ class DatasetClassifier(QMainWindow):
             super().keyReleaseEvent(event)
 
     def update_button_colors(self):
+        accent_color = self.config_handler.get_color('accent_color')
+        alternate_color = self.config_handler.get_color('alternate_color')
+        warning_color = self.config_handler.get_color('warning_color')
+        select_color = self.config_handler.get_color('select_color')
+        add_color = self.config_handler.get_color('add_color')
+
+        self.category_add_button.setStyleSheet(f"background-color: {accent_color}; color: white;")
+
         if not self.db:
             return
         current_image = self.image_handler.get_current_image_path()
@@ -275,11 +304,6 @@ class DatasetClassifier(QMainWindow):
             return
         
         current_score, current_categories = self.db.get_image_score(current_image)
-        accent_color = self.config_handler.get_color('accent_color')
-        alternate_color = self.config_handler.get_color('alternate_color')
-        warning_color = self.config_handler.get_color('warning_color')
-        select_color = self.config_handler.get_color('select_color')
-        add_color = self.config_handler.get_color('add_color')
         
         # Update default score buttons
         for i in range(self.score_layout.count()):
@@ -361,7 +385,6 @@ class DatasetClassifier(QMainWindow):
             elif action == 'image_previous':
                 QShortcut(QKeySequence(key), self, activated=self.load_previous_image)
             elif action.startswith('key_'):
-                print(action)
                 index = int(action.split('_')[1])
                 # Set score buttons
                 if index < len(self.default_scores) - 1:
@@ -369,15 +392,16 @@ class DatasetClassifier(QMainWindow):
                     shortcut.activated.connect(lambda checked=False, s=self.default_scores[index]: self.score_image(s))
                     button = self.findChild(QPushButton, self.default_scores[index])
                     if button:
-                        unicode = key_to_unicode(key)
-                        if not f"({unicode})" in button.text():
-                            button.setText(f"({unicode})        {button.text()}")
+                        _, scores = self.config_handler.get_scores()
+                        unicode = key_to_unicode(QKeySequence(key).toString())
+                        button.setText(f"({unicode})        {scores[self.default_scores[index]]}")
+                            
                         button.setToolTip(f"Shortcut: {key}")
                 # Set shortcut buttons
                 if index < len(self.category_buttons):
                     button, _, keybind_label = self.category_buttons[index]
                     shortcut = QShortcut(QKeySequence(f"ALT+{key}"), self)
-                    shortcut.activated.connect(lambda checked=False, b=button: self.score_image(b.text()))
+                    shortcut.activated.connect(lambda checked=False, b=button: self.score_image(b.objectName()))
                     self.custom_shortcuts[action] = shortcut
                     button.setToolTip(f"Shortcut: ALT+{key}")
                     keybind_label.setText(f"{key}")
