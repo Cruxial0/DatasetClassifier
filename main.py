@@ -378,7 +378,6 @@ class DatasetClassifier(QMainWindow):
         self.custom_shortcuts.clear()
 
         keybindings = self.config_handler.get_keybindings()
-        
         for action, key in keybindings.items():
             if action == 'image_next':
                 QShortcut(QKeySequence(key), self, activated=self.load_next_image)
@@ -400,12 +399,12 @@ class DatasetClassifier(QMainWindow):
                 # Set shortcut buttons
                 if index < len(self.category_buttons):
                     button, _, keybind_label = self.category_buttons[index]
-                    key = QKeySequence(key)
-                    shortcut = QShortcut(QKeySequence(f"ALT+{key.toString()}"), self)
-                    shortcut.activated.connect(lambda checked=False, b=button: self.score_image(b.objectName()))
+                    key_seq = QKeySequence(key)
+                    shortcut = QShortcut(QKeySequence(f"ALT+{key_seq.toString()}"), self)
+                    shortcut.activated.connect(lambda checked=False, b=button: self.score_image(b.text()))
                     self.custom_shortcuts[action] = shortcut
-                    button.setToolTip(f"Shortcut: ALT+{key.toString()}")
-                    keybind_label.setText(f"{QKeySequence(key).toString()}")
+                    button.setToolTip(f"Shortcut: ALT+{key_seq.toString()}")
+                    keybind_label.setText(f"{QKeySequence(key_seq).toString()}")
             elif action == 'discard':
                 shortcut = QShortcut(QKeySequence(key), self)
                 shortcut.activated.connect(lambda checked=False, s='discard': self.score_image(s))
@@ -413,8 +412,9 @@ class DatasetClassifier(QMainWindow):
                 if button:
                     unicode = key_to_unicode(QKeySequence(key).toString())
                     if not f"({unicode})" in button.text():
-                        button.setText(f"({unicode})        {button.text()}")
+                        button.setText(f"({unicode})        discard")
                     button.setToolTip(f"Shortcut: {key}")
+            
 
     def apply_accent_color(self):
         accent_color = self.config_handler.get_color('accent_color')
