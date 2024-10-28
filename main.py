@@ -401,7 +401,7 @@ class DatasetClassifier(QMainWindow):
                 if index < len(self.category_buttons):
                     button, _, keybind_label = self.category_buttons[index]
                     key = QKeySequence(key)
-                    shortcut = QShortcut(QKeySequence(f"ALT+{key}"), self)
+                    shortcut = QShortcut(QKeySequence(f"ALT+{key.toString()}"), self)
                     shortcut.activated.connect(lambda checked=False, b=button: self.score_image(b.objectName()))
                     self.custom_shortcuts[action] = shortcut
                     button.setToolTip(f"Shortcut: ALT+{key.toString()}")
