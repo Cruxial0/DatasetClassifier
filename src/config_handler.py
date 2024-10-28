@@ -1,6 +1,8 @@
 from typing import Literal
 import yaml
 
+from src.score_presets import get_preset
+
 default_colors = {
     "accent_color": "#5a9bd8",
     "alternate_color": "#b08463",
@@ -35,6 +37,16 @@ default_keybinds = {
 default_export_options = {
     "export_captions": False,
     "seperate_by_score": False
+}
+
+default_scores = {
+    "preset": "pdxl",
+    "score_0": "score_9",
+    "score_1": "score_8_up",
+    "score_2": "score_7_up",
+    "score_3": "score_6_up",
+    "score_4": "score_5_up",
+    "score_5": "score_4_up"
 }
 
 class ConfigHandler:
@@ -87,6 +99,42 @@ class ConfigHandler:
         export_options = self.config.get('export_options', default_export_options)
         export_options[export_option] = value
         self.config['export_options'] = export_options
+
+    def get_scores(self) -> tuple[str, dict[str, str]]:
+        scores = self.config.get('scores', default_scores)
+        score_list = {}
+        for i in range(0, 6):
+            score_list[f'score_{i}'] = scores[f'score_{i}']
+        
+        return scores.get('preset', default_scores["preset"]), score_list
+    
+    def get_score(self, score):
+        scores = self.config.get('scores', default_scores)
+        return scores.get(score, default_scores[score])
+    
+    def set_scores(self, values: list[str]):
+        if len(values) != 6:
+            return
+        
+        scores = self.config.get('scores', default_scores)
+        for i in range(0, 6):
+            scores[f'score_{i}'] = values[i]
+
+        self.config['scores'] = scores
+    
+    def set_scores_preset(self, preset_name):
+        preset, values = get_preset(preset_name)
+        scores = self.config.get('scores', default_scores)
+        for i in range(0, 6):
+            scores[f'score_{i}'] = values[i]
+
+        scores['preset'] = preset
+
+        self.config['scores'] = scores
+
+    def get_selected_preset(self):
+        scores = self.config.get('scores', default_scores)
+        return scores.get('preset', default_scores["preset"])
 
     def save_config(self):
         with open(self.config_file, 'w') as f:

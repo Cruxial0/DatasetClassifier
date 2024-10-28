@@ -7,6 +7,8 @@ from pathlib import Path
 import shutil
 from typing import List, Set, Self
 
+from src.config_handler import ConfigHandler
+
 @dataclass
 class ExportRule:
     categories: Set[str]
@@ -27,26 +29,28 @@ class Image:
     score: str
     categories: List[str]
 
-    def apply_rule(self, rule: ExportRule, output_dir, seperate_by_score: bool) -> Self:
+    def apply_rule(self, rule: ExportRule, output_dir, seperate_by_score: bool, config: ConfigHandler) -> Self:
         
         return Image(
             id=self.id,
             source_path=self.source_path,
-            dest_path=self.create_path(rule, output_dir, seperate_by_score),
+            dest_path=self.create_path(rule, output_dir, seperate_by_score, config),
             score=self.score,
             categories=self.categories
         )
     
-    def create_path(self, rule: ExportRule, output_dir, seperate_by_score: bool) -> str:
+    def create_path(self, rule: ExportRule, output_dir, seperate_by_score: bool, config: ConfigHandler) -> str:
         filename = Path(self.source_path).name
+        _, scores = config.get_scores()
         if seperate_by_score:
-            return path.abspath(path.join(output_dir, self.score, rule.destination, filename))
+            return path.abspath(path.join(output_dir, scores[self.score], rule.destination, filename))
         else:
             return path.abspath(path.join(output_dir, rule.destination, filename))
     
 
 class Exporter:
-    def __init__(self, data):
+    def __init__(self, data, config: ConfigHandler):
+        self.config = config
         self.output_dir = data['output_directory']
         self.export_rules = data['rules']
         self.scores = data['scores']
@@ -122,6 +126,6 @@ class Exporter:
     def match_rule(self, image: Image) -> Image:
         for rule in sorted(self.export_rules, key=lambda x: x.priority, reverse=True):
             if not rule.match(set(image.categories)): continue
-            return image.apply_rule(rule, self.output_dir, self.seperate_by_score)
+            return image.apply_rule(rule, self.output_dir, self.seperate_by_score, self.config)
         print(f"WARNING: Could not match any rules for image: {image}")
         self.failed_exports += 1

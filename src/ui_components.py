@@ -61,13 +61,16 @@ class UIComponents:
         return layout, category_input, category_add_button, category_button_layout
 
     @staticmethod
-    def create_scoring_buttons(default_scores, state: bool):
+    def create_scoring_buttons(default_scores, state: bool, config: ConfigHandler):
         layout = QVBoxLayout()
 
         score_layout = QHBoxLayout()
         score_buttons = []
         for score in default_scores:
-            button = QPushButton(score, enabled=state)
+            if score == 'discard':
+                button = QPushButton('discard', enabled=state)
+            else:
+                button = QPushButton(config.get_score(score), enabled=state)
             button.setObjectName(score)
             score_layout.addWidget(button)
             score_buttons.append(button)

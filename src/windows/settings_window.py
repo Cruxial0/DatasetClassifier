@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                             QStackedWidget, QComboBox, QColorDialog)
 from PyQt6.QtCore import Qt, QEvent, pyqtSignal
 from PyQt6.QtGui import QColor, QKeySequence
+from src.score_presets import get_preset, get_preset_list
 from src.config_handler import ConfigHandler
 
 class ColorButton(QPushButton):
@@ -233,14 +234,50 @@ class SettingsWindow(QMainWindow):
         page = QWidget()
         layout = QVBoxLayout(page)
         
+        # Create the row with a label and combo box
         row = QHBoxLayout()
         label = QLabel("Scoring Preset")
         label.setFixedWidth(100)
         preset_combo = QComboBox()
-        preset_combo.addItems(["Preset 1", "Preset 2", "Preset 3"])
+        preset_combo.addItems(get_preset_list())
+
+        selected_preset = self.config.get_selected_preset()
+        if selected_preset in get_preset_list():
+            preset_combo.setCurrentText(selected_preset)
+            
+
         row.addWidget(label)
         row.addWidget(preset_combo)
         layout.addLayout(row)
         
+        # Create the buttons and store them for later updates
+        self.buttons = []
+        buttons_layout = QHBoxLayout()
+        for i in range(0, 6):
+            button = QPushButton()
+            button.setObjectName(f'preview_score_{i}')
+            buttons_layout.addWidget(button)
+            self.buttons.append(button)  # Store button references in a list
+
+        # Add a discard button
+        discard_button = QPushButton("discard")
+        discard_button.setObjectName('preview_discard')
+        buttons_layout.addWidget(discard_button)
+        
+        layout.addLayout(buttons_layout)
         layout.addStretch()
+
+        self.update_button_names(preset_combo.currentText())
+
+        # Connect combo box signal to update button names
+        preset_combo.currentTextChanged.connect(lambda text: self.update_button_names(text, True))
+        
         return page
+
+    def update_button_names(self, preset_name, save=False):
+        preset, scores = get_preset(preset_name)
+        for i, button in enumerate(self.buttons):
+            button.setText(scores[i])
+        
+        self.config.set_scores_preset(preset)
+        self.config.save_config()

@@ -7,6 +7,7 @@ from PyQt6.QtCore import Qt, QMimeData, QPoint, pyqtSignal
 from PyQt6.QtGui import QDrag, QPalette, QColor
 from pyqt6_multiselect_combobox import MultiSelectComboBox
 
+from src.config_handler import ConfigHandler
 from src.export import ExportRule
 
 class RuleComponent(QWidget):
@@ -81,10 +82,11 @@ class RuleComponent(QWidget):
         self.setAutoFillBackground(highlight)
 
 class ExportPopup(QWidget):
-    def __init__(self, export_callback, categories):
+    def __init__(self, export_callback, categories, config: ConfigHandler):
         super().__init__()
         self.categories = categories
         self.export_callback = export_callback
+        self.config = config
         self.initUI()
         self.drag_component = None
 
@@ -128,18 +130,21 @@ class ExportPopup(QWidget):
         # Checkboxes
         check_layout = QHBoxLayout()
         self.checkboxes = {}
-        labels = ['score_9', 'score_8_up', 'score_7_up', 'score_6_up', 'score_5_up', 'score_4_up', 'discard']
-        for label in labels:
+        preset, scores = self.config.get_scores()
+        for name, label in scores.items():
             checkbox = QCheckBox(label)
-            self.checkboxes[label] = checkbox
+            checkbox.setObjectName(name)
+            self.checkboxes[name] = checkbox
             check_layout.addWidget(checkbox)
         layout.addLayout(check_layout)
 
         options_layout = QHBoxLayout()
-        self.seperate_by_score = QCheckBox('Seperate by score')
         self.export_captions = QCheckBox('Export Captions')
-        options_layout.addWidget(self.seperate_by_score)
+        self.seperate_by_score = QCheckBox('Seperate by score')
+        self.export_captions.setChecked(self.config.get_export_option('export_captions'))
+        self.seperate_by_score.setChecked(self.config.get_export_option('seperate_by_score'))
         options_layout.addWidget(self.export_captions)
+        options_layout.addWidget(self.seperate_by_score)
         layout.addLayout(options_layout)
 
         # Buttons
@@ -189,7 +194,7 @@ class ExportPopup(QWidget):
         data = {
             'output_directory': self.dir_input.text(),
             'rules': [component.get_data() for component in reversed(self.category_components)],
-            'scores': [label for label, checkbox in self.checkboxes.items() if checkbox.isChecked()],
+            'scores': [name for name, checkbox in self.checkboxes.items() if checkbox.isChecked()],
             'seperate_by_score': self.seperate_by_score.isChecked(),
             'export_captions': self.export_captions.isChecked()
         }
