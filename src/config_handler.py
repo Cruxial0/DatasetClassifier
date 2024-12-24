@@ -36,7 +36,8 @@ default_keybinds = {
 
 default_export_options = {
     "export_captions": False,
-    "seperate_by_score": False
+    "seperate_by_score": False,
+    "delete_images": False
 }
 
 default_scores = {

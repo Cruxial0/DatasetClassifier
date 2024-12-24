@@ -141,10 +141,13 @@ class ExportPopup(QWidget):
         options_layout = QHBoxLayout()
         self.export_captions = QCheckBox('Export Captions')
         self.seperate_by_score = QCheckBox('Seperate by score')
+        self.delete_images = QCheckBox('Delete images from source directory')
         self.export_captions.setChecked(self.config.get_export_option('export_captions'))
         self.seperate_by_score.setChecked(self.config.get_export_option('seperate_by_score'))
+        self.delete_images.setChecked(self.config.get_export_option('delete_images'))
         options_layout.addWidget(self.export_captions)
         options_layout.addWidget(self.seperate_by_score)
+        options_layout.addWidget(self.delete_images)
         layout.addLayout(options_layout)
 
         # Buttons

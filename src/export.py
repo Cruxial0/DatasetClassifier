@@ -56,6 +56,7 @@ class Exporter:
         self.scores = data['scores']
         self.seperate_by_score = data['seperate_by_score']
         self.export_captions = data['export_captions']
+        self.delete_images = data['delete_images']
         self.export_images = []
         self.failed_exports = 0
 
@@ -93,6 +94,9 @@ class Exporter:
             dest_dir.mkdir(parents=True, exist_ok=True)
             shutil.copy(img.source_path, img.dest_path)
             
+            if self.delete_images:
+                os.remove(img.source_path)
+            
             if not self.export_captions:
                 continue
                 
@@ -107,6 +111,8 @@ class Exporter:
                 dest_caption = Path(f"{dest_stem}{ext}")
                 if source_caption.exists():
                     shutil.copy(source_caption, dest_caption)
+                    if self.delete_images:
+                        os.remove(source_caption)
     
     def clean_output_dir(self):
         # Sourced from https://stackoverflow.com/a/185941

@@ -148,15 +148,19 @@ class SettingsWindow(QMainWindow):
         
         export_caption = QCheckBox("Export captions")
         seperate_by_score = QCheckBox("Seperate by score")
+        delete_images = QCheckBox("Delete images from source directory")
         
         export_caption.setChecked(self.config.get_export_option('export_captions'))
         seperate_by_score.setChecked(self.config.get_export_option('seperate_by_score'))
+        delete_images.setChecked(self.config.get_export_option('delete_images'))
 
         export_caption.stateChanged.connect(lambda state: self.update_export_option(state, 'export_captions'))
         seperate_by_score.stateChanged.connect(lambda state: self.update_export_option(state, 'seperate_by_score'))
+        delete_images.stateChanged.connect(lambda state: self.update_export_option(state, 'delete_images'))
 
         layout.addWidget(export_caption)
         layout.addWidget(seperate_by_score)
+        layout.addWidget(delete_images)
         layout.addStretch()
         return page
 
