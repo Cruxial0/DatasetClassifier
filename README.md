@@ -2,7 +2,9 @@
 A simple tool to help you speed up your workflow when manually scoring and categorizing images.
 
 ## Overview
-DatasetClassifier is an efficient image browser with advanced classification features. It utilizes PonyDiffusion's rating convention to score images from `score_9` to `score_4_up`.
+DatasetClassifier is an efficient and customizable image browser combined with categorization and scoring features. The purpose of DatasetClassifier is to speed up the manual workflow of curating larger datasets. I created it as no real alternatives existed at the time, with the best alternative being manually dragging/dropping images into folders in windows file explorer.
+
+As an example workflow, I usually use this tool to quickly curate and discard unwanted images from large datasets downloaded from booru. I like to make models of broad subjects, so the datasets usually end up being around 20-30k images. Using this tool, I can get through about 3-4 thousand images an hour, making it much more efficient (not to mention less straining) than windows file explorer.
 
 ![DatasetClassifier Interface](https://github.com/user-attachments/assets/20d55a39-b5c4-438c-b7a2-1f9ddef0e3f6)
 
@@ -11,7 +13,8 @@ DatasetClassifier is an efficient image browser with advanced classification fea
 2. **Image Browser**: Central panel displays the current image for classification.
 3. **Categorization**: Assign multiple categories to each image for detailed organization.
 4. **Flexible Output**: Images are saved in both the main scoring folder and respective category folders.
-5. **Rule-based Export**: You can define your own rules and customize the export pattern
+5. **Rule-based Export**: You can define your own rules and customize the export pattern.
+6. **Customization**: Many parts of the interface can be customized to better suit your needs.
 
 ## Rule-based export
 With rule based export, you can define your own rules.
@@ -47,8 +50,8 @@ In this example, all images with both the `needs editing` and `needs cropping` c
 **Seperate by Score:** Seperates all images by score, then by category. Images that would be saved to `.` will instead be saved to `./score_9`, `./score_8_up` etc.
 
 ## Keyboard-Centric Design
-DatasetClassifier prioritizes efficiency with a keyboard-driven interface. All functions have customizable keybinds, configured through the `config.yaml` file.
-The application works with modifier layers. By default, all keybinds are on the middle row of the keyboard (Based on the English QWERTY layout). Using the ALT modifier toggles categories, while CTRL removes categories. Holding ALT or CTRL will highlight which buttons they affect.
+DatasetClassifier prioritizes efficiency with a keyboard-driven interface. All functions have customizable keybinds, configured through the provided settings interface, or by manually editing the `config.yaml` file.
+The application works with modifier layers. By default, all keybinds are on the middle row of the keyboard (Based on the English QWERTY layout). Using the ALT modifier toggles categories, while CTRL removes categories. Holding ALT or CTRL will highlight which buttons they affect. I encourage you to play around with these, as they will massively speed up your workflow.
 
 ### Default Keybinds
 ```yaml
@@ -70,7 +73,23 @@ image_next: Right
 image_previous: Left
 ```
 
-Customize your workflow by modifying these keybinds in the configuration file to suit your preferences.
+## Customization
+Customization is always a core principle of mine. I have added support for customizing things such as keybinds, color themes and scoring presets.
+
+### Scoring Presets
+Scoring Presets are the visual sugar to your scoring. By default it uses the PonyDiffusion convention, which goes as follows:
+```
+score_9, score_8_up, score_7_up, score_6_up, score_5_up, score_4_up
+```
+Understandably, this convention is critiziced by some, which is why DatasetClassifier lets you choose between 6 different scoring presets:
+```yaml
+pdxl_preset = ['score_9', 'score_8_up', 'score_7_up', 'score_6_up', 'score_5_up', 'score_4_up']
+tier_preset = ['S-Tier', 'A-Tier', 'B-Tier', 'C-Tier', 'D-Tier', 'F-Tier']
+numeric_tier_preset = ['Tier 1', 'Tier 2', 'Tier 3', 'Tier 4', 'Tier 5', 'Tier 6']
+performance_tier_preset = ['Outstanding', 'Excellent', 'Good', 'Average', 'Below Average', 'Poor']
+star_tier_preset = ['★★★★★', '★★★★☆', '★★★☆☆', '★★☆☆☆', '★☆☆☆☆', '☆☆☆☆☆']
+booru_tier_preset = ['masterpiece', 'high quality', 'good quality', 'average', 'low quality', 'poor quality']
+```
 
 ## Installation
 ### Windows
