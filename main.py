@@ -131,11 +131,13 @@ class DatasetClassifier(QMainWindow):
     def create_middle_row(self):
         layout = QHBoxLayout()
         
-        image_viewer_layout, self.prev_button, self.image_label, self.next_button = UIComponents.create_image_viewer(self.button_states.image_enabled)
+        image_viewer_layout, self.prev_button, self.image_label, self.next_button, self.to_latest_button_right, self.to_latest_button_left = UIComponents.create_image_viewer(self.button_states.image_enabled)
         layout.addLayout(image_viewer_layout, 7)
 
         self.prev_button.clicked.connect(self.load_previous_image)
         self.next_button.clicked.connect(self.load_next_image)
+        self.to_latest_button_right.clicked.connect(self.load_latest_image)
+        self.to_latest_button_left.clicked.connect(self.load_latest_image)
 
         category_buttons_layout, self.category_input, self.category_add_button, self.category_button_layout = UIComponents.create_category_buttons(self.button_states.category_enabled)
         layout.addLayout(category_buttons_layout, 3)
@@ -143,7 +145,7 @@ class DatasetClassifier(QMainWindow):
         self.category_input.textChanged.connect(self.check_category_button_name)
         self.category_add_button.clicked.connect(self.add_category_button)
 
-        self.button_states.declare_button_group([self.prev_button, self.next_button], 'image')
+        self.button_states.declare_button_group([self.prev_button, self.next_button, self.to_latest_button_right, self.to_latest_button_left], 'image')
         self.button_states.declare_button_group([self.category_input, self.category_add_button], 'category')
 
         return layout
@@ -168,6 +170,8 @@ class DatasetClassifier(QMainWindow):
                 self.input_path.setText(folder)
                 self.button_states.toggle_button_group(True, 'input')
                 self.button_states.toggle_button_group(True, 'image')
+                self.button_states.toggle_button(False, 'to_latest_button_right', 'image')
+                self.button_states.toggle_button(False, 'to_latest_button_left', 'image')
                 self.load_images()
                 
             else:
@@ -177,6 +181,8 @@ class DatasetClassifier(QMainWindow):
                 self.check_for_custom_scorings()
                 self.button_states.toggle_button_group(True, 'category')
                 self.button_states.toggle_button_group(True, 'score')
+                self.button_states.toggle_button(True, 'to_latest_button_right', 'image')
+                self.button_states.toggle_button(False, 'to_latest_button_left', 'image')
                 self.workspace_loaded = True
                 self.update_button_colors()
 
@@ -231,6 +237,37 @@ class DatasetClassifier(QMainWindow):
         self.update_progress()
         self.display_image()
 
+    def load_latest_image(self):
+        # 1.  Get latest id from database
+        # 2. Set id in image_handler
+        # 3.call self.display_image
+
+        latest_id = self.db.get_latest_image_id()
+        self.image_handler.set_index(latest_id)
+        self.display_image()
+        self.button_states.toggle_button(False, 'to_latest_button_right', 'image')
+        self.button_states.toggle_button(False, 'to_latest_button_left', 'image')
+
+    def manage_latest_button_state(self):
+        if self.db is None:
+            return
+        latest_id = self.db.get_latest_image_id()
+        image_handler_index = self.image_handler.get_index()
+        condition: bool = (image_handler_index == latest_id) == True
+        
+        if condition:
+            self.button_states.toggle_button(False, 'to_latest_button_right', 'image')
+            self.button_states.toggle_button(False, 'to_latest_button_left', 'image')
+            return
+        
+        if image_handler_index > latest_id:
+            self.button_states.toggle_button(True, 'to_latest_button_left', 'image')
+            self.button_states.toggle_button(False, 'to_latest_button_right', 'image')
+        else:
+            self.button_states.toggle_button(True, 'to_latest_button_right', 'image')
+            self.button_states.toggle_button(False, 'to_latest_button_left', 'image')
+        
+
     def display_image(self):
         pixmap = self.image_handler.get_current_image()
         if pixmap:
@@ -259,6 +296,7 @@ class DatasetClassifier(QMainWindow):
             ))
             self.update_progress()
             self.update_button_colors()
+            self.manage_latest_button_state()
             QTimer.singleShot(100, self.image_handler.preload_images)
 
     def update_progress(self):

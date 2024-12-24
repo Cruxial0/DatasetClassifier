@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QLabel, QLineEdit, 
-                             QScrollArea, QSizePolicy, QProgressBar, QMessageBox)
+                             QScrollArea, QSizePolicy, QProgressBar, QMessageBox, QSpacerItem)
 from PyQt6.QtGui import QPixmap, QKeySequence, QShortcut, QAction
 from PyQt6.QtCore import Qt, QTimer
 
@@ -30,8 +30,19 @@ class UIComponents:
     def create_image_viewer(state: bool):
         layout = QHBoxLayout()
         
+        container_left = QVBoxLayout()
+        
         prev_button = QPushButton('<', enabled=state)
-        layout.addWidget(prev_button)
+        prev_button.setObjectName("prev_button")
+        to_latest_button_left = QPushButton('<<', enabled=state)
+        to_latest_button_left.setObjectName("to_latest_button_left")
+
+        container_left.addSpacerItem(QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+        container_left.addWidget(prev_button)
+        container_left.addWidget(to_latest_button_left)
+        container_left.addSpacerItem(QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+
+        layout.addLayout(container_left)
 
         image_label = QLabel()
         image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -41,10 +52,21 @@ class UIComponents:
         scroll_area.setWidgetResizable(True)
         layout.addWidget(scroll_area)
 
+        container_right = QVBoxLayout()
+        
         next_button = QPushButton('>', enabled=state)
-        layout.addWidget(next_button)
+        next_button.setObjectName("next_button")
+        to_latest_button_right = QPushButton('>>', enabled=state)
+        to_latest_button_right.setObjectName("to_latest_button_right")
 
-        return layout, prev_button, image_label, next_button
+        container_right.addSpacerItem(QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+        container_right.addWidget(next_button)
+        container_right.addWidget(to_latest_button_right)
+        container_right.addSpacerItem(QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+
+        layout.addLayout(container_right)
+
+        return layout, prev_button, image_label, next_button, to_latest_button_right, to_latest_button_left
 
     @staticmethod
     def create_category_buttons(state: bool):

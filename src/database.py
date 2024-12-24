@@ -159,6 +159,10 @@ class Database:
             ))
         
         return images
+    
+    def get_latest_image_id(self):
+        self.cursor.execute('SELECT id FROM scores ORDER BY timestamp DESC LIMIT 1')
+        return self.cursor.fetchone()[0]
 
     def write_sidecar(self):
         data = [

@@ -1,4 +1,5 @@
 from typing import Literal
+from PyQt6.QtWidgets import QPushButton
 
 
 class ButtonStateManager:
@@ -24,9 +25,10 @@ class ButtonStateManager:
 
     def toggle_button(self, state: bool, name, group: Literal['score', 'category', 'input', 'image']):
         enabled, buttons = self.get_button_group(group)
-        if enabled == state:
-            return
+        # if enabled == state:
+        #     return
         for btn in buttons:
+            print(btn.objectName())
             if btn.objectName() == name:
                 btn.setEnabled(state)
 
@@ -40,7 +42,7 @@ class ButtonStateManager:
         elif group == 'image':
             self.image_buttons = buttons
 
-    def get_button_group(self, group: Literal['score', 'category', 'input', 'image']):
+    def get_button_group(self, group: Literal['score', 'category', 'input', 'image']) -> tuple[bool, list[QPushButton]]:
         if group == 'score':
             return self.score_enabled, self.score_buttons
         elif group == 'category':

@@ -182,6 +182,11 @@ class ImageHandler:
         finally:
             if 'image' in locals():
                 image.close()
+    def get_index(self):
+        return self.current_index
+    
+    def set_index(self, index):
+        self.current_index = index
 
     def get_progress(self):
         if self.image_list:
