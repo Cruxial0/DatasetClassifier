@@ -28,7 +28,6 @@ class ButtonStateManager:
         # if enabled == state:
         #     return
         for btn in buttons:
-            print(btn.objectName())
             if btn.objectName() == name:
                 btn.setEnabled(state)
 
