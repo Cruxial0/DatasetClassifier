@@ -5,6 +5,7 @@ def create_projects_schema():
         project_name TEXT NOT NULL,
         project_directories TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         version INTEGER DEFAULT 1
     );"""
 
@@ -70,6 +71,80 @@ def create_indexes():
     CREATE INDEX idx_image_tags_image ON image_tags(image_id);
     """
 
+def create_triggers():
+   return """
+   CREATE TRIGGER update_images_project_insert
+   AFTER INSERT ON images
+   FOR EACH ROW
+   BEGIN
+       UPDATE projects SET updated_at = CURRENT_TIMESTAMP
+       WHERE project_id = NEW.project_id;
+   END;
+
+   CREATE TRIGGER update_images_project_update 
+   AFTER UPDATE ON images
+   FOR EACH ROW
+   BEGIN
+       UPDATE projects SET updated_at = CURRENT_TIMESTAMP
+       WHERE project_id = NEW.project_id;
+   END;
+
+   CREATE TRIGGER update_images_project_delete
+   AFTER DELETE ON images
+   FOR EACH ROW
+   BEGIN
+       UPDATE projects SET updated_at = CURRENT_TIMESTAMP
+       WHERE project_id = OLD.project_id;
+   END;
+
+   CREATE TRIGGER update_scores_project_insert
+   AFTER INSERT ON scores
+   FOR EACH ROW
+   BEGIN
+       UPDATE projects SET updated_at = CURRENT_TIMESTAMP
+       WHERE project_id = NEW.project_id;
+   END;
+
+   CREATE TRIGGER update_scores_project_update
+   AFTER UPDATE ON scores
+   FOR EACH ROW
+   BEGIN
+       UPDATE projects SET updated_at = CURRENT_TIMESTAMP
+       WHERE project_id = NEW.project_id;
+   END;
+
+   CREATE TRIGGER update_scores_project_delete
+   AFTER DELETE ON scores
+   FOR EACH ROW
+   BEGIN
+       UPDATE projects SET updated_at = CURRENT_TIMESTAMP
+       WHERE project_id = OLD.project_id;
+   END;
+
+   CREATE TRIGGER update_tag_groups_project_insert
+   AFTER INSERT ON tag_groups
+   FOR EACH ROW
+   BEGIN
+       UPDATE projects SET updated_at = CURRENT_TIMESTAMP
+       WHERE project_id = NEW.project_id;
+   END;
+
+   CREATE TRIGGER update_tag_groups_project_update
+   AFTER UPDATE ON tag_groups
+   FOR EACH ROW
+   BEGIN
+       UPDATE projects SET updated_at = CURRENT_TIMESTAMP
+       WHERE project_id = NEW.project_id;
+   END;
+
+   CREATE TRIGGER update_tag_groups_project_delete
+   AFTER DELETE ON tag_groups
+   FOR EACH ROW
+   BEGIN
+       UPDATE projects SET updated_at = CURRENT_TIMESTAMP
+       WHERE project_id = OLD.project_id;
+   END;"""
+
 def create_database():
     return f"""
     PRAGMA foreign_keys = ON;
@@ -80,4 +155,5 @@ def create_database():
     {create_tags_schema()}
     {create_image_tags_schema()}
     {create_indexes()}
+    {create_triggers()}
     """
