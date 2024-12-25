@@ -89,6 +89,7 @@ class UIComponents:
                 button = QPushButton('discard', enabled=state)
             else:
                 button = QPushButton(config.get_score(score), enabled=state)
+                
             button.setObjectName(score)
             score_layout.addWidget(button)
             score_buttons.append(button)

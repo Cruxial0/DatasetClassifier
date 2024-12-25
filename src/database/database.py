@@ -31,7 +31,7 @@ class Database:
         cursor = self.connection.cursor()
         cursor.execute("INSERT INTO projects (project_name, project_directories, version) VALUES (?, ?, ?);", (name, json.dumps(directories), DB_VERSION))
         cursor.connection.commit()
-
+        
         return cursor.lastrowid
 
     def __del__(self):

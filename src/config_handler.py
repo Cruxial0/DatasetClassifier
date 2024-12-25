@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Any, Optional
 import yaml
 
 from src.score_presets import get_preset
@@ -19,12 +19,12 @@ default_options = {
 }
 
 default_keybinds = {
-    "key_0": "A", # score_9
-    "key_1": "S", # score_8_up
-    "key_2": "D", # score_7_up
-    "key_3": "F", # score_6_up
-    "key_4": "G", # score_5_up
-    "key_5": "H", # score_4_up
+    "key_0": "A",  # score_9
+    "key_1": "S",  # score_8_up
+    "key_2": "D",  # score_7_up
+    "key_3": "F",  # score_6_up
+    "key_4": "G",  # score_5_up
+    "key_5": "H",  # score_4_up
     "key_6": "J",
     "key_7": "K",
     "key_8": "L",
@@ -50,6 +50,15 @@ default_scores = {
     "score_5": "score_4_up"
 }
 
+# Combined defaults for get_value lookup
+DEFAULT_VALUES = {
+    "colors": default_colors,
+    "options": default_options,
+    "keybindings": default_keybinds,
+    "export_options": default_export_options,
+    "scores": default_scores
+}
+
 class ConfigHandler:
     def __init__(self, config_file='config.yaml'):
         self.config_file = config_file
@@ -58,84 +67,99 @@ class ConfigHandler:
     def load_config(self):
         try:
             with open(self.config_file, 'r') as f:
-                return yaml.safe_load(f)
+                return yaml.safe_load(f) or {}
         except FileNotFoundError:
             return {}
 
+    def get_value(self, path: str) -> Any:
+        """Get a value from config using dot notation with fallback to defaults"""
+        current = self.config
+        default = DEFAULT_VALUES
+        
+        for key in path.split('.'):
+            # Try to get from actual config first
+            if isinstance(current, dict) and key in current:
+                current = current[key]
+            # Fall back to defaults if not found
+            elif isinstance(default, dict) and key in default:
+                current = default[key]
+            else:
+                return None
+            
+            # Update default fallback path
+            default = default.get(key, {}) if isinstance(default, dict) else {}
+            
+        return current
+
+    def set_value(self, path: str, value: Any):
+        """Set a value in config using dot notation"""
+        current = self.config
+        keys = path.split('.')
+        
+        # Navigate to the correct nested level
+        for key in keys[:-1]:
+            if key not in current:
+                current[key] = {}
+            current = current[key]
+            
+        # Set the value
+        current[keys[-1]] = value
+
+    # Updated convenience methods using dot notation
     def get_keybindings(self):
-        return self.config.get('keybindings', default_keybinds)
+        return self.get_value('keybindings') or default_keybinds
     
-    def set_keybind(self, key, value):
-        keybinds = self.config.get('keybindings', default_keybinds)
-        keybinds[key] = value
-        self.config['keybindings'] = keybinds
+    def set_keybind(self, key: str, value: str):
+        self.set_value(f'keybindings.{key}', value)
 
     def get_colors(self):
-        return self.config.get('colors', default_colors)
+        return self.get_value('colors') or default_colors
 
     def get_color(self, color: Literal["accent_color", "alternate_color", "warning_color", "select_color", "add_color"]):
-        colors = self.config.get('colors', {})
-        # Return the color if found in the config's colors section; otherwise, return the default
-        return colors.get(color, default_colors[color])
+        return self.get_value(f'colors.{color}')
     
-    def set_color(self, color: Literal["accent_color", "alternate_color", "warning_color", "select_color", "add_color"], hex_code):
-        colors = self.config.get('colors', {})
-        colors[color] = hex_code
-        self.config['colors'] = colors
+    def set_color(self, color: Literal["accent_color", "alternate_color", "warning_color", "select_color", "add_color"], hex_code: str):
+        self.set_value(f'colors.{color}', hex_code)
 
-    def get_option(self, option):
-        options = self.config.get('options', {})
-        return options.get(option, default_options[option])
+    def get_option(self, option: str):
+        return self.get_value(f'options.{option}')
     
-    def set_option(self, option, value):
-        options = self.config.get('options', {})
-        options[option] = value
-        self.config['options'] = options
+    def set_option(self, option: str, value: Any):
+        self.set_value(f'options.{option}', value)
 
-    def get_export_option(self, export_option):
-        export_options = self.config.get('export_options', default_export_options)
-        return export_options.get(export_option, default_export_options[export_option])
+    def get_export_option(self, export_option: str):
+        return self.get_value(f'export_options.{export_option}')
     
-    def set_export_option(self, export_option, value):
-        export_options = self.config.get('export_options', default_export_options)
-        export_options[export_option] = value
-        self.config['export_options'] = export_options
+    def set_export_option(self, export_option: str, value: Any):
+        self.set_value(f'export_options.{export_option}', value)
 
     def get_scores(self) -> tuple[str, dict[str, str]]:
-        scores = self.config.get('scores', default_scores)
         score_list = {}
-        for i in range(0, 6):
-            score_list[f'score_{i}'] = scores[f'score_{i}']
+        for i in range(6):
+            score_key = f'score_{i}'
+            score_list[score_key] = self.get_value(f'scores.{score_key}')
         
-        return scores.get('preset', default_scores["preset"]), score_list
+        return self.get_value('scores.preset'), score_list
     
-    def get_score(self, score):
-        scores = self.config.get('scores', default_scores)
-        return scores.get(score, default_scores[score])
+    def get_score(self, score: str):
+        return self.get_value(f'scores.{score}')
     
     def set_scores(self, values: list[str]):
         if len(values) != 6:
             return
         
-        scores = self.config.get('scores', default_scores)
-        for i in range(0, 6):
-            scores[f'score_{i}'] = values[i]
+        for i in range(6):
+            self.set_value(f'scores.score_{i}', values[i])
 
-        self.config['scores'] = scores
-    
-    def set_scores_preset(self, preset_name):
+    def set_scores_preset(self, preset_name: str):
         preset, values = get_preset(preset_name)
-        scores = self.config.get('scores', default_scores)
-        for i in range(0, 6):
-            scores[f'score_{i}'] = values[i]
-
-        scores['preset'] = preset
-
-        self.config['scores'] = scores
+        
+        self.set_value('scores.preset', preset)
+        for i in range(6):
+            self.set_value(f'scores.score_{i}', values[i])
 
     def get_selected_preset(self):
-        scores = self.config.get('scores', default_scores)
-        return scores.get('preset', default_scores["preset"])
+        return self.get_value('scores.preset')
 
     def save_config(self):
         with open(self.config_file, 'w') as f:
