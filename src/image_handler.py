@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import shutil
 from PyQt6.QtGui import QPixmap
 from src.database.database import Database
@@ -22,9 +23,10 @@ class ImageHandler:
 
     def load_images(self, input_folder, hide_scored_images):
         self.input_folder = input_folder
+        print(input_folder)
         self.image_list = [f for f in os.listdir(input_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))]
         if hide_scored_images:
-            self.image_list = [img for img in self.image_list if not self.db.image.is_image_scored(os.path.join(self.input_folder, img))]
+            self.image_list = [img for img in self.image_list if not self.db.images.is_image_scored(os.path.join(self.input_folder, img))]
         self.current_index = 0 if self.image_list else -1
         self.preload_images()
 
@@ -39,7 +41,7 @@ class ImageHandler:
 
     def get_current_image_path(self):
         if 0 <= self.current_index < len(self.image_list):
-            return os.path.join(self.input_folder, self.image_list[self.current_index])
+            return Path(self.input_folder, self.image_list[self.current_index]).absolute().as_posix()
         return None
 
     def get_current_image(self):
@@ -65,8 +67,8 @@ class ImageHandler:
         return False
 
     def score_image(self, score, categories):
-        if self.current_image and self.output_folder:
-            current_score, current_categories = self.db.image.get_image_score(self.current_image)
+        if self.current_image:
+            current_score, current_categories = self.db.images.get_image_score(self.current_image)
             
             # Update categories
             new_categories = current_categories.copy()
@@ -135,7 +137,7 @@ class ImageHandler:
                 pass
 
             # Update database
-            self.db.image.add_or_update_score(self.current_image, new_score, new_categories)
+            self.db.images.add_or_update_score(self.current_image, new_score, new_categories)
             
             return True
         return False

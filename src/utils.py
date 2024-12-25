@@ -1,7 +1,14 @@
 import os
+from pathlib import Path
 
 def get_image_files(directory):
     return [f for f in os.listdir(directory) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.bmp'))]
+
+def get_image_paths(directory):
+    """
+    Returns a list of image paths in the given directory (posix-formatted)
+    """
+    return [Path(directory, f).absolute().as_posix() for f in get_image_files(directory)]
 
 def create_directory(path):
     os.makedirs(path, exist_ok=True)

@@ -7,14 +7,17 @@ from src.config_handler import ConfigHandler
 
 class UIComponents:
     @staticmethod
-    def create_directory_selection(state: bool):
+    def create_project_selection(state: bool):
         layout = QVBoxLayout()
         
         input_layout = QHBoxLayout()
+
         input_path = QLineEdit()
-        input_button = QPushButton('Select Input Directory')
+        input_button = QPushButton('Load Project')
+
         input_layout.addWidget(input_path)
         input_layout.addWidget(input_button)
+        
         layout.addLayout(input_layout)
 
         return layout, input_path, input_button

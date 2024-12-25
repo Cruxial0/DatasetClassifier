@@ -5,6 +5,7 @@ import sys
 from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QMessageBox, QMainWindow, QApplication, QWidget, QLabel)
 from PyQt6.QtGui import QKeySequence, QShortcut, QTransform
 from PyQt6.QtCore import Qt, QTimer
+from src.project_utils import load_project_from_id
 from src.database.database import Database
 from src.project import Project
 from src.export import ExportRule, Exporter
@@ -25,7 +26,7 @@ class DatasetClassifier(QMainWindow):
         super().__init__()
         self.default_scores = ['score_0', 'score_1', 'score_2', 'score_3', 'score_4', 'score_5', 'discard']
         self.active_project = None
-        self.db_new = Database()
+        self.db = Database()
         self.config_handler = ConfigHandler()
         self.button_states = ButtonStateManager()
         self.score_layout = None
@@ -48,7 +49,7 @@ class DatasetClassifier(QMainWindow):
         main_layout = QVBoxLayout(central_widget)
 
         self.create_menu_bar()
-        main_layout.addLayout(self.create_directory_selection())
+        main_layout.addLayout(self.create_project_selection())
         main_layout.addLayout(self.create_middle_row())
         main_layout.addLayout(self.create_scoring_buttons())
 
@@ -86,28 +87,28 @@ class DatasetClassifier(QMainWindow):
         self.project_new_action.triggered.connect(self.new_project)
         self.project_migrate_action.triggered.connect(self.migrate_project)
 
-    def create_directory_selection(self):
-        layout, self.input_path, input_button = UIComponents.create_directory_selection(self.button_states.input_enabled)
-        self.button_states.declare_button_group([self.input_path], 'input')
-        input_button.clicked.connect(lambda: self.select_directory('input'))
+    def create_project_selection(self):
+        layout, self.input_project_id, input_button = UIComponents.create_project_selection(self.button_states.input_enabled)
+        # self.button_states.declare_button_group([self.input_project_id], 'input')
+        input_button.clicked.connect(lambda: self.load_project(self.input_project_id.text()))
         return layout
     
     def new_project(self):
-        self.new_project_window = NewProjectPopup(self.db_new)
+        self.new_project_window = NewProjectPopup(self.db)
         self.new_project_window.show()
         self.new_project_window.set_callback(self.new_project_callback)
 
     def new_project_callback(self, project: Project):
-        self.active_project = project
+        self.handle_project_loaded(project)
         self.project_edit_action.setEnabled(True)
 
     def migrate_project(self):
-        self.new_project_window = MigrateProjectPopup(self.db_new)
+        self.new_project_window = MigrateProjectPopup(self.db)
         self.new_project_window.show()
         self.new_project_window.set_callback(self.migrate_project_callback)
 
     def migrate_project_callback(self, project: Project):
-        self.active_project = project
+        self.handle_project_loaded(project)
         self.project_edit_action.setEnabled(True)
 
     def open_settings_window(self):
@@ -122,7 +123,7 @@ class DatasetClassifier(QMainWindow):
     def open_export_window(self):
         if not self.db:
             return
-        self.export_window = ExportPopup(self.export, self.db.get_unique_categories(), self.config_handler)
+        self.export_window = ExportPopup(self.export, self.db.images.get_unique_categories(self.active_project.id), self.config_handler)
         self.export_window.show()
 
     ## Callback function for Export Popup
@@ -130,7 +131,8 @@ class DatasetClassifier(QMainWindow):
         exporter = Exporter(data, self.config_handler)
         
         summary = f"Export path: {exporter.output_dir}"
-        for key, value in exporter.process_export(self.db.get_all_images()).items():
+        images = self.db.images.get_project_scores(self.active_project.id)
+        for key, value in exporter.process_export([(image[0], image[1], None, image[2], image[3]) for image in images]).items():
             summary += f"\n - {value} images exported to '{key}'"
 
         confirm = QMessageBox.question(self, 'Export summary', 
@@ -190,19 +192,11 @@ class DatasetClassifier(QMainWindow):
         accent_color = self.config_handler.get_color('accent_color')
         button.setStyleSheet(f"background-color: {accent_color};")
         QTimer.singleShot(150, lambda: self.score_image(score))
-
-    def select_directory(self, dir_type):
-        dialog = QFileDialog(self)
-        dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
-        dialog.setNameFilter("SQLite files (*.sqlite *.db *.sqlite3)")
-        dialog.setViewMode(QFileDialog.ViewMode.List)
-        if dialog.exec():
-            file_path = dialog.selectedFiles()[0]
-            self.db = LegacyDatabase(file_path)
         
 
     def check_for_custom_scorings(self):       
-        custom_scorings = self.db.get_unique_categories()
+        custom_scorings = self.db.images.get_unique_categories(self.active_project.id)
+        print(custom_scorings)
         
         if len(custom_scorings) > 0:
             reply = QMessageBox.question(self, 'Custom Scorings Detected', 
@@ -235,26 +229,47 @@ class DatasetClassifier(QMainWindow):
             self.category_buttons.append((button, remove_button, keybind_label))
             self.apply_keybindings()
 
+    def handle_post_load_button_states(self):
+        self.button_states.toggle_button_group(True, 'category')
+        self.button_states.toggle_button_group(True, 'score')
+        self.button_states.toggle_button_group(True, 'image')
+        self.button_states.toggle_button(True, 'to_latest_button_right', 'image')
+        self.button_states.toggle_button(False, 'to_latest_button_left', 'image')
+
+    def load_project(self, project_id: str):
+        # Check if project id is valid
+        if not project_id.isdigit():
+            return
+        self.handle_project_loaded(load_project_from_id(int(project_id), self.db))
+
+    def handle_project_loaded(self, project: Project):
+        self.active_project = project
+        self.load_images()
+        self.check_for_custom_scorings()
+        self.handle_post_load_button_states()
+        self.workspace_loaded = True
+        self.update_button_colors()
+
     def load_images(self):
-        self.image_handler.load_images(self.input_path.text(), self.hide_scored_images)
+        if self.db is None or self.active_project is None:
+            return
+        self.image_handler.load_images(self.active_project.directories[0], self.hide_scored_images)
         self.update_progress()
         self.display_image()
 
     def load_latest_image(self):
-        # 1.  Get latest id from database
-        # 2. Set id in image_handler
-        # 3.call self.display_image
-
-        latest_id = self.db.get_latest_image_id()
+        latest_id = self.db.images.get_latest_image_id(self.active_project.id)
         self.image_handler.set_index(latest_id)
+
         self.display_image()
+
         self.button_states.toggle_button(False, 'to_latest_button_right', 'image')
         self.button_states.toggle_button(False, 'to_latest_button_left', 'image')
 
     def manage_latest_button_state(self):
         if self.db is None:
             return
-        latest_id = self.db.get_latest_image_id()
+        latest_id = self.db.images.get_latest_image_id(self.active_project.id)
         image_handler_index = self.image_handler.get_index()
         condition: bool = (image_handler_index == latest_id) == True
         
@@ -344,7 +359,7 @@ class DatasetClassifier(QMainWindow):
         if not current_image:
             return
         
-        current_score, current_categories = self.db.get_image_score(current_image)
+        current_score, current_categories = self.db.images.get_image_score(current_image)
         
         # Update default score buttons
         for i in range(self.score_layout.count()):
@@ -385,7 +400,7 @@ class DatasetClassifier(QMainWindow):
     def score_image(self, score):
         current_image_path = self.image_handler.get_current_image_path()
         if current_image_path:
-            current_score, _ = self.db.get_image_score(current_image_path)
+            current_score, _ = self.db.images.get_image_score(current_image_path)
             
             if score in self.default_scores:
                 new_score = score

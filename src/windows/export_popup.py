@@ -199,7 +199,8 @@ class ExportPopup(QWidget):
             'rules': [component.get_data() for component in reversed(self.category_components)],
             'scores': [name for name, checkbox in self.checkboxes.items() if checkbox.isChecked()],
             'seperate_by_score': self.seperate_by_score.isChecked(),
-            'export_captions': self.export_captions.isChecked()
+            'export_captions': self.export_captions.isChecked(),
+            'delete_images': self.delete_images.isChecked()
         }
         if data['output_directory'] == '':
             QMessageBox.warning(self, 'Invalid export', 'Select an output path before exporting')
