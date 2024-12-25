@@ -1,12 +1,13 @@
 import os
 import shutil
 from PyQt6.QtGui import QPixmap
+from src.database.database import Database
 from src.utils import create_directory
 from PIL import Image
 from PIL.ExifTags import TAGS
 
 class ImageHandler:
-    def __init__(self, db, config_handler):
+    def __init__(self, db: Database, config_handler):
         self.db = db
         self.config_handler = config_handler
         self.input_folder = None
@@ -23,7 +24,7 @@ class ImageHandler:
         self.input_folder = input_folder
         self.image_list = [f for f in os.listdir(input_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))]
         if hide_scored_images:
-            self.image_list = [img for img in self.image_list if not self.db.is_image_scored(os.path.join(self.input_folder, img))]
+            self.image_list = [img for img in self.image_list if not self.db.image.is_image_scored(os.path.join(self.input_folder, img))]
         self.current_index = 0 if self.image_list else -1
         self.preload_images()
 
@@ -65,7 +66,7 @@ class ImageHandler:
 
     def score_image(self, score, categories):
         if self.current_image and self.output_folder:
-            current_score, current_categories = self.db.get_image_score(self.current_image)
+            current_score, current_categories = self.db.image.get_image_score(self.current_image)
             
             # Update categories
             new_categories = current_categories.copy()
@@ -134,8 +135,7 @@ class ImageHandler:
                 pass
 
             # Update database
-            dest_path = os.path.join(self.output_folder, new_score, os.path.basename(self.current_image)) if new_score else None
-            self.db.add_or_update_score(self.current_image, dest_path, new_score, new_categories)
+            self.db.image.add_or_update_score(self.current_image, new_score, new_categories)
             
             return True
         return False
@@ -192,14 +192,3 @@ class ImageHandler:
         if self.image_list:
             return (self.current_index + 1, len(self.image_list))
         return (0, 0)
-
-    def sync_filesystem_with_database(self):
-        all_scores = self.db.get_all_scores()
-        for source_path, dest_path, score, categories in all_scores:
-            if not os.path.exists(source_path):
-                self.db.remove_score(source_path)
-            elif not os.path.exists(dest_path):
-                dest_folder = os.path.join(self.output_folder, score, *categories)
-                new_dest_path = os.path.join(dest_folder, os.path.basename(source_path))
-                self.copy_image_to_folder(dest_folder)
-                self.db.add_or_update_score(source_path, new_dest_path, score, categories)

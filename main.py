@@ -25,7 +25,6 @@ class DatasetClassifier(QMainWindow):
         super().__init__()
         self.default_scores = ['score_0', 'score_1', 'score_2', 'score_3', 'score_4', 'score_5', 'discard']
         self.active_project = None
-        self.db = None
         self.db_new = Database()
         self.config_handler = ConfigHandler()
         self.button_states = ButtonStateManager()

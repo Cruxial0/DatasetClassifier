@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 import sqlite3
+from src.database.query.image_queries import ImageQueries
 from src.database.queries import create_database
 
 DB_VERSION = 1
@@ -9,6 +10,7 @@ DB_VERSION = 1
 class Database:
     def __init__(self, db_path="./db/dataset_classifier.db"):
         self.db_path = db_path
+        self.image = ImageQueries(self)
         self.connect()
 
     def connect(self):
