@@ -5,9 +5,10 @@ import sys
 from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QMessageBox, QMainWindow, QApplication, QWidget, QLabel)
 from PyQt6.QtGui import QKeySequence, QShortcut, QTransform
 from PyQt6.QtCore import Qt, QTimer
+from src.project_manager import Project
 from src.export import ExportRule, Exporter
 from src.button_states import ButtonStateManager
-from src.database import Database
+from src.database.database_legacy import LegacyDatabase
 from src.config_handler import ConfigHandler
 from src.ui_components import UIComponents
 from src.image_handler import ImageHandler
@@ -15,11 +16,13 @@ from src.utils import key_to_unicode
 from src.theme import set_dark_mode
 from src.windows.export_popup import ExportPopup
 from src.windows.settings_window import SettingsWindow
+from src.windows.new_project_popup import NewProjectPopup
 
 class DatasetClassifier(QMainWindow):
     def __init__(self):
         super().__init__()
         self.default_scores = ['score_0', 'score_1', 'score_2', 'score_3', 'score_4', 'score_5', 'discard']
+        self.active_project = None
         self.db = None
         self.config_handler = ConfigHandler()
         self.button_states = ButtonStateManager()
@@ -50,19 +53,23 @@ class DatasetClassifier(QMainWindow):
     def create_menu_bar(self):
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu('File')
+        project_menu = menu_bar.addMenu('Project')
         view_menu = menu_bar.addMenu('View')
         options_menu = menu_bar.addMenu('Options')
 
         file_menu.setToolTipsVisible(True)
+        project_menu.setToolTipsVisible(True)
         view_menu.setToolTipsVisible(True)
         options_menu.setToolTipsVisible(True)
 
         actions = UIComponents.create_menu_actions(self.config_handler)
         self.hide_scored_action, self.treat_categories_as_scoring_action, self.auto_scroll_on_scoring_action,  \
-        self.export_action, self.write_to_filesystem_action, self.settings_action = actions  
+        self.export_action, self.write_to_filesystem_action, self.settings_action, self.project_new_action, self.project_edit_action = actions  
 
         file_menu.addAction(self.export_action)
         file_menu.addAction(self.settings_action)
+        project_menu.addAction(self.project_new_action)
+        project_menu.addAction(self.project_edit_action)
         view_menu.addAction(self.hide_scored_action)
         # options_menu.addAction(self.treat_categories_as_scoring_action)
         options_menu.addAction(self.auto_scroll_on_scoring_action)
@@ -74,15 +81,25 @@ class DatasetClassifier(QMainWindow):
         self.write_to_filesystem_action.triggered.connect(self.toggle_write_to_filesystem)
         self.export_action.triggered.connect(self.open_export_window)
         self.settings_action.triggered.connect(self.open_settings_window)
+        self.project_new_action.triggered.connect(self.new_project)
 
     def create_directory_selection(self):
-        layout, self.input_path, self.output_path, input_button, output_button = UIComponents.create_directory_selection(self.button_states.input_enabled)
-        self.button_states.declare_button_group([self.output_path, output_button], 'input')
+        layout, self.input_path, input_button = UIComponents.create_directory_selection(self.button_states.input_enabled)
+        self.button_states.declare_button_group([self.input_path], 'input')
         input_button.clicked.connect(lambda: self.select_directory('input'))
-        output_button.clicked.connect(lambda: self.select_directory('output'))
         return layout
     
+    def new_project(self):
+        self.new_project_window = NewProjectPopup()
+        self.new_project_window.show()
+        self.new_project_window.set_callback(self.new_project_callback)
+
+    def new_project_callback(self, project: Project):
+        self.active_project = project
+        self.project_edit_action.setEnabled(True)
+
     def open_settings_window(self):
+        
         if not self.config_handler:
             return
         self.settings_window = SettingsWindow(self.config_handler)
@@ -164,38 +181,13 @@ class DatasetClassifier(QMainWindow):
         QTimer.singleShot(150, lambda: self.score_image(score))
 
     def select_directory(self, dir_type):
-        folder = QFileDialog.getExistingDirectory(self, f"Select {dir_type.capitalize()} Directory")
-        if folder:
-            if dir_type == 'input':
-                self.input_path.setText(folder)
-                self.button_states.toggle_button_group(True, 'input')
-                self.button_states.toggle_button_group(True, 'image')
-                self.button_states.toggle_button(False, 'to_latest_button_right', 'image')
-                self.button_states.toggle_button(False, 'to_latest_button_left', 'image')
-                self.load_images()
-                
-            else:
-                self.output_path.setText(folder)
-                self.image_handler.set_output_folder(folder)
-                self.rebuild_database(self.input_path.text(), folder) # todo: move to another thread
-                self.check_for_custom_scorings()
-                self.button_states.toggle_button_group(True, 'category')
-                self.button_states.toggle_button_group(True, 'score')
-                self.button_states.toggle_button(True, 'to_latest_button_right', 'image')
-                self.button_states.toggle_button(False, 'to_latest_button_left', 'image')
-                self.workspace_loaded = True
-                self.update_button_colors()
-
-    def rebuild_database(self, input_folder, output_folder):
-        db_path = Path(output_folder).joinpath('images_scores.db')
-        if not db_path.exists():
-            self.db = Database(db_path=str(db_path))
-            self.db.rebuild_from_filesystem(input_folder, output_folder)
-            QMessageBox.information(self, "Database Rebuilt", "Database has been rebuilt from the filesystem.")
-        else:
-            self.db = Database(db_path=str(db_path))
-        
-        self.image_handler.set_db(self.db)
+        dialog = QFileDialog(self)
+        dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
+        dialog.setNameFilter("SQLite files (*.sqlite *.db *.sqlite3)")
+        dialog.setViewMode(QFileDialog.ViewMode.List)
+        if dialog.exec():
+            file_path = dialog.selectedFiles()[0]
+            self.db = LegacyDatabase(file_path)
         
 
     def check_for_custom_scorings(self):       

@@ -5,7 +5,7 @@ from typing import List
 
 from src.export import Image
 
-class Database:
+class LegacyDatabase:
     def __init__(self, db_path='db/image_scores.db'):
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
