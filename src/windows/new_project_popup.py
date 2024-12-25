@@ -1,13 +1,16 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QListWidget, QFileDialog
 
-from src.project_manager import Project
+from src.database.database import Database
+from src.project import Project
+from src.project_utils import new_project
 
 class NewProjectPopup(QWidget):
-    def __init__(self):
+    def __init__(self, database: Database):
         super().__init__()
         self.callback = None
         self.projectName = None
         self.directories = []
+        self.database = database
         self.createUI()
         self.update_create_enabled()
 
@@ -66,7 +69,7 @@ class NewProjectPopup(QWidget):
         self.callback = callback
 
     def create_project(self) -> Project:
-        project = Project(self.projectName, self.directories)
+        project = new_project(self.projectName, self.directories, self.database)
         self.callback(project)
         self.close()
 

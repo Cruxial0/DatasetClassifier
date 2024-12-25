@@ -5,7 +5,8 @@ import sys
 from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QMessageBox, QMainWindow, QApplication, QWidget, QLabel)
 from PyQt6.QtGui import QKeySequence, QShortcut, QTransform
 from PyQt6.QtCore import Qt, QTimer
-from src.project_manager import Project
+from src.database.database import Database
+from src.project import Project
 from src.export import ExportRule, Exporter
 from src.button_states import ButtonStateManager
 from src.database.database_legacy import LegacyDatabase
@@ -17,6 +18,7 @@ from src.theme import set_dark_mode
 from src.windows.export_popup import ExportPopup
 from src.windows.settings_window import SettingsWindow
 from src.windows.new_project_popup import NewProjectPopup
+from src.windows.migrate_project_popup import MigrateProjectPopup
 
 class DatasetClassifier(QMainWindow):
     def __init__(self):
@@ -24,6 +26,7 @@ class DatasetClassifier(QMainWindow):
         self.default_scores = ['score_0', 'score_1', 'score_2', 'score_3', 'score_4', 'score_5', 'discard']
         self.active_project = None
         self.db = None
+        self.db_new = Database()
         self.config_handler = ConfigHandler()
         self.button_states = ButtonStateManager()
         self.score_layout = None
@@ -63,13 +66,13 @@ class DatasetClassifier(QMainWindow):
         options_menu.setToolTipsVisible(True)
 
         actions = UIComponents.create_menu_actions(self.config_handler)
-        self.hide_scored_action, self.treat_categories_as_scoring_action, self.auto_scroll_on_scoring_action,  \
-        self.export_action, self.write_to_filesystem_action, self.settings_action, self.project_new_action, self.project_edit_action = actions  
+        self.hide_scored_action, self.treat_categories_as_scoring_action, self.auto_scroll_on_scoring_action, self.export_action, self.write_to_filesystem_action, self.settings_action, self.project_new_action, self.project_edit_action, self.project_migrate_action = actions  
 
         file_menu.addAction(self.export_action)
         file_menu.addAction(self.settings_action)
         project_menu.addAction(self.project_new_action)
         project_menu.addAction(self.project_edit_action)
+        project_menu.addAction(self.project_migrate_action)
         view_menu.addAction(self.hide_scored_action)
         # options_menu.addAction(self.treat_categories_as_scoring_action)
         options_menu.addAction(self.auto_scroll_on_scoring_action)
@@ -82,6 +85,7 @@ class DatasetClassifier(QMainWindow):
         self.export_action.triggered.connect(self.open_export_window)
         self.settings_action.triggered.connect(self.open_settings_window)
         self.project_new_action.triggered.connect(self.new_project)
+        self.project_migrate_action.triggered.connect(self.migrate_project)
 
     def create_directory_selection(self):
         layout, self.input_path, input_button = UIComponents.create_directory_selection(self.button_states.input_enabled)
@@ -90,7 +94,7 @@ class DatasetClassifier(QMainWindow):
         return layout
     
     def new_project(self):
-        self.new_project_window = NewProjectPopup()
+        self.new_project_window = NewProjectPopup(self.db_new)
         self.new_project_window.show()
         self.new_project_window.set_callback(self.new_project_callback)
 
@@ -98,8 +102,16 @@ class DatasetClassifier(QMainWindow):
         self.active_project = project
         self.project_edit_action.setEnabled(True)
 
+    def migrate_project(self):
+        self.new_project_window = MigrateProjectPopup(self.db_new)
+        self.new_project_window.show()
+        self.new_project_window.set_callback(self.migrate_project_callback)
+
+    def migrate_project_callback(self, project: Project):
+        self.active_project = project
+        self.project_edit_action.setEnabled(True)
+
     def open_settings_window(self):
-        
         if not self.config_handler:
             return
         self.settings_window = SettingsWindow(self.config_handler)

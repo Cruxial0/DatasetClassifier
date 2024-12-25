@@ -3,8 +3,19 @@ def create_projects_schema():
     CREATE TABLE projects(
         project_id INTEGER PRIMARY KEY,
         project_name TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        project_directories TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         version INTEGER DEFAULT 1
+    );"""
+
+def create_images_schema():
+    return """
+    CREATE TABLE images (
+        image_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL,
+        source_path TEXT NOT NULL,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(project_id)
     );"""
 
 def create_scores_schema():
@@ -12,8 +23,8 @@ def create_scores_schema():
     CREATE TABLE scores(
         image_id INTEGER PRIMARY KEY,
         project_id INTEGER NOT NULL,
-        source_path TEXT NOT NULL,
         score INTEGER,
+        categories TEXT NOT NULL,
         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (project_id) REFERENCES projects(project_id)
     );"""
@@ -63,6 +74,7 @@ def create_database():
     return f"""
     PRAGMA foreign_keys = ON;
     {create_projects_schema()}
+    {create_images_schema()}
     {create_scores_schema()}
     {create_tag_groups_schema()}
     {create_tags_schema()}
