@@ -86,6 +86,10 @@ class KeybindPage:
         """Register a button to be bound to a specific key action"""
         self.button_bindings[action] = button
         
+    def unregister_button_binding(self, action: str):
+        if action in self.button_bindings:
+            del self.button_bindings[action]
+
     def apply_keybindings(self, bindings: Dict[str, str | int]):
         """Apply keybindings to this page's buttons"""
         self._clear_shortcuts()
