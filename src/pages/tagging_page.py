@@ -4,6 +4,7 @@ from PyQt6.QtCore import Qt
 from src.button_states import ButtonStateManager
 from src.config_handler import ConfigHandler
 from src.database.database import Database
+from src.update_poller import UpdatePoller
 
 class TaggingPage(QWidget):
     def __init__(self, parent):
@@ -11,10 +12,13 @@ class TaggingPage(QWidget):
         self.parent = parent
         self.button_states: ButtonStateManager = parent.button_states
         self.db: Database = parent.db
+        self.update_poller: UpdatePoller = parent.update_poller
         self.config_handler: ConfigHandler = parent.config_handler
         self.active_project = parent.active_project
 
         self.setupUI()
+
+        self.update_poller.add_method('update_tag_groups', self.update_tag_groups)
 
     def setupUI(self):
         self.main_layout = QHBoxLayout(self)
@@ -37,6 +41,27 @@ class TaggingPage(QWidget):
 
     def show_configure_tag_groups(self):
         self.parent.open_settings_window('tag_groups')
+
+    def update_tag_groups(self):
+        self.tag_groups = self.db.tags.get_project_tags(self.active_project.id)
+
+        if self.tag_groups is None: 
+            return
+        
+        # Update label to tag group name
+        self.tag_group_label.setText(self.tag_groups[0].name)
+
+        # Create buttons for each tag in the first group
+        self.active_tags = self.tag_groups[0].tags
+        
+        # Remove all items in the tags layout
+        while self.tags_layout.count() > 0:
+            self.tags_layout.takeAt(0).widget().deleteLater()
+        
+        for tag in self.active_tags:
+            btn = QPushButton(tag.name)
+            btn.setText(tag.name)
+            self.tags_layout.addWidget(btn)
 
     def _create_tagging_interface(self):
         tagging_layout = QVBoxLayout()
@@ -65,17 +90,17 @@ class TaggingPage(QWidget):
         header_layout.addWidget(self.score_label)
 
         # Tags
-        tags_layout = QVBoxLayout()
-        tags_layout.setContentsMargins(7, 7, 7, 7)
+        self.tags_layout = QVBoxLayout()
+        self.tags_layout.setContentsMargins(7, 7, 7, 7)
 
         tag_groups = self.db.tags.get_project_tags(self.active_project.id)
         if tag_groups is not None and len(tag_groups) > 0:
-            pass
+            self.update_tag_groups()
         else:
             add_button = QPushButton("Configure Tag Groups")
             add_button.setStyleSheet(f"background-color: {self.config_handler.get_color('accent_color')}; color: white;")
             add_button.clicked.connect(self.show_configure_tag_groups)
-            tags_layout.addWidget(add_button)
+            self.tags_layout.addWidget(add_button)
 
         # Controls
         controls_layout = QHBoxLayout()
@@ -99,7 +124,7 @@ class TaggingPage(QWidget):
 
         # Ordering
         tagging_layout.addLayout(header_layout)
-        tagging_layout.addLayout(tags_layout)
+        tagging_layout.addLayout(self.tags_layout)
         tagging_layout.addStretch(1)
         tagging_layout.addLayout(controls_layout)
         tagging_layout.addLayout(progress_layout)

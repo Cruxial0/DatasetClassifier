@@ -11,6 +11,7 @@ from src.popups.export_popup import ExportPopup
 from src.windows.settings_window import SettingsWindow
 from src.popups.new_project_popup import NewProjectPopup
 from src.popups.migrate_project_popup import MigrateProjectPopup
+from src.update_poller import UpdatePoller
 
 # dataset_classifier.py
 class DatasetClassifier(QMainWindow):
@@ -20,6 +21,7 @@ class DatasetClassifier(QMainWindow):
         self.db = database
         self.config_handler = ConfigHandler()
         self.button_states = ButtonStateManager()
+        self.update_poller = UpdatePoller()
         self.current_mode = 0
         self.initUI()
 
