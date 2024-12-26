@@ -7,24 +7,20 @@ from src.config_handler import ConfigHandler
 
 class UIComponents:
     @staticmethod
-    def create_directory_selection(state: bool):
+    def create_project_selection(state: bool):
         layout = QVBoxLayout()
         
         input_layout = QHBoxLayout()
+
         input_path = QLineEdit()
-        input_button = QPushButton('Select Input Directory')
+        input_button = QPushButton('Load Project')
+
         input_layout.addWidget(input_path)
         input_layout.addWidget(input_button)
+        
         layout.addLayout(input_layout)
 
-        output_layout = QHBoxLayout()
-        output_path = QLineEdit(enabled=state)
-        output_button = QPushButton('Select Output Directory', enabled=state)
-        output_layout.addWidget(output_path)
-        output_layout.addWidget(output_button)
-        layout.addLayout(output_layout)
-
-        return layout, input_path, output_path, input_button, output_button
+        return layout, input_path, input_button
 
     @staticmethod
     def create_image_viewer(state: bool):
@@ -93,6 +89,7 @@ class UIComponents:
                 button = QPushButton('discard', enabled=state)
             else:
                 button = QPushButton(config.get_score(score), enabled=state)
+                
             button.setObjectName(score)
             score_layout.addWidget(button)
             score_buttons.append(button)
@@ -118,6 +115,14 @@ class UIComponents:
         write_to_filesystem.setToolTip('If true, instantly reflects any changes in the output directory by copying and moving images around.\nUses 100-1000+ times more storage space.')
         export = QAction('Export')
         settings = QAction('Settings')
+        project_new = QAction('New Project')
+        project_edit = QAction('Edit Project')
+        project_edit.setEnabled(False)
+        project_migrate = QAction('Migrate Legacy Project')
+
+        menu_button = QPushButton("Swtich Mode")
+        menu_button.setFixedSize(100, 25)  # Adjust size as needed
 
         return (hide_scored_action, treat_categories_as_scoring_action, 
-                auto_scroll_on_scoring_action, export, write_to_filesystem, settings)
+                auto_scroll_on_scoring_action, export, write_to_filesystem, settings,
+                project_new, project_edit, project_migrate, menu_button)

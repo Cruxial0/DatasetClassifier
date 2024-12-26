@@ -5,7 +5,7 @@ from typing import List
 
 from src.export import Image
 
-class Database:
+class LegacyDatabase:
     def __init__(self, db_path='db/image_scores.db'):
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -177,5 +177,18 @@ class Database:
         with open(self.sidecar_path, 'w') as f:
             json.dump(data, f)
 
+    def get_all_data(self) -> list[tuple[str, str, str, str, list[str], str]]:
+        query = "SELECT * FROM scores"
+        self.cursor.execute(query)
+
+        # Convert the data to a list of tuples
+        data = [(row[0], row[1], row[2], row[3], json.loads(row[4]), row[5]) for row in self.cursor.fetchall()]
+
+        return data
+
     def close(self):
         self.conn.close()
+
+    def __del__(self):
+        if self.conn:
+            self.conn.close()
