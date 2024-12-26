@@ -83,16 +83,23 @@ class ProjectSelectionWindow(QMainWindow):
         left_column = QVBoxLayout()
 
         welcome_label = QLabel("Welcome!")
+        welcome_label.setMargin(10)
         left_column.addWidget(welcome_label)
         
+        functions_layout = QVBoxLayout()
+        functions_layout.setContentsMargins(7, 0, 7, 0)
+        left_column.addLayout(functions_layout)
+
         new_project_btn = QPushButton("New Project")
+        new_project_btn.setWhatsThis("Create a new project")
+        new_project_btn.setToolTip("Create a new project")
         new_project_btn.clicked.connect(self.on_new_project)
         
         import_legacy_btn = QPushButton("Import Legacy Database")
         import_legacy_btn.clicked.connect(self.on_import_legacy)
         
-        left_column.addWidget(new_project_btn)
-        left_column.addWidget(import_legacy_btn)
+        functions_layout.addWidget(new_project_btn)
+        functions_layout.addWidget(import_legacy_btn)
         left_column.addStretch()
         
         # Right column - Recent Projects
@@ -109,7 +116,7 @@ class ProjectSelectionWindow(QMainWindow):
         buttons_layout = QHBoxLayout()
         
         # add 10px margin
-        buttons_layout.setContentsMargins(10, 0, 10, 0)
+        buttons_layout.setContentsMargins(10, 0, 10, 10)
 
         open_button = QPushButton("Open")
         delete_button = QPushButton("Delete")

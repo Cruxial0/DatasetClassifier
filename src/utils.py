@@ -1,6 +1,10 @@
 import os
 from datetime import datetime
 from pathlib import Path
+import pytz
+from zoneinfo import ZoneInfo
+from typing import Optional
+from tzlocal import get_localzone
 
 def get_image_files(directory):
     return [f for f in os.listdir(directory) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.bmp'))]
@@ -61,24 +65,43 @@ def key_to_unicode(key: str) -> str:
 
     return key_unicode_map.get(key.upper(), key)
 
-def get_time_ago(timestamp_str: str) -> str:
+def get_time_ago(timestamp_str: str, timezone: Optional[str] = None) -> str:
     """
     Convert a timestamp string to a human-readable relative time string.
+    Uses system timezone by default, with optional timezone override.
     
     Args:
         timestamp_str: ISO format timestamp string
+        timezone: Optional timezone name override (e.g. "America/New_York", "Asia/Tokyo")
         
     Returns:
         str: Human readable string like "2 hours ago"
     """
     # Parse the timestamp string to datetime object
     timestamp = datetime.fromisoformat(timestamp_str)
-    now = datetime.now()
+    
+    # If timestamp has no timezone, assume UTC
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=ZoneInfo("UTC"))
+    
+    # Get system timezone if none specified
+    if timezone is None:
+        target_tz = get_localzone()
+    else:
+        try:
+            target_tz = ZoneInfo(timezone)
+        except KeyError:
+            raise ValueError(f"Invalid timezone: {timezone}")
+        
+    now = datetime.now(target_tz)
+    
+    # Convert timestamp to target timezone for comparison
+    timestamp = timestamp.astimezone(target_tz)
     
     # Calculate the time difference
     delta = now - timestamp
     seconds = delta.total_seconds()
-    
+
     # Convert to appropriate time unit
     if seconds < 60:
         return "just now"
