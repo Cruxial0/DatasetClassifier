@@ -1,4 +1,5 @@
-from PyQt6.QtWidgets import (QVBoxLayout, QMainWindow, QWidget, QStackedWidget)
+from PyQt6.QtWidgets import (QHBoxLayout, QMainWindow, QWidget, QStackedWidget)
+from src.pages.tagging_page import TaggingPage
 from src.pages.scoring_page import ScoringPage
 from src.project_utils import load_project_from_id
 from src.database.database import Database
@@ -19,32 +20,29 @@ class DatasetClassifier(QMainWindow):
         self.db = database
         self.config_handler = ConfigHandler()
         self.button_states = ButtonStateManager()
+        self.current_mode = 0
         self.initUI()
 
     def initUI(self):
         self.setWindowTitle('Dataset Classifier')
         self.setGeometry(100, 100, 1000, 600)
         
-        # Create central widget and main layout
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        main_layout = QVBoxLayout(central_widget)
-
-        # Setup UI components
-        self.create_menu_bar()
-        # main_layout.addLayout(self.create_project_selection())
-        
-        # Setup stacked widget for different pages
+        # Create and set the stacked widget
         self.stacked_widget = QStackedWidget()
         self.setCentralWidget(self.stacked_widget)
         
         # Initialize pages
         self.scoring_page = ScoringPage(self)
-        self.stacked_widget.addWidget(self.scoring_page)
+        self.tagging_page = TaggingPage(self)  # Add this line
         
-        # Setup mode switching
-        self.setup_mode_switching()
-
+        # Add both pages to the stacked widget
+        self.stacked_widget.addWidget(self.scoring_page)
+        self.stacked_widget.addWidget(self.tagging_page)  # Add this line
+        
+        # Create menu bar
+        self.create_menu_bar()
+        
+        # Set initial project
         self.scoring_page.set_active_project(self.active_project)
 
     def create_menu_bar(self):
@@ -60,7 +58,14 @@ class DatasetClassifier(QMainWindow):
         options_menu.setToolTipsVisible(True)
 
         actions = UIComponents.create_menu_actions(self.config_handler)
-        self.hide_scored_action, self.treat_categories_as_scoring_action, self.auto_scroll_on_scoring_action, self.export_action, self.write_to_filesystem_action, self.settings_action, self.project_new_action, self.project_edit_action, self.project_migrate_action = actions  
+        self.hide_scored_action, self.treat_categories_as_scoring_action, self.auto_scroll_on_scoring_action, self.export_action, self.write_to_filesystem_action, self.settings_action, self.project_new_action, self.project_edit_action, self.project_migrate_action, self.menu_button = actions  
+
+        button_widget = QWidget()
+        layout = QHBoxLayout(button_widget)
+        layout.addStretch()  # This pushes the button to the right
+        layout.addWidget(self.menu_button)
+        layout.setContentsMargins(0, 7, 7, 0)  
+        menu_bar.setCornerWidget(button_widget)
 
         file_menu.addAction(self.export_action)
         file_menu.addAction(self.settings_action)
@@ -71,26 +76,17 @@ class DatasetClassifier(QMainWindow):
         # options_menu.addAction(self.treat_categories_as_scoring_action)
         options_menu.addAction(self.auto_scroll_on_scoring_action)
         options_menu.addAction(self.write_to_filesystem_action)
+        self.menu_button.clicked.connect(self.switch_mode)
 
+        
         # self.hide_scored_action.triggered.connect(self.toggle_hide_scored_images)
         # self.treat_categories_as_scoring_action.triggered.connect(self.toggle_treat_categories_as_scoring)
         # self.auto_scroll_on_scoring_action.triggered.connect(self.toggle_auto_scroll_on_scoring)
         # self.write_to_filesystem_action.triggered.connect(self.toggle_write_to_filesystem)
         # self.export_action.triggered.connect(self.open_export_window)
-        # self.settings_action.triggered.connect(self.open_settings_window)
+        self.settings_action.triggered.connect(self.open_settings_window)
         # self.project_new_action.triggered.connect(self.new_project)
         # self.project_migrate_action.triggered.connect(self.migrate_project)
-
-    def setup_mode_switching(self):
-        # Add mode switch in menu bar
-        view_menu = self.menuBar().addMenu('View')
-        mode_menu = view_menu.addMenu('Mode')
-        
-        scoring_action = mode_menu.addAction('Scoring')
-        tagging_action = mode_menu.addAction('Tagging')
-        
-        scoring_action.triggered.connect(lambda: self.switch_mode(0))
-        tagging_action.triggered.connect(lambda: self.switch_mode(1))
 
     def setup_stacked_widget(self):
         self.stacked_widget = QStackedWidget()
@@ -98,16 +94,17 @@ class DatasetClassifier(QMainWindow):
         
         # Initialize modes
         self.scoring_mode = ScoringPage(self)
-        # self.tagging_mode = TaggingMode(self)
+        self.tagging_mode = TaggingPage(self)
         
         # Add to stacked widget
         self.stacked_widget.addWidget(self.scoring_mode)
-        # self.stacked_widget.addWidget(self.tagging_mode)
+        self.stacked_widget.addWidget(self.tagging_mode)
 
         self.stackedLayout.addWidget(self.stacked_widget)
 
-    def switch_mode(self, index):
-        self.stacked_widget.setCurrentIndex(index)
+    def switch_mode(self):
+        self.current_mode = 1 if self.current_mode == 0 else 0
+        self.stacked_widget.setCurrentIndex(self.current_mode)
 
     def handle_project_loaded(self, project: Project):
         """Called when a project is loaded"""
@@ -128,3 +125,7 @@ class DatasetClassifier(QMainWindow):
     def update_button_colors(self):
         """Update button colors across all pages"""
         self.scoring_page.update_button_colors()
+
+    def open_settings_window(self, page: str = None):
+        settings_window = SettingsWindow(self.config_handler, self.db, page, self.active_project)
+        settings_window.show()

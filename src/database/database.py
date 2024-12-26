@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 import sqlite3
+from src.database.query.tag_queries import TagQueries
 from src.database.query.project_queries import ProjectQueries
 from src.database.query.image_queries import ImageQueries
 from src.database.queries import create_database
@@ -15,6 +16,7 @@ class Database:
 
         self.images = ImageQueries(self.connection)
         self.projects = ProjectQueries(self.connection)
+        self.tags = TagQueries(self.connection)
 
     def connect(self):
         if os.path.exists(self.db_path):

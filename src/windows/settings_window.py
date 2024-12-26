@@ -7,8 +7,11 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                             QStackedWidget, QComboBox, QColorDialog)
 from PyQt6.QtCore import Qt, QEvent, pyqtSignal
 from PyQt6.QtGui import QColor, QKeySequence
+from src.database.database import Database
+from src.project import Project
 from src.score_presets import get_preset, get_preset_list
 from src.config_handler import ConfigHandler
+from src.windows.settings_pages.tag_groups_settings import TagGroupsSettings
 
 class ColorButton(QPushButton):
     def __init__(self, color=QColor):
@@ -70,7 +73,7 @@ class KeybindWidget(QPushButton):
         self.is_capturing = True
 
 class SettingsWindow(QMainWindow):
-    def __init__(self, config: ConfigHandler):
+    def __init__(self, config: ConfigHandler, database: Database, page: str = None, project: Project = None, ):
         super().__init__()
 
         self.scoring_updated_callback = None
@@ -80,6 +83,9 @@ class SettingsWindow(QMainWindow):
         self.config = config
         self.setWindowTitle("Settings")
         self.setMinimumSize(800, 600)
+        
+        self.db = database
+        self.project = project
         
         # Create main widget and layout
         main_widget = QWidget()
@@ -100,7 +106,8 @@ class SettingsWindow(QMainWindow):
             "Export": self.create_export_page(),
             "Keybinds": self.create_keybinds_page(),
             "Colors": self.create_colors_page(),
-            "Scoring": self.create_scoring_page()
+            "Scoring": self.create_scoring_page(),
+            "Tag Groups": TagGroupsSettings(self)
         }
         
         for name, page in self.pages.items():

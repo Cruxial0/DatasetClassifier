@@ -120,6 +120,9 @@ class UIComponents:
         project_edit.setEnabled(False)
         project_migrate = QAction('Migrate Legacy Project')
 
+        menu_button = QPushButton("Swtich Mode")
+        menu_button.setFixedSize(100, 25)  # Adjust size as needed
+
         return (hide_scored_action, treat_categories_as_scoring_action, 
                 auto_scroll_on_scoring_action, export, write_to_filesystem, settings,
-                project_new, project_edit, project_migrate)
+                project_new, project_edit, project_migrate, menu_button)
