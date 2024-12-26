@@ -10,8 +10,8 @@ from src.project_utils import load_project_from_id
 from src.project import Project
 from src.database.database import Database
 from src.utils import get_time_ago
-from src.windows.new_project_popup import NewProjectPopup
-from src.windows.migrate_project_popup import MigrateProjectPopup
+from src.popups.new_project_popup import NewProjectPopup
+from src.popups.migrate_project_popup import MigrateProjectPopup
 from src.windows.dataset_classifier import DatasetClassifier
 
 class ProjectListItem(QListWidgetItem):

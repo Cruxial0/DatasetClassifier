@@ -6,10 +6,10 @@ from src.project import Project
 from src.button_states import ButtonStateManager
 from src.config_handler import ConfigHandler
 from src.ui_components import UIComponents
-from src.windows.export_popup import ExportPopup
+from src.popups.export_popup import ExportPopup
 from src.windows.settings_window import SettingsWindow
-from src.windows.new_project_popup import NewProjectPopup
-from src.windows.migrate_project_popup import MigrateProjectPopup
+from src.popups.new_project_popup import NewProjectPopup
+from src.popups.migrate_project_popup import MigrateProjectPopup
 
 # dataset_classifier.py
 class DatasetClassifier(QMainWindow):
@@ -45,8 +45,7 @@ class DatasetClassifier(QMainWindow):
         # Setup mode switching
         self.setup_mode_switching()
 
-        project = load_project_from_id(1, self.db)
-        self.scoring_page.set_active_project(project)
+        self.scoring_page.set_active_project(self.active_project)
 
     def create_menu_bar(self):
         menu_bar = self.menuBar()
