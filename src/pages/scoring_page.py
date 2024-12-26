@@ -33,8 +33,19 @@ class ScoringPage(QWidget):
         self.alt_pressed = False
         self.ctrl_pressed = False
         
+        # Cache for UI updates
+        self._update_timer = QTimer()
+        self._update_timer.setSingleShot(True)
+        self._update_timer.timeout.connect(self._delayed_ui_update)
+        self._pending_updates = set()
+
         self.setup_ui()
         self.setup_keybinds()
+
+    def setup_ui(self):
+        main_layout = QVBoxLayout(self)
+        main_layout.addLayout(self.create_middle_row())
+        main_layout.addLayout(self.create_scoring_buttons())
 
     def setup_keybinds(self):
         """Register all button-keybinding associations"""
@@ -88,25 +99,130 @@ class ScoringPage(QWidget):
         self.button_states.toggle_button_group(True, 'category')
 
     def score_image(self, score: str):
-        """Handle image scoring"""
+        """Optimized scoring with reduced UI updates"""
         if not self.active_project:
             return
-            
-        current_image = self.image_handler.get_current_image_path()
-        if not current_image:
-            return
-            
-        # Handle scoring logic
+
         self.image_handler.score_image(score, None)
         
-        # Update UI
+        # Update UI before loading next image
         self.update_button_colors()
-        self.load_next_image()
         
-    def setup_ui(self):
-        main_layout = QVBoxLayout(self)
-        main_layout.addLayout(self.create_middle_row())
-        main_layout.addLayout(self.create_scoring_buttons())
+        # Load next image with preloading
+        if self.image_handler.load_next_image():
+            QTimer.singleShot(0, self.display_image)
+
+    def load_next_image(self):
+        if self.image_handler.load_next_image():
+            self.display_image()
+
+    def load_previous_image(self):
+        if self.image_handler.load_previous_image():
+            self.display_image()
+
+    def load_latest_image(self):
+        """Load the latest scored image in the project"""
+        latest_id = self.db.images.get_latest_image_id(self.active_project.id)
+        if latest_id is not None and self.image_handler.image_ids:
+            # Find the index of the latest image ID in our list
+            try:
+                latest_index = self.image_handler.image_ids.index(latest_id)
+                self.image_handler.set_index(latest_index)
+                self.display_image()
+                
+                # Update navigation button states
+                self.button_states.toggle_button(False, 'to_latest_button_right', 'image')
+                self.button_states.toggle_button(False, 'to_latest_button_left', 'image')
+            except ValueError:
+                print(f"Latest image ID {latest_id} not found in current image list")
+
+    def display_image(self):
+        """Optimized image display"""
+        pixmap = self.image_handler.get_current_image()
+        if not pixmap:
+            return
+
+        # Cache the orientation for the current image
+        if not hasattr(self, '_cached_orientation'):
+            self._cached_orientation = {}
+            
+        image_id = self.image_handler.current_image_id
+        if image_id not in self._cached_orientation:
+            self._cached_orientation[image_id] = self.image_handler.get_orientation()
+
+        orientation = self._cached_orientation[image_id]
+        
+        # Only create transform if needed
+        transform = None
+        if orientation != "Normal":
+            transform = QTransform()
+            rotations = {
+                "Rotate 90 CW": 90,
+                "Rotate 180": 180,
+                "Rotate 270 CW": 270,
+                "Rotate 90 CCW": 270
+            }
+            if orientation in rotations:
+                transform.rotate(rotations[orientation])
+        
+        # Apply transform if needed
+        if transform:
+            pixmap = pixmap.transformed(transform, Qt.TransformationMode.SmoothTransformation)
+        
+        # Scale and display
+        scaled_pixmap = pixmap.scaled(
+            self.image_label.size(), 
+            Qt.AspectRatioMode.KeepAspectRatio, 
+            Qt.TransformationMode.SmoothTransformation
+        )
+        self.image_label.setPixmap(scaled_pixmap)
+        
+        # Schedule UI updates
+        self.schedule_ui_update('progress')
+        self.schedule_ui_update('buttons')
+        self.schedule_ui_update('latest')
+    
+    def load_images(self):
+        """Load images for the active project"""
+        if self.active_project:
+            self.image_handler.load_images(self.active_project.id, False)
+            self.update_progress()
+            self.display_image()
+
+    def update_progress(self):
+        """Update the progress bar and label"""
+        current, total = self.image_handler.get_progress()
+        if total > 0:
+            self.progress_bar.setValue(current * 100 // total)
+            self.progress_label.setText(f"{current}/{total}")
+
+    
+    def manage_latest_button_state(self):
+        """Update the state of Latest Image navigation buttons"""
+        if not self.db or not self.active_project:
+            return
+
+        latest_id = self.db.images.get_latest_image_id(self.active_project.id)
+        if latest_id is None or not self.image_handler.current_image_id:
+            return
+
+        # Get indices for comparison
+        try:
+            latest_index = self.image_handler.image_ids.index(latest_id)
+            current_index = self.image_handler.image_ids.index(self.image_handler.current_image_id)
+            
+            # Update button states based on position
+            if current_index == latest_index:
+                self.button_states.toggle_button(False, 'to_latest_button_right', 'image')
+                self.button_states.toggle_button(False, 'to_latest_button_left', 'image')
+            elif current_index > latest_index:
+                self.button_states.toggle_button(True, 'to_latest_button_left', 'image')
+                self.button_states.toggle_button(False, 'to_latest_button_right', 'image')
+            else:
+                self.button_states.toggle_button(True, 'to_latest_button_right', 'image')
+                self.button_states.toggle_button(False, 'to_latest_button_left', 'image')
+        except ValueError:
+            print("Error: Could not determine image positions")
 
     def create_middle_row(self):
         layout = QHBoxLayout()
@@ -137,23 +253,6 @@ class ScoringPage(QWidget):
         for button in self.score_buttons:
             button.clicked.connect(lambda checked, s=button.objectName(): self.on_score_button_click(s, button))
         return layout
-    
-    def load_next_image(self):
-        if self.image_handler.load_next_image():
-            self.display_image()
-
-    def load_previous_image(self):
-        if self.image_handler.load_previous_image():
-            self.display_image()
-
-    def load_latest_image(self):
-        latest_id = self.db.images.get_latest_image_id(self.active_project.id)
-        self.image_handler.set_index(latest_id)
-
-        self.display_image()
-
-        self.button_states.toggle_button(False, 'to_latest_button_right', 'image')
-        self.button_states.toggle_button(False, 'to_latest_button_left', 'image')
 
     def check_category_button_name(self):
         name = self.category_input.text()
@@ -192,116 +291,57 @@ class ScoringPage(QWidget):
         button.setStyleSheet(f"background-color: {accent_color};")
         QTimer.singleShot(150, lambda: self.score_image(score))
 
-    def display_image(self):
-        pixmap = self.image_handler.get_current_image()
-        if pixmap:
-            # Get the orientation value (you'll need to implement this)
-            orientation = self.image_handler.get_orientation()
-            
-            # Create a QTransform object
-            transform = QTransform()
-            
-            # Apply rotation based on orientation
-            if orientation == "Rotate 90 CW":
-                transform.rotate(90)
-            elif orientation == "Rotate 180":
-                transform.rotate(180)
-            elif orientation == "Rotate 270 CW" or orientation == "Rotate 90 CCW":
-                transform.rotate(270)
-            
-            # Apply the transform to the pixmap
-            rotated_pixmap = pixmap.transformed(transform, Qt.TransformationMode.SmoothTransformation)
-            
-            # Set the rotated pixmap
-            self.image_label.setPixmap(rotated_pixmap.scaled(
-                self.image_label.size(), 
-                Qt.AspectRatioMode.KeepAspectRatio, 
-                Qt.TransformationMode.SmoothTransformation
-            ))
-            self.update_progress()
-            self.update_button_colors()
-            self.manage_latest_button_state()
-            QTimer.singleShot(100, self.image_handler.preload_images)
-
-    def load_images(self):
-        self.image_handler.load_images(self.active_project.directories[0], False) # TODO: Add support for multiple directories
-        self.update_progress()
-        self.display_image()
-
-    def update_progress(self):
-        current, total = self.image_handler.get_progress()
-        if total > 0:
-            self.progress_bar.setValue(current * 100 // total)
-            self.progress_label.setText(f"{current}/{total}")
-
-    def manage_latest_button_state(self):
-        if self.db is None:
-            return
-        latest_id = self.db.images.get_latest_image_id(self.active_project.id)
-        image_handler_index = self.image_handler.get_index()
-        condition: bool = (image_handler_index == latest_id) == True
-        
-        if condition:
-            self.button_states.toggle_button(False, 'to_latest_button_right', 'image')
-            self.button_states.toggle_button(False, 'to_latest_button_left', 'image')
-            return
-        
-        if image_handler_index > latest_id:
-            self.button_states.toggle_button(True, 'to_latest_button_left', 'image')
-            self.button_states.toggle_button(False, 'to_latest_button_right', 'image')
-        else:
-            self.button_states.toggle_button(True, 'to_latest_button_right', 'image')
-            self.button_states.toggle_button(False, 'to_latest_button_left', 'image')
-
     def update_button_colors(self):
-        accent_color = self.config_handler.get_color('accent_color')
-        alternate_color = self.config_handler.get_color('alternate_color')
-        warning_color = self.config_handler.get_color('warning_color')
-        select_color = self.config_handler.get_color('select_color')
-        add_color = self.config_handler.get_color('add_color')
+        """
+        Update score button colors based on the current image's score.
 
-        self.category_add_button.setStyleSheet(f"background-color: {accent_color}; color: white;")
+        If the current image has a score, change the corresponding button's color to the accent color.
+        If the current image does not have a score, change the 'discard' button's color to the alternate color.
+        If the current image does not have a score and the 'discard' button does not exist, do not change any button colors.
 
-        if not self.db:
+        This function is optimized to use a cache of stylesheet strings to avoid redundant computation.
+        """
+
+        if not self.db or not self.image_handler.current_image_id:
             return
+
         current_image = self.image_handler.get_current_image_path()
         if not current_image:
             return
         
-        current_score, current_categories = self.db.images.get_image_score(current_image)
+        # Get score from optimized cache
+        current_score, current_categories = self.image_handler.get_score(current_image)
         
-        # Update default score buttons
+        # Update score buttons
+        style_cache = {}  # Cache stylesheet strings
+        
         for i in range(self.score_layout.count()):
             button = self.score_layout.itemAt(i).widget()
-            if isinstance(button, QPushButton):
-                if not button.isEnabled(): continue
+            if not isinstance(button, QPushButton) or not button.isEnabled():
+                continue
+
+            style_key = (button.objectName() == current_score, button.objectName() == 'discard')
+            if style_key not in style_cache:
                 if button.objectName() == current_score:
-                    if button.objectName() == 'discard':
-                        button.setStyleSheet(f"background-color: {warning_color}; color: white;")
-                    else:
-                        button.setStyleSheet(f"background-color: {accent_color}; color: white;")
+                    color = self.config_handler.get_color('warning_color' if button.objectName() == 'discard' else 'accent_color')
+                    style_cache[style_key] = f"background-color: {color}; color: white;"
                 else:
-                    if button.objectName() == 'discard':
-                        button.setStyleSheet(f"background-color: {alternate_color}; color: white;")
-                    else:
-                        button.setStyleSheet("")
-        
-        # Update category buttons
-        for button, remove_button, _ in self.category_buttons:
-            if not button.isEnabled(): continue
-            is_active = button.text() in current_categories
+                    color = self.config_handler.get_color('alternate_color') if button.objectName() == 'discard' else ""
+                    style_cache[style_key] = f"background-color: {color}; color: white;" if color else ""
             
-            if is_active:
-                button.setStyleSheet(f"background-color: {alternate_color}; color: white;")
-            else:
-                button.setStyleSheet("")
-            
-            if self.alt_pressed and not self.ctrl_pressed:
-                if not is_active:
-                    button.setStyleSheet(f"background-color: {add_color}; color: white;")
-                else:
-                    button.setStyleSheet(f"background-color: {warning_color}; color: white;")
-            elif self.ctrl_pressed:
-                remove_button.setStyleSheet(f"background-color: {warning_color}; color: white;")
-            else:
-                remove_button.setStyleSheet("")
+            button.setStyleSheet(style_cache[style_key])
+
+    def schedule_ui_update(self, update_type):
+        """Schedule a UI update to batch multiple updates together"""
+        self._pending_updates.add(update_type)
+        self._update_timer.start(50)  # 50ms delay
+
+    def _delayed_ui_update(self):
+        """Process all pending UI updates at once"""
+        if 'progress' in self._pending_updates:
+            self.update_progress()
+        if 'buttons' in self._pending_updates:
+            self.update_button_colors()
+        if 'latest' in self._pending_updates:
+            self.manage_latest_button_state()
+        self._pending_updates.clear()

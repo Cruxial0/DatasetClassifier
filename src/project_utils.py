@@ -31,7 +31,7 @@ def new_project(project_name: str, directories: list[str], db: Database) -> Proj
     for directory in directories:
         images.extend(get_image_paths(directory))
 
-    db.images.add_images(images, project_id)
+    db.images.add(images, project_id)
 
     return Project(project_id, project_name, directories, db)
 

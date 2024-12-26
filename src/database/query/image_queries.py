@@ -29,14 +29,19 @@ class ImageQueries:
         
         self.conn.commit()
 
-    def is_image_scored(self, source_path: str) -> bool:
+    def get_path(self, image_id: int) -> str:
+        cursor = self.conn.cursor()
+        query = "SELECT source_path FROM images WHERE image_id = ? LIMIT 1"
+        return cursor.execute(query, (image_id,)).fetchone()[0]
+
+    def is_scored(self, source_path: str) -> bool:
         # Get image id from source path, then check if it exists in scores table
         cursor = self.conn.connection.cursor()
         query = "SELECT id FROM images WHERE source_path = ?"
         cursor.execute(query, (source_path,))
         return cursor.fetchone() is not None
     
-    def get_image_score(self, source_path: str) -> tuple[str | None, list[str]]:
+    def get_score(self, source_path: str) -> tuple[str | None, list[str]]:
         cursor = self.conn.cursor()
         query = """
         SELECT s.score, s.categories
@@ -97,7 +102,7 @@ class ImageQueries:
             return image_id[0]
         return 0
     
-    def add_images(self, source_paths: list[str], project_id: int) -> None:
+    def add(self, source_paths: list[str], project_id: int) -> None:
         cursor = self.conn.cursor()
         cursor.executemany("INSERT INTO images (source_path, project_id) VALUES (?, ?)", [(source_path, project_id) for source_path in source_paths])
         self.conn.commit()
