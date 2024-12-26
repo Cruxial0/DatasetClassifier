@@ -129,5 +129,5 @@ class DatasetClassifier(QMainWindow):
         self.scoring_page.update_button_colors()
 
     def open_settings_window(self, page: str = None):
-        settings_window = SettingsWindow(self.config_handler, self.db, page, self.active_project)
+        settings_window = SettingsWindow(self.config_handler, self, page)
         settings_window.show()

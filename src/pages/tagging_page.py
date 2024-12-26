@@ -163,6 +163,7 @@ class TaggingPage(QWidget):
         self.parent.open_settings_window('tag_groups')
 
     def add_tag(self, tag_id: int):
+        print(f"Adding tag {tag_id}")
         if self.current_image is None:
             return
         
@@ -187,6 +188,7 @@ class TaggingPage(QWidget):
 
             bindings = self.keybind_handler.current_bindings
             self.keybind_page.register_button_binding(f'key_{tag.display_order}', btn)
+
             unicode = key_to_unicode(QKeySequence(bindings.get(key)).toString())
             hotkey_label.setText(f"({unicode})")
 
@@ -211,11 +213,10 @@ class TaggingPage(QWidget):
         
         # Unregister all tagging keybinds
         for i in range(10):
-            self.keybind_page.unregister_button_binding(f'key_{i}')
+            self.keybind_page.remove_keybinding(f'key_{i}')
 
         # Remove all items in the tags layout
-        while self.tags_layout.count() > 0:
-            self.tags_layout.takeAt(0).widget().deleteLater()
+        self._clear_layout(self.tags_layout)
         
         for tag in self.active_tags:
             btn_layout = self.create_tag_button(tag)
@@ -291,3 +292,18 @@ class TaggingPage(QWidget):
             if image_path:
                 current_score, _ = self.image_handler.get_score(image_path)
                 self.score_label.setText(self.config_handler.get_score(current_score))
+
+    def _clear_layout(self, layout):
+        while layout.count():
+            item = layout.takeAt(0)
+            
+            # Handle nested layouts
+            if item.layout():
+                self._clear_layout(item.layout())
+                
+            # Handle widgets
+            if item.widget():
+                item.widget().deleteLater()
+                
+            # Delete the item itself
+            del item

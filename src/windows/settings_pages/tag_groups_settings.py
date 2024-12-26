@@ -1,16 +1,19 @@
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QListWidget, QListWidgetItem, QPushButton, QSizePolicy, QLineEdit
 from PyQt6.QtCore import Qt
 
+from src.project import Project
 from src.database.database import Database
 from src.tagging.tag_group import Tag, TagGroup
+from src.update_poller import UpdatePoller
 
 from PyQt6.QtCore import QTimer
 
 class TagWidget(QWidget):
-    def __init__(self, tag, database, parent=None):
+    def __init__(self, tag, database, update_poller: UpdatePoller, parent=None):
         super().__init__(parent)
         self.tag: Tag = tag
         self.db: Database = database
+        self.update_poller: UpdatePoller = update_poller
         
         # Create timer for debouncing
         self.write_timer = QTimer()
@@ -40,12 +43,15 @@ class TagWidget(QWidget):
         self.tag.name = self.line_edit.text()
         self.db.tags.update_tag(self.tag)
 
+        # Used to update the UI in the Tagging Page
+        self.update_poller.poll_update('update_tag_groups')
+
 class TagListItem(QListWidgetItem):
-    def __init__(self, tag, database, list_widget):
+    def __init__(self, tag, database, update_poller: UpdatePoller, list_widget):
         super().__init__(list_widget)
         self.tag = tag
 
-        widget = TagWidget(tag, database)
+        widget = TagWidget(tag, database, update_poller)
 
         list_widget.setItemWidget(self, widget)
 
@@ -66,10 +72,12 @@ class TagGroupWidget(QWidget):
         button.clicked.connect(self.on_button_clicked)
 
         required_button = QPushButton("R")
+        required_button.setFixedWidth(30)
         required_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
         min_tags_button = QPushButton(str(self.tag_group.min_tags))
         min_tags_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        min_tags_button.setFixedWidth(40)
         min_tags_button.setDisabled(True)
 
         self.main_layout.addWidget(button)
@@ -99,7 +107,9 @@ class TagGroupsSettings(QWidget):
         super().__init__()
         self.parent = parent
         self.db: Database = parent.db
-        self.active_project = parent.project
+        self.active_project: Project = parent.project
+        self.update_poller: UpdatePoller = parent.update_poller
+
         self.active_group = None
         self.setupUI()
 
@@ -152,8 +162,8 @@ class TagGroupsSettings(QWidget):
     def _setup_right_column(self):
         column_layout = QVBoxLayout()
 
-        tags_label = QLabel("Tags")
-        column_layout.addWidget(tags_label)
+        self.tags_label = QLabel("Tags")
+        column_layout.addWidget(self.tags_label)
 
         add_layout = QHBoxLayout()
         add_button = QPushButton("Add Tag")
@@ -191,13 +201,19 @@ class TagGroupsSettings(QWidget):
         group = TagGroup(group_id, self.active_project.id, name, self.tag_groups_list.count())
         self.tag_groups_list.addItem(TagGroupListItem(group, self.tag_groups_list, self.on_tag_group_clicked))
 
+        # Used to update the UI in the Tagging Page
+        self.update_poller.poll_update('update_tag_groups')
+
     def add_tag(self):
         if self.active_group is None:
             return
         name = self.add_tag_name_input.text()
         tag_id = self.db.tags.add_tag(name, self.active_group.id, self.tags_list.count())
         tag = Tag(tag_id, name, self.active_group.id)
-        self.tags_list.addItem(TagListItem(tag, self.db, self.tags_list))
+        self.tags_list.addItem(TagListItem(tag, self.db, self.update_poller, self.tags_list))
+
+        # Used to update the UI in the Tagging Page
+        self.update_poller.poll_update('update_tag_groups')
 
     def update_tag_group_order(self):
         """Update the order of tag groups in the database after drag and drop"""
@@ -214,6 +230,9 @@ class TagGroupsSettings(QWidget):
 
         self.db.tags.update_tag_group_order(new_order)
 
+        # Used to update the UI in the Tagging Page
+        self.update_poller.poll_update('update_tag_groups')
+
     def update_tag_order(self):
         """Update the order of tags in the database after drag and drop"""
         items: list[TagListItem] = []
@@ -229,6 +248,9 @@ class TagGroupsSettings(QWidget):
 
         self.db.tags.update_tag_order(new_order)
 
+        # Used to update the UI in the Tagging Page
+        self.update_poller.poll_update('update_tag_groups')
+
     def on_tag_group_clicked(self, group: TagGroup):
         if group.tags is None: 
             group.tags = []
@@ -237,4 +259,6 @@ class TagGroupsSettings(QWidget):
         self.active_group = group
 
         for tag in group.tags:
-            self.tags_list.addItem(TagListItem(tag, self.db, self.tags_list))
+            self.tags_list.addItem(TagListItem(tag, self.db, self.update_poller, self.tags_list))
+
+        self.tags_label.setText(f"Tags for \"{group.name}\"")

@@ -75,30 +75,50 @@ class KeybindHandler:
             for page in self.registered_pages.values():
                 page.apply_keybindings(self.current_bindings)
 
+    
+    def unregister_keybinding(self, action: str):
+        """Unregister a keybinding and remove it from all pages"""
+        if action in self.current_bindings:
+            # Remove from current bindings
+            del self.current_bindings[action]
+            
+            # Update all registered pages to remove this binding
+            for page in self.registered_pages.values():
+                page.remove_keybinding(action)
+
 class KeybindPage:
-    """Base class for pages that use keybindings"""
     def __init__(self, widget: QWidget):
         self.widget = widget
         self.shortcuts: Dict[str, QShortcut] = {}
-        self.button_bindings: Dict[str, QPushButton] = {}
+        self.button_bindings: Dict[str, Optional[QPushButton]] = {}  # Make buttons optional
         
-    def register_button_binding(self, action: str, button: QPushButton):
+
+    def register_button_binding(self, action: str, button: Optional[QPushButton] = None):
         """Register a button to be bound to a specific key action"""
         self.button_bindings[action] = button
-        
-    def unregister_button_binding(self, action: str):
-        if action in self.button_bindings:
-            del self.button_bindings[action]
+        # Reapply keybindings if the button is being set
+        if button is not None:
+            self.apply_keybindings({action: self.shortcuts.get(action)})
+    
 
     def apply_keybindings(self, bindings: Dict[str, str | int]):
         """Apply keybindings to this page's buttons"""
-        self._clear_shortcuts()
+        # Clear only the shortcuts we're updating
+        for action in bindings:
+            if action in self.shortcuts:
+                shortcut = self.shortcuts[action]
+                shortcut.setEnabled(False)
+                shortcut.deleteLater()
+                del self.shortcuts[action]
         
         for action, key in bindings.items():
-            if action in self.button_bindings:
+            if action in self.button_bindings and self.button_bindings[action] is not None:
                 button = self.button_bindings[action]
+                
+                # Skip if either button or key is None
+                if button is None or key is None:
+                    continue
 
-                # Create a function that captures the specific button
                 def create_click_handler(btn):
                     def handler():
                         if btn.isEnabled():
@@ -118,7 +138,26 @@ class KeybindPage:
                     )
                     alt_shortcut.activated.connect(create_click_handler(button))
                     self.shortcuts[f"alt_{action}"] = alt_shortcut
+
+
+    def remove_keybinding(self, action: str):
+        """Remove a specific keybinding"""
+        # Clear the shortcut if it exists
+        if action in self.shortcuts:
+            shortcut = self.shortcuts[action]
+            shortcut.setEnabled(False)
+            shortcut.deleteLater()
+            del self.shortcuts[action]
+            
+        # Also clear alt shortcut if it exists
+        alt_action = f"alt_{action}"
+        if alt_action in self.shortcuts:
+            alt_shortcut = self.shortcuts[alt_action]
+            alt_shortcut.setEnabled(False)
+            alt_shortcut.deleteLater()
+            del self.shortcuts[alt_action]
     
+
     def _clear_shortcuts(self):
         for shortcut in self.shortcuts.values():
             shortcut.setEnabled(False)

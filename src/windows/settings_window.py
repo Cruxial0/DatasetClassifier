@@ -12,6 +12,7 @@ from src.project import Project
 from src.score_presets import get_preset, get_preset_list
 from src.config_handler import ConfigHandler
 from src.windows.settings_pages.tag_groups_settings import TagGroupsSettings
+from src.update_poller import UpdatePoller
 
 class ColorButton(QPushButton):
     def __init__(self, color=QColor):
@@ -73,7 +74,7 @@ class KeybindWidget(QPushButton):
         self.is_capturing = True
 
 class SettingsWindow(QMainWindow):
-    def __init__(self, config: ConfigHandler, database: Database, page: str = None, project: Project = None, ):
+    def __init__(self, config: ConfigHandler, parent, page: str = None):
         super().__init__()
 
         self.scoring_updated_callback = None
@@ -84,8 +85,9 @@ class SettingsWindow(QMainWindow):
         self.setWindowTitle("Settings")
         self.setMinimumSize(800, 600)
         
-        self.db = database
-        self.project = project
+        self.db: Database = parent.db
+        self.project: Database = parent.active_project
+        self.update_poller: UpdatePoller = parent.update_poller
         
         # Create main widget and layout
         main_widget = QWidget()
