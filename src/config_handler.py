@@ -38,6 +38,7 @@ default_keybinds = {
 
 default_export_options = {
     "export_captions": False,
+    "caption_format": ".txt",
     "seperate_by_score": False,
     "delete_images": False
 }

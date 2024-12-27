@@ -172,3 +172,22 @@ class TagQueries:
         cursor.execute("DELETE FROM image_tags WHERE image_id = ? AND tag_id = ?", (image_id, tag_id))
         self.db.commit()
         cursor.close()
+
+    def get_image_tags(self, image_id: int) -> list[int]:
+        cursor = self.db.cursor()
+        cursor.execute("SELECT tag_id FROM image_tags WHERE image_id = ?", (image_id,))
+        return [row[0] for row in cursor.fetchall()]
+    
+    def get_tags_from_ids(self, tag_id: list[int]) -> list[tuple[int, int, str, int, int]]:
+        """Returns a list of tuples of tag_id and tag_name for the given list of tag_ids."""
+        cursor = self.db.cursor()
+        # Get the following values from the tags table: tag_id, group_id, tag_name, display_order
+        # Aditionally, get the display_order from the tag_groups table
+        cursor.execute(
+            """
+            SELECT tags.tag_id, tags.group_id, tags.tag_name, tags.display_order, tag_groups.display_order
+            FROM tags
+            JOIN tag_groups ON tags.group_id = tag_groups.group_id
+            WHERE tags.tag_id IN ({})
+            """.format(','.join('?' * len(tag_id))), tag_id)
+        return cursor.fetchall()

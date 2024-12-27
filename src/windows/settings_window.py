@@ -168,26 +168,31 @@ class SettingsWindow(QMainWindow):
         seperate_by_score = QCheckBox("Seperate by score")
         delete_images = QCheckBox("Delete images from source directory")
         
+        caption_format_layout = QHBoxLayout()
+        caption_format_layout.addWidget(QLabel("Export format:"))
+        caption_format = QComboBox()
+        caption_format.addItems(['.txt', '.caption'])
+        caption_format.setCurrentText(self.config.get_value('export_options.caption_format'))
+        caption_format_layout.addWidget(caption_format)
+
         export_caption.setChecked(self.config.get_export_option('export_captions'))
         seperate_by_score.setChecked(self.config.get_export_option('seperate_by_score'))
         delete_images.setChecked(self.config.get_export_option('delete_images'))
 
-        export_caption.stateChanged.connect(lambda state: self.update_export_option(state, 'export_captions'))
-        seperate_by_score.stateChanged.connect(lambda state: self.update_export_option(state, 'seperate_by_score'))
-        delete_images.stateChanged.connect(lambda state: self.update_export_option(state, 'delete_images'))
+        export_caption.checkStateChanged.connect(lambda state: self.update_export_option((state.value > 0), 'export_captions'))
+        caption_format.currentTextChanged.connect(lambda text: self.update_export_option(text, 'caption_format'))
+        seperate_by_score.checkStateChanged.connect(lambda state: self.update_export_option((state.value > 0), 'seperate_by_score'))
+        delete_images.checkStateChanged.connect(lambda state: self.update_export_option((state.value > 0), 'delete_images'))
 
         layout.addWidget(export_caption)
+        layout.addLayout(caption_format_layout)
         layout.addWidget(seperate_by_score)
         layout.addWidget(delete_images)
         layout.addStretch()
         return page
 
-    def update_export_option(self, state, key):
-        if state == Qt.CheckState.Checked.value:
-            self.config.set_export_option(key, True)
-        elif state == Qt.CheckState.Unchecked.value:
-            self.config.set_export_option(key, False)
-        
+    def update_export_option(self, value, key):
+        self.config.set_value(f'export_options.{key}', value)
         self.config.save_config()
 
     def create_keybinds_page(self):

@@ -7,50 +7,17 @@ from pathlib import Path
 import shutil
 from typing import List, Set, Self
 
+from src.caption_handler import CaptionHandler
+from src.database.database import Database
+from src.export_image import ExportImage
 from src.config_handler import ConfigHandler
-
-@dataclass
-class ExportRule:
-    categories: Set[str]
-    destination: str
-    priority: int
-
-    def match(self, categories: Set[str]) -> bool:
-        if self.categories is None:
-            return True
-        return self.categories.issubset(categories)
-
-
-@dataclass
-class Image:
-    id: int
-    source_path: str
-    dest_path: str
-    score: str
-    categories: List[str]
-
-    def apply_rule(self, rule: ExportRule, output_dir, seperate_by_score: bool, config: ConfigHandler) -> Self:
-        
-        return Image(
-            id=self.id,
-            source_path=self.source_path,
-            dest_path=self.create_path(rule, output_dir, seperate_by_score, config),
-            score=self.score,
-            categories=self.categories
-        )
-    
-    def create_path(self, rule: ExportRule, output_dir, seperate_by_score: bool, config: ConfigHandler) -> str:
-        filename = Path(self.source_path).name
-        _, scores = config.get_scores()
-        if seperate_by_score:
-            return path.abspath(path.join(output_dir, scores[self.score], rule.destination, filename))
-        else:
-            return path.abspath(path.join(output_dir, rule.destination, filename))
     
 
 class Exporter:
-    def __init__(self, data, config: ConfigHandler):
+    def __init__(self, data, database: Database, config: ConfigHandler):
         self.config = config
+        self.caption_handler = CaptionHandler(database, config)
+
         self.output_dir = data['output_directory']
         self.export_rules = data['rules']
         self.scores = data['scores']
@@ -60,7 +27,7 @@ class Exporter:
         self.export_images = []
         self.failed_exports = 0
 
-    def process_export(self, images: List[Image]) -> dict[str, int]:
+    def process_export(self, images: List[ExportImage]) -> dict[str, int]:
         self.export_images = self.process_images(images)
 
         found_dirs = dict()
@@ -78,7 +45,7 @@ class Exporter:
 
         return found_dirs
 
-    def process_images(self, images: List[Image]) -> List[Image]:
+    def process_images(self, images: List[ExportImage]) -> List[ExportImage]:
         output = []
         for img in images:
             if not img.score in self.scores:
@@ -99,20 +66,11 @@ class Exporter:
             
             if not self.export_captions:
                 continue
-                
-            # Handle caption/txt files
-            source_stem = os.path.splitext(img.source_path)[0]
-            dest_stem = os.path.splitext(img.dest_path)[0]
             
-            caption_extensions = ['.caption', '.txt']
-            
-            for ext in caption_extensions:
-                source_caption = Path(f"{source_stem}{ext}")
-                dest_caption = Path(f"{dest_stem}{ext}")
-                if source_caption.exists():
-                    shutil.copy(source_caption, dest_caption)
-                    if self.delete_images:
-                        os.remove(source_caption)
+            # Collect captions
+            self.caption_handler.collect_image_captions(img)
+
+        self.caption_handler.write_image_captions()
     
     def clean_output_dir(self):
         # Sourced from https://stackoverflow.com/a/185941
@@ -127,9 +85,9 @@ class Exporter:
                 print('Failed to delete %s. Reason: %s' % (file_path, e))
 
     def output_dir_empty(self) -> bool:
-        return os.listdir(self.output_dir) == 0
+        return len(os.listdir(self.output_dir)) == 0
 
-    def match_rule(self, image: Image) -> Image:
+    def match_rule(self, image: ExportImage) -> ExportImage:
         for rule in sorted(self.export_rules, key=lambda x: x.priority, reverse=True):
             if not rule.match(set(image.categories)): continue
             return image.apply_rule(rule, self.output_dir, self.seperate_by_score, self.config)
