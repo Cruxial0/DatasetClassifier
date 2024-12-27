@@ -270,6 +270,8 @@ class TaggingPage(QWidget):
             btn_layout = self.create_tag_button(tag)
             self.tag_buttons_layout.addLayout(btn_layout)
 
+        self.keybind_handler.register_page("tagging", self.keybind_page)
+
     def next_group(self):
         if self.tag_groups is None or len(self.tag_groups) < 1 or self.current_group is None:
             return
