@@ -1,5 +1,6 @@
 from typing import Literal, Any, Optional
 import yaml
+import os
 
 from src.score_presets import get_preset
 
@@ -31,13 +32,13 @@ default_keybinds = {
     "key_9": ";",
     "discard": "BACKSPACE",
     "continue": "Return",
-    "image_next": "Right",
-    "image_previous": "Left",
+    "next_image": "Right",
+    "previous_image": "Left",
     "blur": "Space"
 }
 
 default_export_options = {
-    "export_captions": False,
+    "export_captions": True,
     "caption_format": ".txt",
     "seperate_by_score": False,
     "delete_images": False
@@ -73,11 +74,27 @@ class ConfigHandler:
         self.config = self.load_config()
 
     def load_config(self):
+        """Load config from file or create new one with defaults if it doesn't exist"""
+        if not os.path.exists(self.config_file):
+            # Create new config file with default values
+            self._create_default_config()
+        
         try:
             with open(self.config_file, 'r') as f:
-                return yaml.safe_load(f) or {}
-        except FileNotFoundError:
+                loaded_config = yaml.safe_load(f)
+                return loaded_config if loaded_config is not None else {}
+        except Exception as e:
+            print(f"Error loading config file: {e}")
             return {}
+
+    def _create_default_config(self):
+        """Create a new config file with default values"""
+        try:
+            with open(self.config_file, 'w') as f:
+                yaml.dump(DEFAULT_VALUES, f, sort_keys=False)
+            print(f"Created new config file with default values at: {self.config_file}")
+        except Exception as e:
+            print(f"Error creating default config file: {e}")
 
     def get_value(self, path: str) -> Any:
         """Get a value from config using dot notation with fallback to defaults"""
@@ -171,4 +188,4 @@ class ConfigHandler:
 
     def save_config(self):
         with open(self.config_file, 'w') as f:
-            yaml.dump(self.config, f)
+            yaml.dump(self.config, f, sort_keys=False)
