@@ -25,6 +25,13 @@ class ExportImage:
     dest_path: str
     score: str
     categories: List[str]
+    
+    def __init__(self, id: int, source_path: str, dest_path: str, score: str, categories: List[str]):
+        self.id = id
+        self.source_path = source_path
+        self.dest_path = dest_path
+        self.score = score
+        self.categories = categories
 
     def apply_rule(self, rule: ExportRule, output_dir, seperate_by_score: bool, config: ConfigHandler) -> Self:
         

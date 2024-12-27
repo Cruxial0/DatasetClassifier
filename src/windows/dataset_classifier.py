@@ -1,4 +1,6 @@
-from PyQt6.QtWidgets import (QHBoxLayout, QMainWindow, QWidget, QStackedWidget)
+import subprocess
+from PyQt6.QtWidgets import (QHBoxLayout, QMainWindow, QWidget, QStackedWidget, QMessageBox)
+from src.export import Exporter
 from src.pages.tagging_page import TaggingPage
 from src.pages.scoring_page import ScoringPage
 from src.project_utils import load_project_from_id
@@ -75,7 +77,7 @@ class DatasetClassifier(QMainWindow):
 
         # self.hide_scored_action.triggered.connect(self.toggle_hide_scored_images)
         # self.auto_scroll_on_scoring_action.triggered.connect(self.toggle_auto_scroll_on_scoring)
-        # self.export_action.triggered.connect(self.open_export_window)
+        self.export_action.triggered.connect(self.open_export_window)
         self.settings_action.triggered.connect(self.open_settings_window)
 
     def setup_stacked_widget(self):
@@ -119,3 +121,31 @@ class DatasetClassifier(QMainWindow):
     def open_settings_window(self, page: str = None):
         settings_window = SettingsWindow(self.config_handler, self, page)
         settings_window.show()
+
+    def open_export_window(self):
+        self.export_popup = ExportPopup(self.export_callback, self.db.images.get_unique_categories(self.active_project.id), self.config_handler)
+        self.export_popup.show()
+
+    # Callbacks
+
+    def export_callback(self, data):
+        exporter = Exporter(data, self.db, self.config_handler)
+        
+        summary = f"Export path: {exporter.output_dir}"
+        for key, value in exporter.process_export(self.db.images.get_export_images(self.active_project.id)).items():
+            summary += f"\n - {value} images exported to '{key}'"
+
+        confirm = QMessageBox.question(self, 'Export summary', 
+                                         f"{summary}\n\nConfirm?",
+                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
+                                         QMessageBox.StandardButton.No)
+        
+        if confirm == QMessageBox.StandardButton.Yes:
+            dir_confirm = QMessageBox.question(self, 'Confirm deleting directory', 
+                                 'All files in the output directory will be deleted.\n\nConfirm?',
+                                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
+                                 QMessageBox.StandardButton.No)
+            if dir_confirm == QMessageBox.StandardButton.Yes:
+                exporter.export()
+                QMessageBox.information(self, "Workspace", "The workspace has been exported.")
+                subprocess.Popen(f'explorer "{exporter.output_dir.replace('//', '\\').replace('/', '\\')}"')

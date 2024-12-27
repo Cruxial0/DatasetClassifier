@@ -1,6 +1,8 @@
 import json
 from sqlite3 import Connection
 
+from src.export_image import ExportImage
+
 
 class ImageQueries:
     def __init__(self, conn: Connection):
@@ -123,3 +125,17 @@ class ImageQueries:
         cursor = self.conn.cursor()
         cursor.executemany("INSERT INTO images (source_path, project_id) VALUES (?, ?)", [(source_path, project_id) for source_path in source_paths])
         self.conn.commit()
+
+    def get_export_images(self, project_id: int) -> list[ExportImage]:
+        cursor = self.conn.cursor()
+
+        # Need images.image_id, images.source_path, scores.score, scores.categories
+        query = """
+        SELECT images.image_id, images.source_path, scores.score, scores.categories
+        FROM images
+        LEFT JOIN scores ON images.image_id = scores.image_id
+        WHERE images.project_id = ?
+        """
+
+        result = cursor.execute(query, (project_id,)).fetchall()
+        return [ExportImage(id=row[0], source_path=row[1], dest_path=None, score=row[2], categories=json.loads(row[3])) for row in result]
