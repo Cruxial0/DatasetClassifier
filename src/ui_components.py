@@ -115,14 +115,9 @@ class UIComponents:
         write_to_filesystem.setToolTip('If true, instantly reflects any changes in the output directory by copying and moving images around.\nUses 100-1000+ times more storage space.')
         export = QAction('Export')
         settings = QAction('Settings')
-        project_new = QAction('New Project')
-        project_edit = QAction('Edit Project')
-        project_edit.setEnabled(False)
-        project_migrate = QAction('Migrate Legacy Project')
 
         menu_button = QPushButton("Swtich Mode")
         menu_button.setFixedSize(100, 25)  # Adjust size as needed
 
         return (hide_scored_action, treat_categories_as_scoring_action, 
-                auto_scroll_on_scoring_action, export, write_to_filesystem, settings,
-                project_new, project_edit, project_migrate, menu_button)
+                auto_scroll_on_scoring_action, export, write_to_filesystem, settings, menu_button)

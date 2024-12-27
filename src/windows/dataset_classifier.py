@@ -50,17 +50,15 @@ class DatasetClassifier(QMainWindow):
     def create_menu_bar(self):
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu('File')
-        project_menu = menu_bar.addMenu('Project')
         view_menu = menu_bar.addMenu('View')
         options_menu = menu_bar.addMenu('Options')
 
         file_menu.setToolTipsVisible(True)
-        project_menu.setToolTipsVisible(True)
         view_menu.setToolTipsVisible(True)
         options_menu.setToolTipsVisible(True)
 
         actions = UIComponents.create_menu_actions(self.config_handler)
-        self.hide_scored_action, self.treat_categories_as_scoring_action, self.auto_scroll_on_scoring_action, self.export_action, self.write_to_filesystem_action, self.settings_action, self.project_new_action, self.project_edit_action, self.project_migrate_action, self.menu_button = actions  
+        self.hide_scored_action, self.treat_categories_as_scoring_action, self.auto_scroll_on_scoring_action, self.export_action, self.write_to_filesystem_action, self.settings_action, self.menu_button = actions  
 
         button_widget = QWidget()
         layout = QHBoxLayout(button_widget)
@@ -71,9 +69,6 @@ class DatasetClassifier(QMainWindow):
 
         file_menu.addAction(self.export_action)
         file_menu.addAction(self.settings_action)
-        project_menu.addAction(self.project_new_action)
-        project_menu.addAction(self.project_edit_action)
-        project_menu.addAction(self.project_migrate_action)
         view_menu.addAction(self.hide_scored_action)
         # options_menu.addAction(self.treat_categories_as_scoring_action)
         options_menu.addAction(self.auto_scroll_on_scoring_action)
