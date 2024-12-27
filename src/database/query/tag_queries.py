@@ -191,3 +191,8 @@ class TagQueries:
             WHERE tags.tag_id IN ({})
             """.format(','.join('?' * len(tag_id))), tag_id)
         return cursor.fetchall()
+    
+    def get_image_tag_count(self, image_id: int) -> int:
+        cursor = self.db.cursor()
+        cursor.execute("SELECT COUNT(*) FROM image_tags WHERE image_id = ?", (image_id,))
+        return cursor.fetchone()[0]

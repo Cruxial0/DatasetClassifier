@@ -13,6 +13,7 @@ from src.database.database import Database
 from src.update_poller import UpdatePoller
 from src.tagging.tag_group import Tag, TagGroup
 from src.utils import key_to_unicode
+from src.widgets.tag_status_widget import TagStatusWidget
 
 class TaggingPage(QWidget):
     def __init__(self, parent):
@@ -39,6 +40,9 @@ class TaggingPage(QWidget):
 
         self.load_images()
         self.update_button_colors()
+
+        self.image_tags: list[int] = self.db.tags.get_image_tags(self.current_image_id)
+        self.status_widget.check_group_conditions(self.image_tags)
 
         # Used in the settings window when updating tags
         self.update_poller.add_method('update_tag_groups', self.update_tag_groups)
@@ -105,25 +109,27 @@ class TaggingPage(QWidget):
         # Headers
         header_layout = QHBoxLayout()
         header_layout.setContentsMargins(7, 0, 7, 0)
-        self.tag_group_label = QLabel("TAG_GROUP")
-        self.tag_group_label.setAlignment(Qt.AlignmentFlag.AlignVCenter)
-        self.score_label = QLabel("SCORE")
-        self.tag_group_label.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+        # self.tag_group_label = QLabel("TAG_GROUP")
+        # self.tag_group_label.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+        # self.score_label = QLabel("SCORE")
+        # self.tag_group_label.setAlignment(Qt.AlignmentFlag.AlignVCenter)
         
-        self.score_label = QLabel("SCORE")
-        self.score_label.setStyleSheet(f"""
-            QLabel {{
-                background-color: {self.config_handler.get_color('accent_color')};
-                color: white;
-                padding: 5px 10px;
-                border-radius: 8px;
-                font-weight: bold;
-            }}
-        """)
+        # self.score_label = QLabel("SCORE")
+        # self.score_label.setStyleSheet(f"""
+        #     QLabel {{
+        #         background-color: {self.config_handler.get_color('accent_color')};
+        #         color: white;
+        #         padding: 5px 10px;
+        #         border-radius: 8px;
+        #         font-weight: bold;
+        #     }}
+        # """)
 
-        header_layout.addWidget(self.tag_group_label)
-        header_layout.addStretch(1)
-        header_layout.addWidget(self.score_label)
+        # header_layout.addWidget(self.tag_group_label)
+        # header_layout.addStretch(1)
+        # header_layout.addWidget(self.score_label)
+        self.status_widget = TagStatusWidget(self)
+        header_layout.addWidget(self.status_widget)
 
         # Tags
         self.tags_layout = QVBoxLayout()
@@ -183,9 +189,14 @@ class TaggingPage(QWidget):
 
         if self.db.tags.image_has_tag(self.current_image_id, tag_id):
             self.db.tags.delete_image_tag(self.current_image_id, tag_id)
+            if tag_id in self.image_tags:
+                self.image_tags.remove(tag_id)
         else:
             self.db.tags.add_image_tag(self.current_image_id, tag_id)
+            if tag_id not in self.image_tags:
+                self.image_tags.append(tag_id)
         
+        self.status_widget.check_group_conditions(self.image_tags)
         self.update_button_colors()
 
     def update_button_colors(self):
@@ -256,10 +267,11 @@ class TaggingPage(QWidget):
                 return
 
             self.current_group = self.tag_groups[0]
+            self.status_widget.set_tag_groups(self.tag_groups)
         
         # Update label to tag group name
-        self.tag_group_label.setText(self.current_group.name)
-        self.tag_group_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+        # self.tag_group_label.setText(self.current_group.name)
+        # self.tag_group_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
 
         if self.current_group.tags is None:
             self.current_group.tags = []
@@ -275,27 +287,30 @@ class TaggingPage(QWidget):
             btn_layout = self.create_tag_button(tag)
             self.tag_buttons_layout.addLayout(btn_layout)
 
+        self.status_widget.set_active_group(self.current_group.order)
         self.keybind_handler.register_page("tagging", self.keybind_page)
 
     def next_group(self):
+        print(f"---- NEXT GROUP START ----")
         if self.tag_groups is None or len(self.tag_groups) < 1 or self.current_group is None:
             return
 
         if self.current_group.order + 1 >= len(self.tag_groups):
             # check if there are more images
-            if not self.image_handler.load_next_image():
+            if not self.load_next_image():
                 return
-            
-            self.load_next_image()
-
-            self.current_group = self.tag_groups[0]
-            self.update_tag_groups(skip_update=True)
+            print(f"Next image: {self.image_handler.current_image_id}")
             return
         
+        print(f"Current group: {self.current_group.name} ({self.current_group.order}/{len(self.tag_groups)})")
         index = self.current_group.order + 1
         self.current_group = self.tag_groups[index]
 
+        
         self.update_tag_groups(skip_update=True)
+        print(f"Next group: {self.current_group.name} ({index}/{len(self.tag_groups)})")
+
+        print(f"---- NEXT GROUP START ----")
 
     def display_image(self):
         """Optimized image display"""
@@ -358,15 +373,29 @@ class TaggingPage(QWidget):
             self.update_progress()
             self.display_image()
 
-    def load_next_image(self):
+    def load_next_image(self) -> bool:
         if self.image_handler.load_next_image():
             self.display_image()
-            self.update_button_colors()
 
-    def load_previous_image(self):
+            self.current_group = self.tag_groups[0]
+            self.update_tag_groups(skip_update=True)
+
+            self.update_button_colors()
+            self.update_progress()
+            return True
+        return False
+
+    def load_previous_image(self) -> bool:
         if self.image_handler.load_previous_image():
             self.display_image()
+
+            self.current_group = self.tag_groups[0]
+            self.update_tag_groups(skip_update=True)
+
             self.update_button_colors()
+            self.update_progress()
+            return True
+        return False
 
     def update_progress(self):
         """Update the progress bar and label"""
@@ -380,7 +409,7 @@ class TaggingPage(QWidget):
             image_path = self.image_handler.get_current_image_path()
             if image_path:
                 current_score, _ = self.image_handler.get_score(image_path)
-                self.score_label.setText(self.config_handler.get_score(current_score))
+                self.status_widget.update_score(self.config_handler.get_score(current_score))
 
     def _clear_layout(self, layout):
         while layout.count():
