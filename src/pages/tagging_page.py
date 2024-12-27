@@ -182,10 +182,8 @@ class TaggingPage(QWidget):
             return
 
         if self.db.tags.image_has_tag(self.current_image_id, tag_id):
-            print(f"Removing tag: {tag_id}")
             self.db.tags.delete_image_tag(self.current_image_id, tag_id)
         else:
-            print(f"Adding tag: {tag_id}")
             self.db.tags.add_image_tag(self.current_image_id, tag_id)
         
         self.update_button_colors()
