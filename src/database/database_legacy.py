@@ -3,7 +3,7 @@ from pathlib import Path
 import sqlite3
 from typing import List
 
-from src.export import Image
+from src.export_image import ExportImage
 
 class LegacyDatabase:
     def __init__(self, db_path='db/image_scores.db'):
@@ -142,7 +142,7 @@ class LegacyDatabase:
         
         return list(unique_categories)
     
-    def get_all_images(self) -> List[Image]:
+    def get_all_images(self) -> List[ExportImage]:
         self.cursor.execute('SELECT id, source_path, dest_path, score, categories FROM scores')
         rows = self.cursor.fetchall()
 
@@ -150,7 +150,7 @@ class LegacyDatabase:
         for row in rows:
             image_id, source_path, dest_path, score, categories_json = row
             categories = json.loads(categories_json)
-            images.append(Image(
+            images.append(ExportImage(
                 id=image_id,
                 source_path=source_path.replace('/', '\\'),
                 dest_path=dest_path.replace('/', '\\'),

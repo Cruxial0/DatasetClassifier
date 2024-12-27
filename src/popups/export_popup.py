@@ -7,8 +7,8 @@ from PyQt6.QtCore import Qt, QMimeData, QPoint, pyqtSignal
 from PyQt6.QtGui import QDrag, QPalette, QColor
 from pyqt6_multiselect_combobox import MultiSelectComboBox
 
+from src.export_image import ExportRule
 from src.config_handler import ConfigHandler
-from src.export import ExportRule
 
 class RuleComponent(QWidget):
     deleteRequested = pyqtSignal(object)
@@ -82,7 +82,7 @@ class RuleComponent(QWidget):
         self.setAutoFillBackground(highlight)
 
 class ExportPopup(QWidget):
-    def __init__(self, export_callback, categories, config: ConfigHandler):
+    def __init__(self, export_callback: callable, categories, config: ConfigHandler):
         super().__init__()
         self.categories = categories
         self.export_callback = export_callback

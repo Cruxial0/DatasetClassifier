@@ -4,7 +4,7 @@ import sys
 from typing import Literal
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                             QHBoxLayout, QLabel, QCheckBox, QPushButton, 
-                            QStackedWidget, QComboBox, QColorDialog)
+                            QStackedWidget, QComboBox, QColorDialog, QSpinBox)
 from PyQt6.QtCore import Qt, QEvent, pyqtSignal
 from PyQt6.QtGui import QColor, QKeySequence
 from src.database.database import Database
@@ -12,6 +12,7 @@ from src.project import Project
 from src.score_presets import get_preset, get_preset_list
 from src.config_handler import ConfigHandler
 from src.windows.settings_pages.tag_groups_settings import TagGroupsSettings
+from src.update_poller import UpdatePoller
 
 class ColorButton(QPushButton):
     def __init__(self, color=QColor):
@@ -73,7 +74,7 @@ class KeybindWidget(QPushButton):
         self.is_capturing = True
 
 class SettingsWindow(QMainWindow):
-    def __init__(self, config: ConfigHandler, database: Database, page: str = None, project: Project = None, ):
+    def __init__(self, config: ConfigHandler, parent, page: str = None):
         super().__init__()
 
         self.scoring_updated_callback = None
@@ -84,8 +85,9 @@ class SettingsWindow(QMainWindow):
         self.setWindowTitle("Settings")
         self.setMinimumSize(800, 600)
         
-        self.db = database
-        self.project = project
+        self.db: Database = parent.db
+        self.project: Database = parent.active_project
+        self.update_poller: UpdatePoller = parent.update_poller
         
         # Create main widget and layout
         main_widget = QWidget()
@@ -103,20 +105,22 @@ class SettingsWindow(QMainWindow):
         
         # Add navigation buttons and corresponding pages
         self.pages = {
-            "Export": self.create_export_page(),
-            "Keybinds": self.create_keybinds_page(),
-            "Colors": self.create_colors_page(),
-            "Scoring": self.create_scoring_page(),
-            "Tag Groups": TagGroupsSettings(self)
+            "export": self.create_export_page(),
+            "keybinds": self.create_keybinds_page(),
+            "colors": self.create_colors_page(),
+            "scoring": self.create_scoring_page(),
+            "privacy": self.create_privacy_page(),
+            "tag_groups": TagGroupsSettings(self)
         }
         
-        for name, page in self.pages.items():
-            btn = QPushButton(name)
+        for name, p in self.pages.items():
+            # convert name from snake_case to Title Case
+            btn = QPushButton(name.replace('_', ' ').title())
             btn.setCheckable(True)
             btn.setFixedHeight(40)
             btn.clicked.connect(lambda checked, n=name: self.switch_page(n))
             nav_layout.addWidget(btn)
-            self.content_stack.addWidget(page)
+            self.content_stack.addWidget(p)
         
         nav_layout.addStretch()
         
@@ -124,6 +128,10 @@ class SettingsWindow(QMainWindow):
         layout.addWidget(nav_widget)
         layout.addWidget(self.content_stack)
         
+        if page:
+            self.switch_page(page)
+            return
+
         # Select first page by default
         first_button = nav_widget.findChild(QPushButton)
         if first_button:
@@ -137,11 +145,14 @@ class SettingsWindow(QMainWindow):
         elif callback_type == 'keybinds':
             self.keybinds_updated_callback = callback
 
-    def switch_page(self, page_name):
+    def switch_page(self, page_name: str):
+
+        # convert page_name to snake_case
+        page_name = page_name.replace(' ', '_').lower()
         # Uncheck all buttons except the clicked one
         nav_buttons = self.findChildren(QPushButton)
         for button in nav_buttons:
-            if button.text() == page_name:
+            if button.text().replace(' ', '_').lower() == page_name:
                 button.setChecked(True)
             else:
                 button.setChecked(False)
@@ -157,26 +168,31 @@ class SettingsWindow(QMainWindow):
         seperate_by_score = QCheckBox("Seperate by score")
         delete_images = QCheckBox("Delete images from source directory")
         
+        caption_format_layout = QHBoxLayout()
+        caption_format_layout.addWidget(QLabel("Export format:"))
+        caption_format = QComboBox()
+        caption_format.addItems(['.txt', '.caption'])
+        caption_format.setCurrentText(self.config.get_value('export_options.caption_format'))
+        caption_format_layout.addWidget(caption_format)
+
         export_caption.setChecked(self.config.get_export_option('export_captions'))
         seperate_by_score.setChecked(self.config.get_export_option('seperate_by_score'))
         delete_images.setChecked(self.config.get_export_option('delete_images'))
 
-        export_caption.stateChanged.connect(lambda state: self.update_export_option(state, 'export_captions'))
-        seperate_by_score.stateChanged.connect(lambda state: self.update_export_option(state, 'seperate_by_score'))
-        delete_images.stateChanged.connect(lambda state: self.update_export_option(state, 'delete_images'))
+        export_caption.checkStateChanged.connect(lambda state: self.update_export_option((state.value > 0), 'export_captions'))
+        caption_format.currentTextChanged.connect(lambda text: self.update_export_option(text, 'caption_format'))
+        seperate_by_score.checkStateChanged.connect(lambda state: self.update_export_option((state.value > 0), 'seperate_by_score'))
+        delete_images.checkStateChanged.connect(lambda state: self.update_export_option((state.value > 0), 'delete_images'))
 
         layout.addWidget(export_caption)
+        layout.addLayout(caption_format_layout)
         layout.addWidget(seperate_by_score)
         layout.addWidget(delete_images)
         layout.addStretch()
         return page
 
-    def update_export_option(self, state, key):
-        if state == Qt.CheckState.Checked.value:
-            self.config.set_export_option(key, True)
-        elif state == Qt.CheckState.Unchecked.value:
-            self.config.set_export_option(key, False)
-        
+    def update_export_option(self, value, key):
+        self.config.set_value(f'export_options.{key}', value)
         self.config.save_config()
 
     def create_keybinds_page(self):
@@ -194,9 +210,11 @@ class SettingsWindow(QMainWindow):
             "Key 8": loaded_keybinds['key_7'], 
             "Key 9": loaded_keybinds['key_8'], 
             "Key 10": loaded_keybinds['key_9'],
+            "Continue": loaded_keybinds['continue'],
             "Discard": loaded_keybinds['discard'], 
-            "Next Image": loaded_keybinds['image_next'], 
-            "Previous Image": loaded_keybinds['image_previous']
+            "Next Image": loaded_keybinds['next_image'], 
+            "Previous Image": loaded_keybinds['previous_image'],
+            "Blur": loaded_keybinds['blur']
         }
         
         for key, value in keybinds.items():
@@ -227,7 +245,7 @@ class SettingsWindow(QMainWindow):
             self.keybinds_updated_callback()
 
         # Update the UI
-        for row in self.pages["Keybinds"].findChildren(QHBoxLayout):
+        for row in self.pages["keybinds"].findChildren(QHBoxLayout):
             label = row.itemAt(0).widget()
             if label.text() == key_name:
                 keybind_widget = row.itemAt(1).widget()
@@ -302,6 +320,38 @@ class SettingsWindow(QMainWindow):
         # Connect combo box signal to update button names
         preset_combo.currentTextChanged.connect(lambda text: self.update_button_names(text, True))
         
+        return page
+    
+    def create_privacy_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        
+        # Create a row with a label and a SpinBox
+        row = QHBoxLayout()
+        label = QLabel("Blur Strength")
+        label.setFixedWidth(100)
+
+        blur_strength = QSpinBox()
+        blur_strength.setRange(0, 100)
+        blur_strength.setValue(self.config.get_value('privacy.blur_strength'))
+        blur_strength.setFixedWidth(100)
+
+        info_label = QLabel("(0-100) (requires restart)")
+        info_label.setFixedWidth(150)
+
+        row.addWidget(label)
+        row.addWidget(blur_strength)
+        row.addWidget(info_label)
+        row.addStretch() 
+        layout.addLayout(row)
+    
+        def update_blur_strength(value):
+            self.config.set_value('privacy.blur_strength', value)
+            self.config.save_config()
+
+        blur_strength.valueChanged.connect(update_blur_strength)
+        
+        layout.addStretch()
         return page
 
     def update_button_names(self, preset_name, save=False):

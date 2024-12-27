@@ -30,12 +30,15 @@ default_keybinds = {
     "key_8": "L",
     "key_9": ";",
     "discard": "BACKSPACE",
+    "continue": "Return",
     "image_next": "Right",
-    "image_previous": "Left"
+    "image_previous": "Left",
+    "blur": "Space"
 }
 
 default_export_options = {
     "export_captions": False,
+    "caption_format": ".txt",
     "seperate_by_score": False,
     "delete_images": False
 }
@@ -50,13 +53,18 @@ default_scores = {
     "score_5": "score_4_up"
 }
 
+default_privacy = {
+    "blur_strength": 35
+}
+
 # Combined defaults for get_value lookup
 DEFAULT_VALUES = {
     "colors": default_colors,
     "options": default_options,
     "keybindings": default_keybinds,
     "export_options": default_export_options,
-    "scores": default_scores
+    "scores": default_scores,
+    "privacy": default_privacy
 }
 
 class ConfigHandler:

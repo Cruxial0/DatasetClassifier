@@ -31,17 +31,23 @@ class ImageHandler:
         self.score_cache = {}  # Cache for image scores
         self.cache_size = 100  # Number of items to keep in cache
         
+
     def set_db(self, db: Database):
         """Update the database instance."""
         self.db = db
         
+
     def set_output_folder(self, folder: str):
         """Set the output folder for scored images."""
         self.output_folder = folder
 
-    def load_images(self, project_id: int, hide_scored_images: bool = False):
+
+    def load_images(self, project_id: int, hide_scored_images: bool = False, get_scored_only: bool = False):
         """Load images with optimized database query"""
         self.current_project_id = project_id
+
+        if hide_scored_images and get_scored_only:
+            raise ValueError("Cannot hide scored images and get only scored images at the same time.")
         
         # Get image IDs and paths in a single query
         if hide_scored_images:
@@ -51,6 +57,17 @@ class ImageHandler:
                 LEFT JOIN scores s ON i.image_id = s.image_id AND i.project_id = s.project_id
                 WHERE i.project_id = ? 
                 AND s.image_id IS NULL
+                ORDER BY i.image_id
+            """
+        elif get_scored_only:
+            query = """
+                SELECT DISTINCT i.image_id, i.source_path, s.score, s.categories 
+                FROM images i 
+                LEFT JOIN scores s ON i.image_id = s.image_id AND i.project_id = s.project_id
+                WHERE i.project_id = ? 
+                AND s.image_id IS NOT NULL
+                AND s.score IS NOT NULL
+                AND s.score != 'discard'
                 ORDER BY i.image_id
             """
         else:
@@ -121,6 +138,7 @@ class ImageHandler:
             return None
         return self.path_cache.get(self.current_image_id)
 
+
     def get_current_image(self) -> QPixmap | None:
         """Get image with cache priority"""
         if not self.current_image_id:
@@ -142,6 +160,7 @@ class ImageHandler:
                 print(f"Error loading image: {e}")
         return None
 
+
     def load_next_image(self) -> bool:
         """Move to the next image in the sequence."""
         if not self.image_ids or self.current_image_id is None:
@@ -154,6 +173,7 @@ class ImageHandler:
             return True
         return False
 
+
     def load_previous_image(self) -> bool:
         """Move to the previous image in the sequence."""
         if not self.image_ids or self.current_image_id is None:
@@ -165,6 +185,7 @@ class ImageHandler:
             self.preload_images()
             return True
         return False
+
 
     def get_score(self, image_path: str) -> tuple[str | None, list[str]]:
         """Get score from cache if available"""
@@ -180,6 +201,7 @@ class ImageHandler:
         self.score_cache[self.current_image_id] = (score, categories)
         return score, categories
 
+
     def score_image(self, score: int | None, categories: list[str] | str) -> bool:
         """
         Score the current image and update its categories.
@@ -187,13 +209,18 @@ class ImageHandler:
         Args:
             score: Numeric score for the image
             categories: List of categories or single category to toggle
+            
+        Returns:
+            bool: True if scoring succeeded, False otherwise
         """
         image_path = self.get_current_image_path()
         if not image_path:
             return False
             
         current_score, current_categories = self.get_score(image_path)
-        
+        if type(current_categories) is not list:
+            current_categories = []
+
         # Update categories
         new_categories = current_categories.copy()
         if isinstance(categories, list):
@@ -210,55 +237,19 @@ class ImageHandler:
         
         # Update score
         new_score = score if score is not None else current_score
-
-        if self.config_handler.get_option('write_to_filesystem'):
-            self._update_filesystem(image_path, current_score, new_score, current_categories, new_categories)
             
-        # Update database
-        self.db.images.add_or_update_score(image_path, new_score, new_categories)
-        return True
+        # Try to update database
+        try:
+            if self.db.images.add_or_update_score(image_path, new_score, new_categories):
+                # Update the cache immediately after successful database update
+                if self.current_image_id is not None:
+                    self.score_cache[self.current_image_id] = (new_score, new_categories)
+                return True
+            return False
+        except Exception as e:
+            print(f"Error in score_image: {e}")
+            return False
 
-    def _update_filesystem(self, image_path: str, old_score: int | None, new_score: int | None, 
-                         old_categories: list[str], new_categories: list[str]):
-        """Update the filesystem organization based on score and category changes."""
-        if old_score and new_score != old_score:
-            # Move image between score folders
-            old_score_path = os.path.join(self.output_folder, str(old_score), os.path.basename(image_path))
-            new_score_path = os.path.join(self.output_folder, str(new_score), os.path.basename(image_path))
-            
-            if os.path.exists(old_score_path):
-                create_directory(os.path.dirname(new_score_path))
-                shutil.move(old_score_path, new_score_path)
-            else:
-                create_directory(os.path.dirname(new_score_path))
-                shutil.copy2(image_path, new_score_path)
-
-        # Handle category changes
-        for category in set(old_categories + new_categories):
-            old_path = os.path.join(self.output_folder, str(old_score or new_score), 
-                                  category, os.path.basename(image_path))
-            new_path = os.path.join(self.output_folder, str(new_score), 
-                                  category, os.path.basename(image_path))
-            
-            if category in old_categories and category in new_categories:
-                # Category unchanged, just move if score changed
-                if new_score != old_score and os.path.exists(old_path):
-                    create_directory(os.path.dirname(new_path))
-                    shutil.move(old_path, new_path)
-            elif category in old_categories and category not in new_categories:
-                # Category removed
-                if os.path.exists(old_path):
-                    os.remove(old_path)
-            elif category not in old_categories and category in new_categories:
-                # Category added
-                create_directory(os.path.dirname(new_path))
-                shutil.copy2(image_path, new_path)
-        
-        # Cleanup empty folders
-        if old_score and new_score != old_score:
-            old_score_folder = os.path.join(self.output_folder, str(old_score))
-            if os.path.exists(old_score_folder) and not os.listdir(old_score_folder):
-                os.rmdir(old_score_folder)
 
     def get_orientation(self) -> str:
         """Get the EXIF orientation of the current image."""
@@ -288,6 +279,7 @@ class ImageHandler:
             print(f"Error reading EXIF data: {e}")
             return "Error reading orientation"
 
+
     def get_progress(self) -> tuple[int, int]:
         """Get the current position and total count of images."""
         if not self.image_ids or self.current_image_id is None:
@@ -296,12 +288,14 @@ class ImageHandler:
         current_idx = self.image_ids.index(self.current_image_id)
         return (current_idx + 1, len(self.image_ids))
 
+
     def get_index(self) -> int:
         """Get the current image index."""
         if not self.image_ids or self.current_image_id is None:
             return -1
         return self.image_ids.index(self.current_image_id)
     
+
     def set_index(self, index: int):
         """Set the current image index."""
         if 0 <= index < len(self.image_ids):

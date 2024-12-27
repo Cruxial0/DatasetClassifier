@@ -26,3 +26,6 @@ class TagGroup:
 
         for tag in tags:
             self.tags.append(Tag(tag[0], tag[1], tag[2]))
+
+    def __repr__(self) -> str:
+        return f"TagGroup(id={self.id}, name={self.name}, tags={self.tags}, order={self.order})"

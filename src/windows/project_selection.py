@@ -156,6 +156,8 @@ class ProjectSelectionWindow(QMainWindow):
         popup.set_callback(self.project_migrated)
 
     def open_project(self):
+        if self.project_list_widget is None or hasattr(self.project_list_widget, 'selected_item') is False:
+            return
         if self.project_list_widget.selected_item:
             project = load_project_from_id(self.project_list_widget.selected_item.id, self.db)
             app = DatasetClassifier(self.db, project)

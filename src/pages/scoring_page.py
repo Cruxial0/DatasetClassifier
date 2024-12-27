@@ -2,8 +2,9 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLab
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPixmap, QTransform, QShortcut, QKeySequence
 
+from src.blur_manager import BlurManager
 from src.keybinds.pages.scoring_keybind_page import ScoringKeybindPage
-from src.keybinds.keybind_manager import KeybindHandler
+from src.keybinds.keybind_manager import KeyBinding, KeybindHandler
 from src.project import Project
 from src.config_handler import ConfigHandler
 from src.database.database import Database
@@ -40,6 +41,9 @@ class ScoringPage(QWidget):
         self._pending_updates = set()
 
         self.setup_ui()
+
+        self.blur_manager: BlurManager = BlurManager(self.image_label, int(self.config_handler.get_value('privacy.blur_strength')))
+
         self.setup_keybinds()
 
     def setup_ui(self):
@@ -48,21 +52,27 @@ class ScoringPage(QWidget):
         main_layout.addLayout(self.create_scoring_buttons())
 
     def setup_keybinds(self):
-        """Register all button-keybinding associations"""
-        # Register score buttons using the score_buttons list
-        for i, button in enumerate(self.score_buttons[:-1]):  # Exclude discard button
-            self.keybind_page.register_button_binding(f'key_{i}', button)
+        # Register score buttons (0-9)
+        for i, button in enumerate(self.score_buttons[:-1]):
+            self.keybind_page.register_binding(f'key_{i}', button)
         
-        # Register discard button (last button in score_buttons)
-        discard_button = self.score_buttons[-1]
-        self.keybind_page.register_button_binding('discard', discard_button)
+        # Register category buttons with Alt modifier
+        for i, (button, _, _) in enumerate(self.category_buttons):
+            self.keybind_page.register_binding(f'category_{i}', button)
         
-        # Register navigation buttons
-        self.keybind_page.register_button_binding('next_image', self.next_button)
-        self.keybind_page.register_button_binding('previous_image', self.prev_button)
+        # Other bindings
+        self.keybind_page.register_binding('discard', self.score_buttons[-1])
+        self.keybind_page.register_binding('next_image', self.next_button)
+        self.keybind_page.register_binding('previous_image', self.prev_button)
+        self.keybind_page.register_binding('blur', self.toggle_blur)
         
-        # Register with keybind handler
+        # Register with handler
         self.keybind_handler.register_page("scoring", self.keybind_page)
+
+    def import_categories(self):
+        categories = self.db.images.get_unique_categories(self.active_project.id)
+        for i, category in enumerate(categories):
+            self.add_category_button_from_import(category)
 
     def update_score_button_labels(self):
         """Update button labels with their keybindings"""
@@ -70,20 +80,48 @@ class ScoringPage(QWidget):
         
         # Update score buttons
         for i, button in enumerate(self.score_buttons[:-1]):  # Exclude discard button
-            key = bindings.get(f'key_{i}')
-            if key:
+            key_bindings = bindings.get(f'key_{i}')
+            if key_bindings:
                 _, scores = self.config_handler.get_scores()
-                unicode = key_to_unicode(QKeySequence(key).toString())
+                # Get shortcuts for both normal and Alt versions
+                shortcuts = []
+                for binding in key_bindings:
+                    key_sequence = self._create_key_sequence(binding)
+                    unicode = key_to_unicode(key_sequence.toString())
+                    shortcuts.append(unicode)
+                
+                # Join shortcuts with separator
+                shortcut_text = " / ".join(shortcuts)
                 score = button.objectName()
-                button.setText(f"({unicode})        {scores[score]}")
+                button.setText(f"({shortcut_text})        {scores[score]}")
         
         # Update discard button
-        key = bindings.get('discard')
-        if key:
+        key_bindings = bindings.get('discard')
+        if key_bindings:
             discard_button = self.score_buttons[-1]
-            unicode = key_to_unicode(QKeySequence(key).toString())
-            if not f"({unicode})" in discard_button.text():
-                discard_button.setText(f"({unicode})        discard")
+            shortcuts = []
+            for binding in key_bindings:
+                key_sequence = self._create_key_sequence(binding)
+                unicode = key_to_unicode(key_sequence.toString())
+                shortcuts.append(unicode)
+            shortcut_text = " / ".join(shortcuts)
+            if not f"({shortcut_text})" in discard_button.text():
+                discard_button.setText(f"({shortcut_text})        discard")
+
+    def update_category_button_labels(self):
+        """Update category button labels with their keybindings"""
+        bindings = self.keybind_handler.current_bindings
+        
+        for i, (button, _, label) in enumerate(self.category_buttons):
+            key_bindings = bindings.get(f'category_{i}')
+            if key_bindings:
+                shortcuts = []
+                for binding in key_bindings:
+                    key_sequence = self._create_key_sequence(binding)
+                    unicode = key_to_unicode(key_sequence.toString())
+                    shortcuts.append(unicode)
+                shortcut_text = " / ".join(shortcuts)
+                label.setText(f"({shortcut_text})")
 
     def set_active_project(self, project: Project):
         """Update the active project and refresh UI"""
@@ -92,11 +130,21 @@ class ScoringPage(QWidget):
         self.display_image()
         self.update_button_colors()
         self.update_progress()
+        self.import_categories()
 
         # Enable relevant UI elements
         self.button_states.toggle_button_group(True, 'score')
         self.button_states.toggle_button_group(True, 'image')
         self.button_states.toggle_button_group(True, 'category')
+
+    def _create_key_sequence(self, binding: KeyBinding) -> QKeySequence:
+        """Create a QKeySequence from a KeyBinding"""
+        key = binding.key
+        if binding.modifiers:
+            modifier_str = "+".join(mod.name.replace('KeyboardModifier.', '') 
+                                  for mod in binding.modifiers)
+            return QKeySequence(f"{modifier_str}+{key}")
+        return QKeySequence(key)
 
     def score_image(self, score: str):
         """Optimized scoring with reduced UI updates"""
@@ -111,6 +159,15 @@ class ScoringPage(QWidget):
         # Load next image with preloading
         if self.image_handler.load_next_image():
             QTimer.singleShot(0, self.display_image)
+
+    def categorize_image(self, category: str):
+        if not self.active_project:
+            return
+
+        self.image_handler.score_image(None, category)
+        
+        # Update UI before loading next image
+        self.update_button_colors()
 
     def load_next_image(self):
         if self.image_handler.load_next_image():
@@ -181,6 +238,8 @@ class ScoringPage(QWidget):
         self.schedule_ui_update('progress')
         self.schedule_ui_update('buttons')
         self.schedule_ui_update('latest')
+
+        # self.update_button_colors()
     
     def load_images(self):
         """Load images for the active project"""
@@ -261,30 +320,78 @@ class ScoringPage(QWidget):
         else:
             self.category_add_button.setStyleSheet(f"background-color: {self.config_handler.get_color('accent_color')}; color: white;")
 
+    def add_category_button_from_import(self, name: str):
+        self._create_category_button(name)
+        self.update_category_button_labels()
+
     def add_category_button(self):
+        """Add a new category button with keybinding support"""
         if len(self.category_buttons) < 10:
             name = self.category_input.text()
             if name and not any(button[0].text() == name for button in self.category_buttons):
-                button = QPushButton(name)
-                button.clicked.connect(lambda _, s=name: self.score_image(s))
-                remove_button = QPushButton("-")
-                remove_button.setMaximumWidth(30)
-                remove_button.clicked.connect(lambda _, b=button: self.remove_category_button(b))
-                
-                keybind_label = QLabel()
-                keybind_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-                keybind_label.setFixedWidth(40)  # Set a fixed width of 30px
-                keybind_label.setStyleSheet("min-width: 40px; max-width: 40px;")  # Ensure the width is exactly 30px
-                
-                button_layout = QHBoxLayout()
-                button_layout.addWidget(keybind_label)
-                button_layout.addWidget(button)
-                button_layout.addWidget(remove_button)
-                
-                self.category_button_layout.addLayout(button_layout)
-                self.category_buttons.append((button, remove_button, keybind_label))
+                self._create_category_button(name)
                 self.category_input.clear()
-                self.apply_keybindings()
+                self.update_category_button_labels()
+
+    def _create_category_button(self, name: str):
+        button = QPushButton(name)
+        button.clicked.connect(lambda _, s=name: self.categorize_image(s))
+        remove_button = QPushButton("-")
+        remove_button.setMaximumWidth(30)
+        remove_button.clicked.connect(lambda _, b=button: self.remove_category_button(b))
+        
+        # Add keybinding label
+        keybind_label = QLabel()
+        keybind_label.setAlignment(Qt.AlignmentFlag.AlignRight | 
+                                    Qt.AlignmentFlag.AlignVCenter)
+        keybind_label.setFixedWidth(40)
+        keybind_label.setStyleSheet("min-width: 40px; max-width: 40px;")
+        
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(keybind_label)
+        button_layout.addWidget(button)
+        button_layout.addWidget(remove_button)
+        
+        self.category_button_layout.addLayout(button_layout)
+        self.category_buttons.append((button, remove_button, keybind_label))
+        
+            # Register keybinding immediately after creating the button
+        category_index = len(self.category_buttons) - 1
+        self.keybind_page.register_binding(f'category_{category_index}', button)
+        
+        # Update keybinding in the handler to apply it
+        self.keybind_handler.update_keybinding(
+            f'category_{category_index}',
+            [KeyBinding(str(category_index), [Qt.KeyboardModifier.AltModifier])]
+        )
+
+    def remove_category_button(self, button):
+        """Remove a category button and its keybinding"""
+        for i, (btn, remove_btn, label) in enumerate(self.category_buttons):
+            if btn == button:
+                # Remove keybinding
+                self.keybind_page.remove_keybinding(f'category_{i}')
+                
+                # Remove UI elements
+                btn.deleteLater()
+                remove_btn.deleteLater()
+                label.deleteLater()
+                layout = btn.parent().layout()
+                if layout:
+                    layout.deleteLater()
+                
+                self.category_buttons.pop(i)
+                
+                # Re-register remaining category buttons with updated indices
+                self._reindex_category_bindings()
+                break
+
+    def _reindex_category_bindings(self):
+        """Update category button indices after removal"""
+        for i, (button, _, _) in enumerate(self.category_buttons):
+            self.keybind_page.remove_keybinding(f'category_{i}')
+            self.keybind_page.register_binding(f'category_{i}', button)
+        self.update_category_button_labels()
 
     def on_score_button_click(self, score, button):
         accent_color = self.config_handler.get_color('accent_color')
@@ -331,6 +438,17 @@ class ScoringPage(QWidget):
             
             button.setStyleSheet(style_cache[style_key])
 
+        # Update category buttons
+        for i in range(self.category_button_layout.count()):
+            button = self.category_button_layout.itemAt(i).layout().itemAt(1).widget()
+            if not isinstance(button, QPushButton) or not button.isEnabled():
+                continue
+
+            if button.text() in current_categories:
+                button.setStyleSheet(f"background-color: {self.config_handler.get_color('warning_color')}; color: white;")
+            else:
+                button.setStyleSheet(f"background-color: {self.config_handler.get_color('alternate_color')}; color: white;")
+
     def schedule_ui_update(self, update_type):
         """Schedule a UI update to batch multiple updates together"""
         self._pending_updates.add(update_type)
@@ -345,3 +463,6 @@ class ScoringPage(QWidget):
         if 'latest' in self._pending_updates:
             self.manage_latest_button_state()
         self._pending_updates.clear()
+
+    def toggle_blur(self):
+        self.blur_manager.toggle_blur()

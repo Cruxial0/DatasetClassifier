@@ -1,4 +1,6 @@
-from PyQt6.QtWidgets import (QHBoxLayout, QMainWindow, QWidget, QStackedWidget)
+import subprocess
+from PyQt6.QtWidgets import (QHBoxLayout, QMainWindow, QWidget, QStackedWidget, QMessageBox)
+from src.export import Exporter
 from src.pages.tagging_page import TaggingPage
 from src.pages.scoring_page import ScoringPage
 from src.project_utils import load_project_from_id
@@ -35,12 +37,12 @@ class DatasetClassifier(QMainWindow):
         
         # Initialize pages
         self.scoring_page = ScoringPage(self)
-        self.tagging_page = TaggingPage(self)  # Add this line
+        self.tagging_page = TaggingPage(self)
         
         # Add both pages to the stacked widget
         self.stacked_widget.addWidget(self.scoring_page)
-        self.stacked_widget.addWidget(self.tagging_page)  # Add this line
-        
+        self.stacked_widget.addWidget(self.tagging_page) 
+
         # Create menu bar
         self.create_menu_bar()
         
@@ -50,17 +52,15 @@ class DatasetClassifier(QMainWindow):
     def create_menu_bar(self):
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu('File')
-        project_menu = menu_bar.addMenu('Project')
         view_menu = menu_bar.addMenu('View')
         options_menu = menu_bar.addMenu('Options')
 
         file_menu.setToolTipsVisible(True)
-        project_menu.setToolTipsVisible(True)
         view_menu.setToolTipsVisible(True)
         options_menu.setToolTipsVisible(True)
 
         actions = UIComponents.create_menu_actions(self.config_handler)
-        self.hide_scored_action, self.treat_categories_as_scoring_action, self.auto_scroll_on_scoring_action, self.export_action, self.write_to_filesystem_action, self.settings_action, self.project_new_action, self.project_edit_action, self.project_migrate_action, self.menu_button = actions  
+        self.hide_scored_action, self.auto_scroll_on_scoring_action, self.export_action, self.settings_action, self.menu_button = actions  
 
         button_widget = QWidget()
         layout = QHBoxLayout(button_widget)
@@ -71,24 +71,14 @@ class DatasetClassifier(QMainWindow):
 
         file_menu.addAction(self.export_action)
         file_menu.addAction(self.settings_action)
-        project_menu.addAction(self.project_new_action)
-        project_menu.addAction(self.project_edit_action)
-        project_menu.addAction(self.project_migrate_action)
         view_menu.addAction(self.hide_scored_action)
-        # options_menu.addAction(self.treat_categories_as_scoring_action)
         options_menu.addAction(self.auto_scroll_on_scoring_action)
-        options_menu.addAction(self.write_to_filesystem_action)
         self.menu_button.clicked.connect(self.switch_mode)
 
-        
         # self.hide_scored_action.triggered.connect(self.toggle_hide_scored_images)
-        # self.treat_categories_as_scoring_action.triggered.connect(self.toggle_treat_categories_as_scoring)
         # self.auto_scroll_on_scoring_action.triggered.connect(self.toggle_auto_scroll_on_scoring)
-        # self.write_to_filesystem_action.triggered.connect(self.toggle_write_to_filesystem)
-        # self.export_action.triggered.connect(self.open_export_window)
+        self.export_action.triggered.connect(self.open_export_window)
         self.settings_action.triggered.connect(self.open_settings_window)
-        # self.project_new_action.triggered.connect(self.new_project)
-        # self.project_migrate_action.triggered.connect(self.migrate_project)
 
     def setup_stacked_widget(self):
         self.stacked_widget = QStackedWidget()
@@ -129,5 +119,33 @@ class DatasetClassifier(QMainWindow):
         self.scoring_page.update_button_colors()
 
     def open_settings_window(self, page: str = None):
-        settings_window = SettingsWindow(self.config_handler, self.db, page, self.active_project)
+        settings_window = SettingsWindow(self.config_handler, self, page)
         settings_window.show()
+
+    def open_export_window(self):
+        self.export_popup = ExportPopup(self.export_callback, self.db.images.get_unique_categories(self.active_project.id), self.config_handler)
+        self.export_popup.show()
+
+    # Callbacks
+
+    def export_callback(self, data):
+        exporter = Exporter(data, self.db, self.config_handler)
+        
+        summary = f"Export path: {exporter.output_dir}"
+        for key, value in exporter.process_export(self.db.images.get_export_images(self.active_project.id)).items():
+            summary += f"\n - {value} images exported to '{key}'"
+
+        confirm = QMessageBox.question(self, 'Export summary', 
+                                         f"{summary}\n\nConfirm?",
+                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
+                                         QMessageBox.StandardButton.No)
+        
+        if confirm == QMessageBox.StandardButton.Yes:
+            dir_confirm = QMessageBox.question(self, 'Confirm deleting directory', 
+                                 'All files in the output directory will be deleted.\n\nConfirm?',
+                                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
+                                 QMessageBox.StandardButton.No)
+            if dir_confirm == QMessageBox.StandardButton.Yes:
+                exporter.export()
+                QMessageBox.information(self, "Workspace", "The workspace has been exported.")
+                subprocess.Popen(f'explorer "{exporter.output_dir.replace('//', '\\').replace('/', '\\')}"')

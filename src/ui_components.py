@@ -108,21 +108,12 @@ class UIComponents:
     def create_menu_actions(config: ConfigHandler):
         hide_scored_action = QAction('Hide Scored Images', checkable=True)
         hide_scored_action.setToolTip('Hides all images that are already scored')
-        treat_categories_as_scoring_action = QAction('Treat categories as scorings', checkable=True)
         auto_scroll_on_scoring_action = QAction('Auto-scroll on scoring', checkable=True, checked=config.get_option('auto_scroll_on_scoring'))
         auto_scroll_on_scoring_action.setToolTip('Automatically moves to the next image when a score button is clicked')
-        write_to_filesystem = QAction('Write changes to file system', checkable=True, checked=config.get_option('write_to_filesystem'))
-        write_to_filesystem.setToolTip('If true, instantly reflects any changes in the output directory by copying and moving images around.\nUses 100-1000+ times more storage space.')
         export = QAction('Export')
         settings = QAction('Settings')
-        project_new = QAction('New Project')
-        project_edit = QAction('Edit Project')
-        project_edit.setEnabled(False)
-        project_migrate = QAction('Migrate Legacy Project')
 
         menu_button = QPushButton("Swtich Mode")
         menu_button.setFixedSize(100, 25)  # Adjust size as needed
 
-        return (hide_scored_action, treat_categories_as_scoring_action, 
-                auto_scroll_on_scoring_action, export, write_to_filesystem, settings,
-                project_new, project_edit, project_migrate, menu_button)
+        return (hide_scored_action, auto_scroll_on_scoring_action, export, settings, menu_button)
