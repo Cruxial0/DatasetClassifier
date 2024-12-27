@@ -58,7 +58,7 @@ class DatasetClassifier(QMainWindow):
         options_menu.setToolTipsVisible(True)
 
         actions = UIComponents.create_menu_actions(self.config_handler)
-        self.hide_scored_action, self.treat_categories_as_scoring_action, self.auto_scroll_on_scoring_action, self.export_action, self.write_to_filesystem_action, self.settings_action, self.menu_button = actions  
+        self.hide_scored_action, self.auto_scroll_on_scoring_action, self.export_action, self.settings_action, self.menu_button = actions  
 
         button_widget = QWidget()
         layout = QHBoxLayout(button_widget)
@@ -70,20 +70,13 @@ class DatasetClassifier(QMainWindow):
         file_menu.addAction(self.export_action)
         file_menu.addAction(self.settings_action)
         view_menu.addAction(self.hide_scored_action)
-        # options_menu.addAction(self.treat_categories_as_scoring_action)
         options_menu.addAction(self.auto_scroll_on_scoring_action)
-        options_menu.addAction(self.write_to_filesystem_action)
         self.menu_button.clicked.connect(self.switch_mode)
 
-        
         # self.hide_scored_action.triggered.connect(self.toggle_hide_scored_images)
-        # self.treat_categories_as_scoring_action.triggered.connect(self.toggle_treat_categories_as_scoring)
         # self.auto_scroll_on_scoring_action.triggered.connect(self.toggle_auto_scroll_on_scoring)
-        # self.write_to_filesystem_action.triggered.connect(self.toggle_write_to_filesystem)
         # self.export_action.triggered.connect(self.open_export_window)
         self.settings_action.triggered.connect(self.open_settings_window)
-        # self.project_new_action.triggered.connect(self.new_project)
-        # self.project_migrate_action.triggered.connect(self.migrate_project)
 
     def setup_stacked_widget(self):
         self.stacked_widget = QStackedWidget()
