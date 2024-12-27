@@ -153,3 +153,22 @@ class TagQueries:
         result = cursor.fetchone()
         cursor.close()
         return result is not None
+    
+    def image_has_tag(self, image_id: int, tag_id: int) -> bool:
+        cursor = self.db.cursor()
+        cursor.execute("SELECT tag_id FROM image_tags WHERE image_id = ? AND tag_id = ?", (image_id, tag_id))
+        result = cursor.fetchone()
+        cursor.close()
+        return result is not None
+    
+    def add_image_tag(self, image_id: int, tag_id: int):
+        cursor = self.db.cursor()
+        cursor.execute("INSERT INTO image_tags (image_id, tag_id) VALUES (?, ?)", (image_id, tag_id))
+        self.db.commit()
+        cursor.close()
+
+    def delete_image_tag(self, image_id: int, tag_id: int):
+        cursor = self.db.cursor()
+        cursor.execute("DELETE FROM image_tags WHERE image_id = ? AND tag_id = ?", (image_id, tag_id))
+        self.db.commit()
+        cursor.close()

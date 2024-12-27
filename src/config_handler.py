@@ -30,6 +30,7 @@ default_keybinds = {
     "key_8": "L",
     "key_9": ";",
     "discard": "BACKSPACE",
+    "continue": "Return",
     "image_next": "Right",
     "image_previous": "Left"
 }

@@ -204,9 +204,10 @@ class SettingsWindow(QMainWindow):
             "Key 8": loaded_keybinds['key_7'], 
             "Key 9": loaded_keybinds['key_8'], 
             "Key 10": loaded_keybinds['key_9'],
+            "Continue": loaded_keybinds['continue'],
             "Discard": loaded_keybinds['discard'], 
-            "Next Image": loaded_keybinds['image_next'], 
-            "Previous Image": loaded_keybinds['image_previous']
+            "Next Image": loaded_keybinds['next_image'], 
+            "Previous Image": loaded_keybinds['previous_image']
         }
         
         for key, value in keybinds.items():
@@ -237,7 +238,7 @@ class SettingsWindow(QMainWindow):
             self.keybinds_updated_callback()
 
         # Update the UI
-        for row in self.pages["Keybinds"].findChildren(QHBoxLayout):
+        for row in self.pages["keybinds"].findChildren(QHBoxLayout):
             label = row.itemAt(0).widget()
             if label.text() == key_name:
                 keybind_widget = row.itemAt(1).widget()

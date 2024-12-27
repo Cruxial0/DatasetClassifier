@@ -21,23 +21,33 @@ class KeybindHandler:
             'next_image': ConfigBinding(
                 config_key='keybindings.next_image',
                 description='Next image',
-                default_value=16777236
+                default_value=16777236 # Right arrow
             ),
             'previous_image': ConfigBinding(
                 config_key='keybindings.previous_image',
                 description='Previous image',
-                default_value=16777234
+                default_value=16777234 # Left arrow
             ),
             'discard': ConfigBinding(
                 config_key='keybindings.discard',
                 description='Discard image',
-                default_value=16777219
+                default_value=16777219 # Backspace
+            ),
+            'continue': ConfigBinding(
+                config_key='keybindings.continue',
+                description='Continue',
+                default_value=16777220 # Enter
+            ),
+            'blur': ConfigBinding(
+                config_key='keybindings.blur',
+                description='Blur',
+                default_value=32 # Space
             ),
             **{
                 f'key_{i}': ConfigBinding(
                     config_key=f'keybindings.key_{i}',
                     description=f'Score {i}',
-                    default_value=None  # You can set default values for each key
+                    default_value=None
                 ) for i in range(10)
             }
         }

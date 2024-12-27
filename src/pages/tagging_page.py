@@ -24,7 +24,7 @@ class TaggingPage(QWidget):
         self.active_project: Project = parent.active_project
         self.image_handler: ImageHandler = ImageHandler(self.db, self.config_handler)
 
-        self.current_image: int = None
+        self.current_image_id: int = None
         self.current_group: TagGroup = None
         self.active_groups: list[TagGroup] = None
 
@@ -34,7 +34,7 @@ class TaggingPage(QWidget):
 
         self.setupUI()
         self.load_images()
-        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.update_button_colors()
 
         # Used in the settings window when updating tags
         self.update_poller.add_method('update_tag_groups', self.update_tag_groups)
@@ -124,6 +124,7 @@ class TaggingPage(QWidget):
         self.tags_layout = QVBoxLayout()
         self.tags_layout.setContentsMargins(7, 7, 7, 7)
 
+        self.tag_buttons_layout = QVBoxLayout()
         tag_groups = self.db.tags.get_project_tags(self.active_project.id)
         if tag_groups is not None and len(tag_groups) > 0:
             self.update_tag_groups()
@@ -131,7 +132,9 @@ class TaggingPage(QWidget):
             add_button = QPushButton("Configure Tag Groups")
             add_button.setStyleSheet(f"background-color: {self.config_handler.get_color('accent_color')}; color: white;")
             add_button.clicked.connect(self.show_configure_tag_groups)
-            self.tags_layout.addWidget(add_button)
+            self.tag_buttons_layout.addWidget(add_button)
+
+        self.tags_layout.addLayout(self.tag_buttons_layout)
 
         # Controls
         controls_layout = QHBoxLayout()
@@ -168,19 +171,41 @@ class TaggingPage(QWidget):
     def show_configure_tag_groups(self):
         self.parent.open_settings_window('tag_groups')
 
-    def add_tag(self, tag_id: int):
-        print(f"Adding tag {tag_id}")
-        if self.current_image is None:
-            return
+    def tag_button_click(self, tag_id: int):
         
-        pass
+        if self.current_image_id is None:
+            return
+
+        if self.db.tags.image_has_tag(self.current_image_id, tag_id):
+            print(f"Removing tag: {tag_id}")
+            self.db.tags.delete_image_tag(self.current_image_id, tag_id)
+        else:
+            print(f"Adding tag: {tag_id}")
+            self.db.tags.add_image_tag(self.current_image_id, tag_id)
+        
+        self.update_button_colors()
+
+    def update_button_colors(self):
+        for i in range(self.tag_buttons_layout.count()):
+            
+            btn = self.tag_buttons_layout.itemAt(i).layout().itemAt(1).widget()
+            if not isinstance(btn, QPushButton) or not btn.isEnabled():
+                continue
+            
+            tag_id = int(btn.objectName().split('_')[-1])
+            if self.db.tags.image_has_tag(self.current_image_id, tag_id):
+                btn.setStyleSheet(f"background-color: {self.config_handler.get_color('accent_color')}; color: white;")
+            else:
+                btn.setStyleSheet(f"background-color: {self.config_handler.get_color('background_color')}; color: white;")
 
     def create_tag_button(self, tag: Tag) -> QHBoxLayout:
         btn_layout = QHBoxLayout()
         
         btn = QPushButton(tag.name)
         btn.setText(tag.name)
-        btn.clicked.connect(lambda: self.add_tag(tag.id))
+
+        btn.setObjectName(f'tag_button_{tag.id}')
+        btn.clicked.connect(lambda: self.tag_button_click(tag.id))
         btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
 
         if tag.display_order < 10:
@@ -225,13 +250,11 @@ class TaggingPage(QWidget):
             self.keybind_page.remove_keybinding(f'key_{i}')
 
         # Remove all items in the tags layout
-        self._clear_layout(self.tags_layout)
+        self._clear_layout(self.tag_buttons_layout)
         
         for tag in self.current_group.tags:
             btn_layout = self.create_tag_button(tag)
-            self.tags_layout.addLayout(btn_layout)
-
-        print(f"post-update id: {self.current_group.order}")
+            self.tag_buttons_layout.addLayout(btn_layout)
 
     def next_group(self):
         if self.tag_groups is None or len(self.tag_groups) < 1 or self.current_group is None:
@@ -243,7 +266,7 @@ class TaggingPage(QWidget):
                 return
             
             self.load_next_image()
-            
+
             self.current_group = self.tag_groups[0]
             self.update_tag_groups(skip_update=True)
             return
@@ -293,6 +316,9 @@ class TaggingPage(QWidget):
             Qt.TransformationMode.SmoothTransformation
         )
         self.image_label.setPixmap(scaled_pixmap)
+
+        self.current_image_id = self.image_handler.current_image_id
+
         self.update_score_label()
 
     def load_images(self):
