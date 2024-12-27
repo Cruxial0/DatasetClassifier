@@ -190,8 +190,15 @@ class TaggingPage(QWidget):
 
     def update_button_colors(self):
         for i in range(self.tag_buttons_layout.count()):
-            
-            btn = self.tag_buttons_layout.itemAt(i).layout().itemAt(1).widget()
+            if self.tag_buttons_layout is None:
+                continue
+
+            layout = self.tag_buttons_layout.itemAt(i).layout()
+
+            if layout is None:
+                continue
+
+            btn = layout.itemAt(1).widget()
             if not isinstance(btn, QPushButton) or not btn.isEnabled():
                 continue
             
