@@ -354,10 +354,12 @@ class TaggingPage(QWidget):
     def load_next_image(self):
         if self.image_handler.load_next_image():
             self.display_image()
+            self.update_button_colors()
 
     def load_previous_image(self):
         if self.image_handler.load_previous_image():
             self.display_image()
+            self.update_button_colors()
 
     def update_progress(self):
         """Update the progress bar and label"""
