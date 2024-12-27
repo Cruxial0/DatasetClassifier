@@ -69,6 +69,11 @@ class ScoringPage(QWidget):
         # Register with handler
         self.keybind_handler.register_page("scoring", self.keybind_page)
 
+    def import_categories(self):
+        categories = self.db.images.get_unique_categories(self.active_project.id)
+        for i, category in enumerate(categories):
+            self.add_category_button_from_import(category)
+
     def update_score_button_labels(self):
         """Update button labels with their keybindings"""
         bindings = self.keybind_handler.current_bindings
@@ -125,6 +130,7 @@ class ScoringPage(QWidget):
         self.display_image()
         self.update_button_colors()
         self.update_progress()
+        self.import_categories()
 
         # Enable relevant UI elements
         self.button_states.toggle_button_group(True, 'score')
@@ -314,44 +320,50 @@ class ScoringPage(QWidget):
         else:
             self.category_add_button.setStyleSheet(f"background-color: {self.config_handler.get_color('accent_color')}; color: white;")
 
+    def add_category_button_from_import(self, name: str):
+        self._create_category_button(name)
+        self.update_category_button_labels()
+
     def add_category_button(self):
         """Add a new category button with keybinding support"""
         if len(self.category_buttons) < 10:
             name = self.category_input.text()
             if name and not any(button[0].text() == name for button in self.category_buttons):
-                button = QPushButton(name)
-                button.clicked.connect(lambda _, s=name: self.categorize_image(s))
-                remove_button = QPushButton("-")
-                remove_button.setMaximumWidth(30)
-                remove_button.clicked.connect(lambda _, b=button: self.remove_category_button(b))
-                
-                # Add keybinding label
-                keybind_label = QLabel()
-                keybind_label.setAlignment(Qt.AlignmentFlag.AlignRight | 
-                                         Qt.AlignmentFlag.AlignVCenter)
-                keybind_label.setFixedWidth(40)
-                keybind_label.setStyleSheet("min-width: 40px; max-width: 40px;")
-                
-                button_layout = QHBoxLayout()
-                button_layout.addWidget(keybind_label)
-                button_layout.addWidget(button)
-                button_layout.addWidget(remove_button)
-                
-                self.category_button_layout.addLayout(button_layout)
-                self.category_buttons.append((button, remove_button, keybind_label))
-                
-                 # Register keybinding immediately after creating the button
-                category_index = len(self.category_buttons) - 1
-                self.keybind_page.register_binding(f'category_{category_index}', button)
-                
-                # Update keybinding in the handler to apply it
-                self.keybind_handler.update_keybinding(
-                    f'category_{category_index}',
-                    [KeyBinding(str(category_index), [Qt.KeyboardModifier.AltModifier])]
-                )
-                
+                self._create_category_button(name)
                 self.category_input.clear()
                 self.update_category_button_labels()
+
+    def _create_category_button(self, name: str):
+        button = QPushButton(name)
+        button.clicked.connect(lambda _, s=name: self.categorize_image(s))
+        remove_button = QPushButton("-")
+        remove_button.setMaximumWidth(30)
+        remove_button.clicked.connect(lambda _, b=button: self.remove_category_button(b))
+        
+        # Add keybinding label
+        keybind_label = QLabel()
+        keybind_label.setAlignment(Qt.AlignmentFlag.AlignRight | 
+                                    Qt.AlignmentFlag.AlignVCenter)
+        keybind_label.setFixedWidth(40)
+        keybind_label.setStyleSheet("min-width: 40px; max-width: 40px;")
+        
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(keybind_label)
+        button_layout.addWidget(button)
+        button_layout.addWidget(remove_button)
+        
+        self.category_button_layout.addLayout(button_layout)
+        self.category_buttons.append((button, remove_button, keybind_label))
+        
+            # Register keybinding immediately after creating the button
+        category_index = len(self.category_buttons) - 1
+        self.keybind_page.register_binding(f'category_{category_index}', button)
+        
+        # Update keybinding in the handler to apply it
+        self.keybind_handler.update_keybinding(
+            f'category_{category_index}',
+            [KeyBinding(str(category_index), [Qt.KeyboardModifier.AltModifier])]
+        )
 
     def remove_category_button(self, button):
         """Remove a category button and its keybinding"""
