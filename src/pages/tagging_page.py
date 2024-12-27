@@ -25,7 +25,7 @@ class TaggingPage(QWidget):
         self.image_handler: ImageHandler = ImageHandler(self.db, self.config_handler)
 
         self.current_image: int = None
-        self.active_tags: list[Tag] = None
+        self.current_group: TagGroup = None
         self.active_groups: list[TagGroup] = None
 
         # Initialize keybind handler
@@ -139,6 +139,9 @@ class TaggingPage(QWidget):
 
         continue_btn = QPushButton("Continue")
         skip_btn = QPushButton("Skip")
+
+        continue_btn.clicked.connect(self.next_group)
+
         controls_layout.addWidget(continue_btn)
         controls_layout.addWidget(skip_btn)
         
@@ -201,20 +204,21 @@ class TaggingPage(QWidget):
 
         return btn_layout
 
-    def update_tag_groups(self):
-        self.tag_groups = self.db.tags.get_project_tags(self.active_project.id)
+    def update_tag_groups(self, skip_update=False):
+        if not skip_update:
+            self.tag_groups = self.db.tags.get_project_tags(self.active_project.id)
 
-        if self.tag_groups is None or len(self.tag_groups) == 0: 
-            return
+            if self.tag_groups is None or len(self.tag_groups) == 0: 
+                return
+
+            self.current_group = self.tag_groups[0]
         
         # Update label to tag group name
-        self.tag_group_label.setText(self.tag_groups[0].name)
+        self.tag_group_label.setText(self.current_group.name)
         self.tag_group_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
 
-        # Create buttons for each tag in the first group
-        self.active_tags = self.tag_groups[0].tags
-        if self.active_tags is None:
-            self.active_tags = []
+        if self.current_group.tags is None:
+            self.current_group.tags = []
         
         # Unregister all tagging keybinds
         for i in range(10):
@@ -223,9 +227,31 @@ class TaggingPage(QWidget):
         # Remove all items in the tags layout
         self._clear_layout(self.tags_layout)
         
-        for tag in self.active_tags:
+        for tag in self.current_group.tags:
             btn_layout = self.create_tag_button(tag)
             self.tags_layout.addLayout(btn_layout)
+
+        print(f"post-update id: {self.current_group.order}")
+
+    def next_group(self):
+        if self.tag_groups is None or len(self.tag_groups) < 1 or self.current_group is None:
+            return
+
+        if self.current_group.order + 1 >= len(self.tag_groups):
+            # check if there are more images
+            if not self.image_handler.load_next_image():
+                return
+            
+            self.load_next_image()
+            
+            self.current_group = self.tag_groups[0]
+            self.update_tag_groups(skip_update=True)
+            return
+        
+        index = self.current_group.order + 1
+        self.current_group = self.tag_groups[index]
+
+        self.update_tag_groups(skip_update=True)
 
     def display_image(self):
         """Optimized image display"""

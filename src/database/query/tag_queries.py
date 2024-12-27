@@ -32,7 +32,15 @@ class TagQueries:
         
         # Create TagGroup objects
         for row in cursor.fetchall():
-            tag_group = TagGroup(*row)
+            tag_group = TagGroup(
+                id=row[0],
+                project_id=row[1],
+                name=row[2],
+                order=row[6],  # display_order is at index 6
+                is_required=row[3],
+                allow_multiple=row[4],
+                min_tags=row[5]
+            )
             tag_groups.append(tag_group)
             group_mapping[tag_group.id] = len(tag_groups) - 1
         
