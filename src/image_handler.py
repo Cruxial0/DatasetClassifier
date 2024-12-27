@@ -209,6 +209,9 @@ class ImageHandler:
         Args:
             score: Numeric score for the image
             categories: List of categories or single category to toggle
+            
+        Returns:
+            bool: True if scoring succeeded, False otherwise
         """
         image_path = self.get_current_image_path()
         if not image_path:
@@ -233,9 +236,17 @@ class ImageHandler:
         # Update score
         new_score = score if score is not None else current_score
             
-        # Update database
-        self.db.images.add_or_update_score(image_path, new_score, new_categories)
-        return True
+        # Try to update database
+        try:
+            if self.db.images.add_or_update_score(image_path, new_score, new_categories):
+                # Update the cache immediately after successful database update
+                if self.current_image_id is not None:
+                    self.score_cache[self.current_image_id] = (new_score, new_categories)
+                return True
+            return False
+        except Exception as e:
+            print(f"Error in score_image: {e}")
+            return False
 
 
     def get_orientation(self) -> str:

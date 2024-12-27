@@ -181,6 +181,8 @@ class ScoringPage(QWidget):
         self.schedule_ui_update('progress')
         self.schedule_ui_update('buttons')
         self.schedule_ui_update('latest')
+
+        # self.update_button_colors()
     
     def load_images(self):
         """Load images for the active project"""

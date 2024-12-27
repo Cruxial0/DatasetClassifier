@@ -6,28 +6,45 @@ class ImageQueries:
     def __init__(self, conn: Connection):
         self.conn = conn
 
-    def add_or_update_score(self, source_path: str, score: str, categories: list[str]) -> None:
-        # Get image info using source path
-        cursor = self.conn.cursor()
-        cursor.execute("SELECT image_id, project_id FROM images WHERE source_path = ?", (source_path,))
-        result = cursor.fetchone()
-        print("reached")
-        if not result:
-            raise ValueError(f"No image found with source path: {source_path}")
+    def add_or_update_score(self, source_path: str, score: str, categories: list[str]) -> bool:
+        """
+        Add or update a score and categories for an image.
         
-        print("reached")
-        image_id, project_id = result
-        categories_json = json.dumps(categories)
+        Args:
+            source_path: Path to the image file
+            score: Score value to assign
+            categories: List of categories to assign
+            
+        Returns:
+            bool: True if the score was successfully added/updated, False otherwise
+            
+        Raises:
+            ValueError: If no image is found with the given source path
+        """
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("SELECT image_id, project_id FROM images WHERE source_path = ?", (source_path,))
+            result = cursor.fetchone()
+            
+            if not result:
+                raise ValueError(f"No image found with source path: {source_path}")
+            
+            image_id, project_id = result
+            categories_json = json.dumps(categories)
 
-        # Update or insert score
-        cursor.execute("""
-            INSERT INTO scores (image_id, project_id, score, categories)
-            VALUES (?, ?, ?, ?)
-            ON CONFLICT(image_id) 
-            DO UPDATE SET score=?, categories=?, timestamp=CURRENT_TIMESTAMP
-        """, (image_id, project_id, score, categories_json, score, categories_json))
-        
-        self.conn.commit()
+            cursor.execute("""
+                INSERT INTO scores (image_id, project_id, score, categories)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(image_id) 
+                DO UPDATE SET score=?, categories=?, timestamp=CURRENT_TIMESTAMP
+            """, (image_id, project_id, score, categories_json, score, categories_json))
+            
+            self.conn.commit()
+            return True
+            
+        except Exception as e:
+            print(f"Error updating score: {e}")
+            return False
 
     def get_path(self, image_id: int) -> str:
         cursor = self.conn.cursor()
