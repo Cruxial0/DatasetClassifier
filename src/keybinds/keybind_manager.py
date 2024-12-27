@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, Optional, Union
 from PyQt6.QtWidgets import QWidget, QPushButton
 from PyQt6.QtGui import QKeySequence, QShortcut
 from dataclasses import dataclass
@@ -11,6 +11,9 @@ class ConfigBinding:
     description: str
     default_value: str | int
 
+# Define a type for possible binding targets
+BindTarget = Union[QPushButton, Callable[[], None]]
+
 class KeybindHandler:
     def __init__(self, config_handler):
         self.config_handler = config_handler
@@ -21,27 +24,27 @@ class KeybindHandler:
             'next_image': ConfigBinding(
                 config_key='keybindings.next_image',
                 description='Next image',
-                default_value=16777236 # Right arrow
+                default_value=16777236  # Right arrow
             ),
             'previous_image': ConfigBinding(
                 config_key='keybindings.previous_image',
                 description='Previous image',
-                default_value=16777234 # Left arrow
+                default_value=16777234  # Left arrow
             ),
             'discard': ConfigBinding(
                 config_key='keybindings.discard',
                 description='Discard image',
-                default_value=16777219 # Backspace
+                default_value=16777219  # Backspace
             ),
             'continue': ConfigBinding(
                 config_key='keybindings.continue',
                 description='Continue',
-                default_value=16777220 # Enter
+                default_value=16777220  # Enter
             ),
             'blur': ConfigBinding(
                 config_key='keybindings.blur',
                 description='Blur',
-                default_value=32 # Space
+                default_value=32  # Space
             ),
             **{
                 f'key_{i}': ConfigBinding(
@@ -84,7 +87,6 @@ class KeybindHandler:
             # Update all registered pages
             for page in self.registered_pages.values():
                 page.apply_keybindings(self.current_bindings)
-
     
     def unregister_keybinding(self, action: str):
         """Unregister a keybinding and remove it from all pages"""
@@ -96,23 +98,26 @@ class KeybindHandler:
             for page in self.registered_pages.values():
                 page.remove_keybinding(action)
 
+
 class KeybindPage:
     def __init__(self, widget: QWidget):
         self.widget = widget
         self.shortcuts: Dict[str, QShortcut] = {}
-        self.button_bindings: Dict[str, Optional[QPushButton]] = {}  # Make buttons optional
-        
+        self.bindings: Dict[str, Optional[BindTarget]] = {}
+
+    def register_binding(self, action: str, target: Optional[BindTarget] = None):
+        """Register a button or function to be bound to a specific key action"""
+        self.bindings[action] = target
+        # Reapply keybindings if the target is being set
+        if target is not None:
+            self.apply_keybindings({action: self.shortcuts.get(action)})
 
     def register_button_binding(self, action: str, button: Optional[QPushButton] = None):
-        """Register a button to be bound to a specific key action"""
-        self.button_bindings[action] = button
-        # Reapply keybindings if the button is being set
-        if button is not None:
-            self.apply_keybindings({action: self.shortcuts.get(action)})
-    
+        """Legacy method for backwards compatibility"""
+        self.register_binding(action, button)
 
     def apply_keybindings(self, bindings: Dict[str, str | int]):
-        """Apply keybindings to this page's buttons"""
+        """Apply keybindings to this page's buttons or functions"""
         # Clear only the shortcuts we're updating
         for action in bindings:
             if action in self.shortcuts:
@@ -122,22 +127,25 @@ class KeybindPage:
                 del self.shortcuts[action]
         
         for action, key in bindings.items():
-            if action in self.button_bindings and self.button_bindings[action] is not None:
-                button = self.button_bindings[action]
+            if action in self.bindings and self.bindings[action] is not None:
+                target = self.bindings[action]
                 
-                # Skip if either button or key is None
-                if button is None or key is None:
+                # Skip if either target or key is None
+                if target is None or key is None:
                     continue
 
-                def create_click_handler(btn):
-                    def handler():
-                        if btn.isEnabled():
-                            btn.click()
+                def create_handler(target: BindTarget):
+                    if isinstance(target, QPushButton):
+                        def handler():
+                            if target.isEnabled():
+                                target.click()
+                    else:  # Callable
+                        handler = target
                     return handler
 
                 # Create shortcut with properly bound handler
                 shortcut = QShortcut(QKeySequence(key), self.widget)
-                shortcut.activated.connect(create_click_handler(button))
+                shortcut.activated.connect(create_handler(target))
                 self.shortcuts[action] = shortcut
 
                 # For Alt+key shortcuts (category buttons)
@@ -146,9 +154,8 @@ class KeybindPage:
                         QKeySequence(f"Alt+{key}"), 
                         self.widget
                     )
-                    alt_shortcut.activated.connect(create_click_handler(button))
+                    alt_shortcut.activated.connect(create_handler(target))
                     self.shortcuts[f"alt_{action}"] = alt_shortcut
-
 
     def remove_keybinding(self, action: str):
         """Remove a specific keybinding"""
@@ -166,7 +173,6 @@ class KeybindPage:
             alt_shortcut.setEnabled(False)
             alt_shortcut.deleteLater()
             del self.shortcuts[alt_action]
-    
 
     def _clear_shortcuts(self):
         for shortcut in self.shortcuts.values():
