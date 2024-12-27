@@ -124,15 +124,18 @@ class TagQueries:
 
     def delete_tag(self, tag_id: int):
         cursor = self.db.cursor()
+
+        # Tag deletion is cascaded, so we only need to delete the tag
+        # All image tags will be deleted automatically
         cursor.execute("DELETE FROM tags WHERE tag_id = ?", (tag_id,))
         self.db.commit()
         cursor.close()
 
     def delete_tag_group(self, group_id: int):
         cursor = self.db.cursor()
-        # First, delete all tags associated with this group
-        cursor.execute("DELETE FROM tags WHERE group_id = ?", (group_id,))
-        # Then delete the group
+        
+        # Tag Group deletion is cascaded, so we only need to delete the tag group itself
+        # All tags will be deleted automatically
         cursor.execute("DELETE FROM tag_groups WHERE group_id = ?", (group_id,))
         self.db.commit()
         cursor.close()

@@ -71,7 +71,7 @@ def create_indexes():
     CREATE INDEX idx_image_tags_image ON image_tags(image_id);
     """
 
-def create_triggers():
+def create_update_date_triggers():
    return """
    CREATE TRIGGER update_images_project_insert
    AFTER INSERT ON images
@@ -143,7 +143,35 @@ def create_triggers():
    BEGIN
        UPDATE projects SET updated_at = CURRENT_TIMESTAMP
        WHERE project_id = OLD.project_id;
-   END;"""
+   END;
+   """
+
+def create_tag_deletion_triggers():
+    return"""
+    CREATE TRIGGER update_tag_groups_project_delete
+    AFTER DELETE ON tag_groups
+    FOR EACH ROW
+    BEGIN
+        UPDATE projects SET updated_at = CURRENT_TIMESTAMP
+        WHERE project_id = OLD.project_id;
+    END;
+
+    -- Cascade delete tags when tag_group is deleted
+    CREATE TRIGGER delete_tags_cascade
+    AFTER DELETE ON tag_groups
+    FOR EACH ROW
+    BEGIN
+        DELETE FROM tags WHERE group_id = OLD.group_id;
+    END;
+
+    -- Cascade delete image_tags when tag is deleted
+    CREATE TRIGGER delete_image_tags_cascade
+    AFTER DELETE ON tags
+    FOR EACH ROW
+    BEGIN
+        DELETE FROM image_tags WHERE tag_id = OLD.tag_id;
+    END;
+   """
 
 def create_database():
     return f"""
@@ -155,5 +183,6 @@ def create_database():
     {create_tags_schema()}
     {create_image_tags_schema()}
     {create_indexes()}
-    {create_triggers()}
+    {create_update_date_triggers()}
+    {create_tag_deletion_triggers()}
     """
