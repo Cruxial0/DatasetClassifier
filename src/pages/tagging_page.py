@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLab
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QTransform, QKeySequence
 
+from src.blur_manager import BlurManager
 from src.keybinds.keybind_manager import KeybindHandler
 from src.keybinds.pages.tagging_keybind_page import TaggingKeybindPage
 from src.image_handler import ImageHandler
@@ -33,12 +34,16 @@ class TaggingPage(QWidget):
         self.keybind_page = TaggingKeybindPage(self)
 
         self.setupUI()
+
+        self.blur_manager: BlurManager = BlurManager(self.image_label, int(self.config_handler.get_value('privacy.blur_strength')))
+
         self.load_images()
         self.update_button_colors()
 
         # Used in the settings window when updating tags
         self.update_poller.add_method('update_tag_groups', self.update_tag_groups)
 
+        self.keybind_page.register_binding('blur', self.blur_manager.toggle_blur)
         self.keybind_handler.register_page("tagging", self.keybind_page)
 
     def setupUI(self):

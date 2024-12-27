@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLab
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPixmap, QTransform, QShortcut, QKeySequence
 
+from src.blur_manager import BlurManager
 from src.keybinds.pages.scoring_keybind_page import ScoringKeybindPage
 from src.keybinds.keybind_manager import KeybindHandler
 from src.project import Project
@@ -40,6 +41,9 @@ class ScoringPage(QWidget):
         self._pending_updates = set()
 
         self.setup_ui()
+
+        self.blur_manager: BlurManager = BlurManager(self.image_label, int(self.config_handler.get_value('privacy.blur_strength')))
+
         self.setup_keybinds()
 
     def setup_ui(self):
@@ -60,6 +64,9 @@ class ScoringPage(QWidget):
         # Register navigation buttons
         self.keybind_page.register_button_binding('next_image', self.next_button)
         self.keybind_page.register_button_binding('previous_image', self.prev_button)
+
+        # Register blur button
+        self.keybind_page.register_button_binding('blur', self.toggle_blur)
         
         # Register with keybind handler
         self.keybind_handler.register_page("scoring", self.keybind_page)
@@ -347,3 +354,6 @@ class ScoringPage(QWidget):
         if 'latest' in self._pending_updates:
             self.manage_latest_button_state()
         self._pending_updates.clear()
+
+    def toggle_blur(self):
+        self.blur_manager.toggle_blur()

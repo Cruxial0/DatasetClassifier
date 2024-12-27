@@ -4,7 +4,7 @@ import sys
 from typing import Literal
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                             QHBoxLayout, QLabel, QCheckBox, QPushButton, 
-                            QStackedWidget, QComboBox, QColorDialog)
+                            QStackedWidget, QComboBox, QColorDialog, QSpinBox)
 from PyQt6.QtCore import Qt, QEvent, pyqtSignal
 from PyQt6.QtGui import QColor, QKeySequence
 from src.database.database import Database
@@ -109,6 +109,7 @@ class SettingsWindow(QMainWindow):
             "keybinds": self.create_keybinds_page(),
             "colors": self.create_colors_page(),
             "scoring": self.create_scoring_page(),
+            "privacy": self.create_privacy_page(),
             "tag_groups": TagGroupsSettings(self)
         }
         
@@ -207,7 +208,8 @@ class SettingsWindow(QMainWindow):
             "Continue": loaded_keybinds['continue'],
             "Discard": loaded_keybinds['discard'], 
             "Next Image": loaded_keybinds['next_image'], 
-            "Previous Image": loaded_keybinds['previous_image']
+            "Previous Image": loaded_keybinds['previous_image'],
+            "Blur": loaded_keybinds['blur']
         }
         
         for key, value in keybinds.items():
@@ -313,6 +315,38 @@ class SettingsWindow(QMainWindow):
         # Connect combo box signal to update button names
         preset_combo.currentTextChanged.connect(lambda text: self.update_button_names(text, True))
         
+        return page
+    
+    def create_privacy_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        
+        # Create a row with a label and a SpinBox
+        row = QHBoxLayout()
+        label = QLabel("Blur Strength")
+        label.setFixedWidth(100)
+
+        blur_strength = QSpinBox()
+        blur_strength.setRange(0, 100)
+        blur_strength.setValue(self.config.get_value('privacy.blur_strength'))
+        blur_strength.setFixedWidth(100)
+
+        info_label = QLabel("(0-100) (requires restart)")
+        info_label.setFixedWidth(150)
+
+        row.addWidget(label)
+        row.addWidget(blur_strength)
+        row.addWidget(info_label)
+        row.addStretch() 
+        layout.addLayout(row)
+    
+        def update_blur_strength(value):
+            self.config.set_value('privacy.blur_strength', value)
+            self.config.save_config()
+
+        blur_strength.valueChanged.connect(update_blur_strength)
+        
+        layout.addStretch()
         return page
 
     def update_button_names(self, preset_name, save=False):
