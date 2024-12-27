@@ -105,20 +105,21 @@ class SettingsWindow(QMainWindow):
         
         # Add navigation buttons and corresponding pages
         self.pages = {
-            "Export": self.create_export_page(),
-            "Keybinds": self.create_keybinds_page(),
-            "Colors": self.create_colors_page(),
-            "Scoring": self.create_scoring_page(),
-            "Tag Groups": TagGroupsSettings(self)
+            "export": self.create_export_page(),
+            "keybinds": self.create_keybinds_page(),
+            "colors": self.create_colors_page(),
+            "scoring": self.create_scoring_page(),
+            "tag_groups": TagGroupsSettings(self)
         }
         
-        for name, page in self.pages.items():
-            btn = QPushButton(name)
+        for name, p in self.pages.items():
+            # convert name from snake_case to Title Case
+            btn = QPushButton(name.replace('_', ' ').title())
             btn.setCheckable(True)
             btn.setFixedHeight(40)
             btn.clicked.connect(lambda checked, n=name: self.switch_page(n))
             nav_layout.addWidget(btn)
-            self.content_stack.addWidget(page)
+            self.content_stack.addWidget(p)
         
         nav_layout.addStretch()
         
@@ -126,6 +127,10 @@ class SettingsWindow(QMainWindow):
         layout.addWidget(nav_widget)
         layout.addWidget(self.content_stack)
         
+        if page:
+            self.switch_page(page)
+            return
+
         # Select first page by default
         first_button = nav_widget.findChild(QPushButton)
         if first_button:
@@ -139,11 +144,14 @@ class SettingsWindow(QMainWindow):
         elif callback_type == 'keybinds':
             self.keybinds_updated_callback = callback
 
-    def switch_page(self, page_name):
+    def switch_page(self, page_name: str):
+
+        # convert page_name to snake_case
+        page_name = page_name.replace(' ', '_').lower()
         # Uncheck all buttons except the clicked one
         nav_buttons = self.findChildren(QPushButton)
         for button in nav_buttons:
-            if button.text() == page_name:
+            if button.text().replace(' ', '_').lower() == page_name:
                 button.setChecked(True)
             else:
                 button.setChecked(False)

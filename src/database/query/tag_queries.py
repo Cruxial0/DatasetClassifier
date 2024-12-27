@@ -51,9 +51,23 @@ class TagQueries:
                 tag_id, group_id, tag_name, tag_order = row
                 group_idx = group_mapping[group_id]
                 tag_groups[group_idx].add_tags([(tag_id, tag_name, tag_order)])
-        
+
         cursor.close()
         return tag_groups
+    
+    def get_tag_group(self, group_id: int) -> TagGroup:
+        """
+        Gets the tag group with the given id from the database, alongside its tags.
+        """
+        cursor = self.db.cursor()
+        cursor.execute("SELECT group_id, project_id, group_name, is_required, allow_multiple, min_tags, display_order FROM tag_groups WHERE group_id = ?", (group_id,))
+        group = TagGroup(*cursor.fetchone())
+        cursor.execute("SELECT tag_id, tag_name, display_order FROM tags WHERE group_id = ?", (group_id,))
+        for row in cursor.fetchall():
+            tag_id, tag_name, tag_order = row
+            group.add_tags([(tag_id, tag_name, tag_order)])
+        cursor.close()
+        return group
         
     def add_tag(self, name: str, group_id: int, order: int) -> int:
         cursor = self.db.cursor()
@@ -99,3 +113,32 @@ class TagQueries:
         cursor.executemany("UPDATE tag_groups SET display_order = ? WHERE group_id = ?", [(order[1], order[0]) for order in new_order])
         self.db.commit()
         cursor.close()
+
+    def delete_tag(self, tag_id: int):
+        cursor = self.db.cursor()
+        cursor.execute("DELETE FROM tags WHERE tag_id = ?", (tag_id,))
+        self.db.commit()
+        cursor.close()
+
+    def delete_tag_group(self, group_id: int):
+        cursor = self.db.cursor()
+        # First, delete all tags associated with this group
+        cursor.execute("DELETE FROM tags WHERE group_id = ?", (group_id,))
+        # Then delete the group
+        cursor.execute("DELETE FROM tag_groups WHERE group_id = ?", (group_id,))
+        self.db.commit()
+        cursor.close()
+
+    def tag_name_exists(self, tag_name: str, group_id: int) -> bool:
+        cursor = self.db.cursor()
+        cursor.execute("SELECT tag_id FROM tags WHERE tag_name = ? AND group_id = ?", (tag_name, group_id))
+        result = cursor.fetchone()
+        cursor.close()
+        return result is not None
+    
+    def tag_group_name_exists(self, group_name: str, project_id: int) -> bool:
+        cursor = self.db.cursor()
+        cursor.execute("SELECT group_id FROM tag_groups WHERE group_name = ? AND project_id = ?", (group_name, project_id))
+        result = cursor.fetchone()
+        cursor.close()
+        return result is not None

@@ -10,7 +10,7 @@ from src.button_states import ButtonStateManager
 from src.config_handler import ConfigHandler
 from src.database.database import Database
 from src.update_poller import UpdatePoller
-from src.tagging.tag_group import Tag
+from src.tagging.tag_group import Tag, TagGroup
 from src.utils import key_to_unicode
 
 class TaggingPage(QWidget):
@@ -23,7 +23,10 @@ class TaggingPage(QWidget):
         self.config_handler: ConfigHandler = parent.config_handler
         self.active_project: Project = parent.active_project
         self.image_handler: ImageHandler = ImageHandler(self.db, self.config_handler)
+
         self.current_image: int = None
+        self.active_tags: list[Tag] = None
+        self.active_groups: list[TagGroup] = None
 
         # Initialize keybind handler
         self.keybind_handler = KeybindHandler(self.config_handler)
@@ -201,7 +204,7 @@ class TaggingPage(QWidget):
     def update_tag_groups(self):
         self.tag_groups = self.db.tags.get_project_tags(self.active_project.id)
 
-        if self.tag_groups is None: 
+        if self.tag_groups is None or len(self.tag_groups) == 0: 
             return
         
         # Update label to tag group name
@@ -210,6 +213,8 @@ class TaggingPage(QWidget):
 
         # Create buttons for each tag in the first group
         self.active_tags = self.tag_groups[0].tags
+        if self.active_tags is None:
+            self.active_tags = []
         
         # Unregister all tagging keybinds
         for i in range(10):

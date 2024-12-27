@@ -35,12 +35,12 @@ class DatasetClassifier(QMainWindow):
         
         # Initialize pages
         self.scoring_page = ScoringPage(self)
-        self.tagging_page = TaggingPage(self)  # Add this line
+        self.tagging_page = TaggingPage(self)
         
         # Add both pages to the stacked widget
         self.stacked_widget.addWidget(self.scoring_page)
-        self.stacked_widget.addWidget(self.tagging_page)  # Add this line
-        
+        self.stacked_widget.addWidget(self.tagging_page) 
+
         # Create menu bar
         self.create_menu_bar()
         
