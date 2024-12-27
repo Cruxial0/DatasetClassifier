@@ -136,26 +136,17 @@ def create_update_date_triggers():
        UPDATE projects SET updated_at = CURRENT_TIMESTAMP
        WHERE project_id = NEW.project_id;
    END;
-
    CREATE TRIGGER update_tag_groups_project_delete
-   AFTER DELETE ON tag_groups
-   FOR EACH ROW
-   BEGIN
-       UPDATE projects SET updated_at = CURRENT_TIMESTAMP
-       WHERE project_id = OLD.project_id;
-   END;
-   """
-
-def create_tag_deletion_triggers():
-    return"""
-    CREATE TRIGGER update_tag_groups_project_delete
     AFTER DELETE ON tag_groups
     FOR EACH ROW
     BEGIN
         UPDATE projects SET updated_at = CURRENT_TIMESTAMP
         WHERE project_id = OLD.project_id;
     END;
+   """
 
+def create_tag_deletion_triggers():
+    return"""
     -- Cascade delete tags when tag_group is deleted
     CREATE TRIGGER delete_tags_cascade
     AFTER DELETE ON tag_groups
