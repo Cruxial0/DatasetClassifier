@@ -218,7 +218,9 @@ class ImageHandler:
             return False
             
         current_score, current_categories = self.get_score(image_path)
-        
+        if type(current_categories) is not list:
+            current_categories = []
+
         # Update categories
         new_categories = current_categories.copy()
         if isinstance(categories, list):

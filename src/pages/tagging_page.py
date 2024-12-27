@@ -3,7 +3,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QTransform, QKeySequence
 
 from src.blur_manager import BlurManager
-from src.keybinds.keybind_manager import KeybindHandler
+from src.keybinds.keybind_manager import KeyBinding, KeybindHandler
 from src.keybinds.pages.tagging_keybind_page import TaggingKeybindPage
 from src.image_handler import ImageHandler
 from src.project import Project
@@ -78,8 +78,8 @@ class TaggingPage(QWidget):
         # Register keybindings
         prev_button.clicked.connect(self.load_previous_image)
         next_button.clicked.connect(self.load_next_image)
-        self.keybind_page.register_button_binding('previous_image', prev_button)
-        self.keybind_page.register_button_binding('next_image', next_button)
+        self.keybind_page.register_binding('previous_image', prev_button)
+        self.keybind_page.register_binding('next_image', next_button)
 
         to_latest_button_right = QPushButton('>>')
         to_latest_button_right.setObjectName("to_latest_button_right")
@@ -208,30 +208,39 @@ class TaggingPage(QWidget):
         
         btn = QPushButton(tag.name)
         btn.setText(tag.name)
-
         btn.setObjectName(f'tag_button_{tag.id}')
         btn.clicked.connect(lambda: self.tag_button_click(tag.id))
         btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
 
         if tag.display_order < 10:
             key = f'key_{tag.display_order}'
-            hotkey_label = QLabel(key)
+            hotkey_label = QLabel()
             hotkey_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
             
-            # Add alignment flag to addWidget
             btn_layout.addWidget(hotkey_label, 0, Qt.AlignmentFlag.AlignVCenter)
             btn_layout.addWidget(btn, 0, Qt.AlignmentFlag.AlignVCenter)
 
-            bindings = self.keybind_handler.current_bindings
-            self.keybind_page.register_button_binding(f'key_{tag.display_order}', btn)
-
-            unicode = key_to_unicode(QKeySequence(bindings.get(key)).toString())
-            hotkey_label.setText(f"({unicode})")
-
+            # Register the button for this key binding
+            self.keybind_page.register_binding(key, btn)
+            
+            # Get and display all key combinations
+            bindings = self.keybind_handler.current_bindings.get(key, [])
+            shortcuts = []
+            for binding in bindings:
+                if binding.key is not None:
+                    key_sequence = self._create_key_sequence(binding)
+                    unicode = key_to_unicode(key_sequence.toString())
+                    shortcuts.append(unicode)
+            
+            shortcut_text = " / ".join(shortcuts) if shortcuts else ""
+            hotkey_label.setText(f"({shortcut_text})")
+            
+            # Store reference to hotkey label for updates
+            btn.setProperty("hotkey_label", hotkey_label)
+            
             return btn_layout
 
         btn_layout.addWidget(btn, 0, Qt.AlignmentFlag.AlignVCenter)
-
         return btn_layout
 
     def update_tag_groups(self, skip_update=False):
@@ -325,6 +334,15 @@ class TaggingPage(QWidget):
         self.current_image_id = self.image_handler.current_image_id
 
         self.update_score_label()
+
+    def _create_key_sequence(self, binding: KeyBinding) -> QKeySequence:
+        """Create a QKeySequence from a KeyBinding"""
+        key = binding.key
+        if binding.modifiers:
+            modifier_str = "+".join(mod.name.replace('KeyboardModifier.', '') 
+                                  for mod in binding.modifiers)
+            return QKeySequence(f"{modifier_str}+{key}")
+        return QKeySequence(key)
 
     def load_images(self):
         """Load images for the active project"""
