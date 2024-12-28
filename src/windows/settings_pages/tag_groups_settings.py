@@ -55,12 +55,8 @@ class TagWidget(QWidget):
         self.update_poller.poll_update('update_tag_groups')
 
     def delete_tag(self):
-        self.db.tags.delete_tag(self.tag.id)
-
-        # Used to update the UI in the Tagging Page
-        self.update_poller.poll_update('update_tag_groups')
-
         self.delete_callback(self.tag.id, 'tag')
+        self.db.tags.delete_tag(self.tag.id)
 
 class TagListItem(QListWidgetItem):
     def __init__(self, tag: Tag, database: Database, update_poller: UpdatePoller, delete_callback: Callable, list_widget: QListWidget):
@@ -107,12 +103,11 @@ class TagGroupWidget(QWidget):
         # Display a dialog to confirm deletion
         result = QMessageBox.question(self, "Delete Tag Group", "Are you sure you want to delete this tag group?\nThis action cannot be undone.", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         if result == QMessageBox.StandardButton.Yes:
+            self.delete_callback(self.tag_group.id, 'tag_group')
+
             self.db.tags.delete_tag_group(self.tag_group.id)
 
-            # Used to update the UI in the Tagging Page
-            self.update_poller.poll_update('update_tag_groups')
-
-            self.delete_callback(self.tag_group.id, 'tag_group')
+            
 
 class TagGroupListItem(QListWidgetItem):
     def __init__(self, tag_group: TagGroup, database: Database, update_poller: Callable, delete_callback: Callable, list_widget: QListWidget, callback: Callable):
@@ -416,15 +411,18 @@ class TagGroupsSettings(QWidget):
                 item = self.tag_groups_list.item(i)
                 if item.tag_group.id == id:
                     self.tag_groups_list.takeItem(i)
+                    self.update_tag_group_order()
                     if self.active_group is not None and id == self.active_group.id:
                         self.active_group = None
                         self.edit_tag_group_widget.clear_tag_group()
                         self.add_tag_button.setEnabled(False)
                         self.tags_list.clear()
+                        
                     break
         elif type == 'tag':
             for i in range(self.tags_list.count()):
                 item = self.tags_list.item(i)
+                self.update_tag_order()
                 if item.tag.id == id:
                     self.tags_list.takeItem(i)
                     break
@@ -441,6 +439,8 @@ class TagGroupsSettings(QWidget):
             item = items[i]
             item.tag_group.display_order = i
             new_order.append((item.tag_group.id, i))
+
+        print(f"item count: {len(new_order)}")
 
         self.db.tags.update_tag_group_order(new_order)
 
