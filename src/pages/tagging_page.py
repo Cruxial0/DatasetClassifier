@@ -201,7 +201,13 @@ class TaggingPage(QWidget):
             if layout is None:
                 continue
 
-            btn = layout.itemAt(1).widget()
+            first_item = layout.itemAt(1)
+
+            # This means the button does not have a hotkey label
+            if first_item is None:
+                first_item = layout.itemAt(0)
+
+            btn = first_item.widget()
             if not isinstance(btn, QPushButton):
                 continue
             
