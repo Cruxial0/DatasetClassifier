@@ -15,8 +15,8 @@ from src.windows.settings_pages.tag_groups_settings import TagGroupsSettings
 from src.update_poller import UpdatePoller
 
 class ColorButton(QPushButton):
-    def __init__(self, color=QColor):
-        super().__init__()
+    def __init__(self, color=QColor, parent=None):  # Add parent parameter
+        super().__init__(parent)  # Pass parent to superclass
         alphabet = string.ascii_lowercase + string.digits
         self.name = ''.join(random.choices(alphabet, k=8))
         self.setObjectName(self.name)
@@ -76,18 +76,18 @@ class KeybindWidget(QPushButton):
 class SettingsWindow(QMainWindow):
     def __init__(self, config: ConfigHandler, parent, page: str = None):
         super().__init__()
-
+        
         self.scoring_updated_callback = None
         self.colors_updated_callback = None
         self.keybinds_updated_callback = None
-
+        
         self.config = config
         self.setWindowTitle("Settings")
         self.setMinimumSize(800, 600)
         
-        self.db: Database = parent.db
-        self.project: Database = parent.active_project
-        self.update_poller: UpdatePoller = parent.update_poller
+        self.db = parent.db
+        self.project = parent.active_project
+        self.update_poller = parent.update_poller
         
         # Create main widget and layout
         main_widget = QWidget()
@@ -97,30 +97,29 @@ class SettingsWindow(QMainWindow):
         # Create navigation bar
         nav_widget = QWidget()
         nav_widget.setFixedWidth(200)
-        # nav_widget.setStyleSheet("background-color: #f0f0f0;")
         nav_layout = QVBoxLayout(nav_widget)
         
         # Create stacked widget for content
         self.content_stack = QStackedWidget()
         
-        # Add navigation buttons and corresponding pages
-        self.pages = {
-            "export": self.create_export_page(),
-            "keybinds": self.create_keybinds_page(),
-            "colors": self.create_colors_page(),
-            "scoring": self.create_scoring_page(),
-            "privacy": self.create_privacy_page(),
-            "tag_groups": TagGroupsSettings(self)
+        # Initialize pages dict but don't create pages yet
+        self._pages = {}
+        self._page_creators = {
+            "export": self.create_export_page,
+            "keybinds": self.create_keybinds_page,
+            "colors": self.create_colors_page,
+            "scoring": self.create_scoring_page,
+            "privacy": self.create_privacy_page,
+            "tag_groups": lambda: TagGroupsSettings(self)
         }
         
-        for name, p in self.pages.items():
-            # convert name from snake_case to Title Case
+        # Add navigation buttons
+        for name in self._page_creators.keys():
             btn = QPushButton(name.replace('_', ' ').title())
             btn.setCheckable(True)
             btn.setFixedHeight(40)
             btn.clicked.connect(lambda checked, n=name: self.switch_page(n))
             nav_layout.addWidget(btn)
-            self.content_stack.addWidget(p)
         
         nav_layout.addStretch()
         
@@ -136,19 +135,21 @@ class SettingsWindow(QMainWindow):
         first_button = nav_widget.findChild(QPushButton)
         if first_button:
             first_button.setChecked(True)
+            self.switch_page(list(self._page_creators.keys())[0])
 
-    def bind_callback(self, callback, callback_type: Literal['scoring', 'colors', 'keybinds']):
-        if callback_type == 'scoring':
-            self.scoring_updated_callback = callback
-        elif callback_type == 'colors':
-            self.colors_updated_callback = callback
-        elif callback_type == 'keybinds':
-            self.keybinds_updated_callback = callback
+    def get_page(self, page_name: str):
+        """Get or create a page"""
+        if page_name not in self._pages:
+            creator = self._page_creators.get(page_name)
+            if creator:
+                self._pages[page_name] = creator()
+                self.content_stack.addWidget(self._pages[page_name])
+        return self._pages.get(page_name)
 
     def switch_page(self, page_name: str):
-
         # convert page_name to snake_case
         page_name = page_name.replace(' ', '_').lower()
+        
         # Uncheck all buttons except the clicked one
         nav_buttons = self.findChildren(QPushButton)
         for button in nav_buttons:
@@ -157,8 +158,18 @@ class SettingsWindow(QMainWindow):
             else:
                 button.setChecked(False)
         
-        # Switch to the selected page
-        self.content_stack.setCurrentWidget(self.pages[page_name])
+        # Get or create the page and switch to it
+        page = self.get_page(page_name)
+        if page:
+            self.content_stack.setCurrentWidget(page)
+
+    def bind_callback(self, callback, callback_type: Literal['scoring', 'colors', 'keybinds']):
+        if callback_type == 'scoring':
+            self.scoring_updated_callback = callback
+        elif callback_type == 'colors':
+            self.colors_updated_callback = callback
+        elif callback_type == 'keybinds':
+            self.keybinds_updated_callback = callback
 
     def create_export_page(self):
         page = QWidget()
@@ -253,8 +264,12 @@ class SettingsWindow(QMainWindow):
                 keybind_widget.setText(keybind_widget.get_key_name(key))
 
     def create_colors_page(self):
-        page = QWidget()
-        layout = QVBoxLayout(page)
+        if hasattr(self, '_colors_page'):
+            return self._colors_page
+            
+        self._colors_page = QWidget(self)
+        layout = QVBoxLayout(self._colors_page)
+        
         loaded_colors = self.config.get_colors()
         colors = {
             "Accent Color": QColor.fromString(loaded_colors['accent_color']),
@@ -266,17 +281,18 @@ class SettingsWindow(QMainWindow):
         
         for name, color in colors.items():
             row = QHBoxLayout()
-            label = QLabel(name)
+            label = QLabel(name, self._colors_page)
             label.setFixedWidth(100)
-            color_button = ColorButton(color)
-            color_button.clicked.connect(lambda _, cb=color_button, n=self.get_key_name(name): cb.chooseColor(n, self.config, self.colors_updated_callback))
+            color_button = ColorButton(color, self._colors_page)
+            color_button.clicked.connect(lambda _, cb=color_button, n=self.get_key_name(name): 
+                cb.chooseColor(n, self.config, self.colors_updated_callback))
             row.addWidget(label)
             row.addWidget(color_button)
             row.addStretch()
             layout.addLayout(row)
-        
-        layout.addStretch()
-        return page
+
+        layout.addStretch(1)
+        return self._colors_page
 
     def create_scoring_page(self):
         page = QWidget()
