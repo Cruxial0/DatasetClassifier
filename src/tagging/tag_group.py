@@ -10,12 +10,12 @@ class Tag:
 
 @dataclass
 class TagGroup:
-    def __init__(self, id: int, project_id: int, name: str, order: int, is_required: bool = False, allow_multiple: bool = False, min_tags: int = 0):
+    def __init__(self, id: int, project_id: int, name: str, order: int, is_required: int = 1, allow_multiple: int = 0, min_tags: int = 0):
         self.id = id
         self.project_id = project_id
         self.name = name
-        self.is_required = is_required
-        self.allow_multiple = allow_multiple
+        self.is_required = bool(is_required)
+        self.allow_multiple = bool(allow_multiple)
         self.min_tags = min_tags
         self.tags: list[Tag] = None
         self.order = order
@@ -28,4 +28,4 @@ class TagGroup:
             self.tags.append(Tag(tag[0], tag[1], tag[2]))
 
     def __repr__(self) -> str:
-        return f"TagGroup(id={self.id}, name={self.name}, tags={self.tags}, order={self.order})"
+        return f"TagGroup(id={self.id}, name={self.name}, tags={self.tags}, order={self.order}) {{required:{self.is_required}, allow_multiple:{self.allow_multiple}, min_tags:{self.min_tags}}}"
