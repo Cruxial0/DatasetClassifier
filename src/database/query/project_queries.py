@@ -100,3 +100,25 @@ class ProjectQueries:
             raise ValueError(f"Project with id {project_id} not found")
 
         return result[0] > 0
+    
+    def has_tags(self, project_id: int) -> bool:
+        """Check if a project has any tag groups
+
+        Args:
+            project_id (int): The ID of the project to check.
+
+        Returns:
+            bool: True if the project has tag groups, False otherwise.
+
+        Raises:
+            ValueError: If the project ID is not found.
+        """
+        
+        cursor = self.db.cursor()
+        query = "SELECT COUNT(*) FROM tag_groups WHERE project_id = ?"
+        result = cursor.execute(query, (project_id,)).fetchone()
+
+        if not result:
+            raise ValueError(f"Project with id {project_id} not found")
+
+        return result[0] > 0

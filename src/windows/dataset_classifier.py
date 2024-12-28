@@ -125,10 +125,22 @@ class DatasetClassifier(QMainWindow):
     # Callbacks
 
     def export_callback(self, data):
+        # Check if there is anything to export
+        if not self.db.projects.has_scores(self.active_project.id) and not self.db.projects.has_tags(self.active_project.id):
+            QMessageBox.information(self, "Export", "There are no images to export.")
+            return
+        
         exporter = Exporter(data, self.db, self.config_handler)
         
+        export_items = exporter.process_export(self.db.images.get_export_images(self.active_project.id)).items()
+
+        if len(export_items) == 0:
+            QMessageBox.information(self, "Export", "No images found matching the export criteria.")
+            return
+
+        # Display summary
         summary = f"Export path: {exporter.output_dir}"
-        for key, value in exporter.process_export(self.db.images.get_export_images(self.active_project.id)).items():
+        for key, value in export_items:
             summary += f"\n - {value} images exported to '{key}'"
 
         confirm = QMessageBox.question(self, 'Export summary', 
