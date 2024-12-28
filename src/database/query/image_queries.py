@@ -138,4 +138,10 @@ class ImageQueries:
         """
 
         result = cursor.execute(query, (project_id,)).fetchall()
-        return [ExportImage(id=row[0], source_path=row[1], dest_path=None, score=row[2], categories=json.loads(row[3])) for row in result]
+        
+        output = []
+        for image_id, source_path, score, categories in result:
+            categories = [] if categories is None else json.loads(categories)
+            output.append(ExportImage(id=image_id, source_path=source_path, dest_path=None, score=score, categories=categories))
+        
+        return output
