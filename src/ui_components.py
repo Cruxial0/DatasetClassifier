@@ -111,7 +111,7 @@ class UIComponents:
         export = QAction('Export')
         settings = QAction('Settings')
 
-        menu_button = QPushButton("Swtich Mode")
+        menu_button = QPushButton("Switch Mode")
         menu_button.setFixedSize(100, 25)  # Adjust size as needed
 
         return (hide_scored_action, export, settings, menu_button)
