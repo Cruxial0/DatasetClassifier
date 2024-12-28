@@ -169,7 +169,7 @@ class TagGroupEditWidget(QWidget):
         self.main_layout.addLayout(min_tags_layout)
         self.main_layout.addWidget(self.prevent_auto_scroll)
 
-        for control in [self.name_edit, self.name_save_button, self.min_tags_input, self.allow_multiple_toggle, self.is_required_toggle, self.prevent_auto_scroll]:
+        for control in [self.name_edit, self.name_save_button, self.min_tags_label, self.min_tags_input, self.allow_multiple_toggle, self.is_required_toggle, self.prevent_auto_scroll]:
             control.setEnabled(False)
 
         # Bind signals
