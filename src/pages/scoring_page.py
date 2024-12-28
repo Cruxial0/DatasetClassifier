@@ -56,20 +56,34 @@ class ScoringPage(QWidget):
     def setup_keybinds(self):
         # Register score buttons (0-9)
         for i, button in enumerate(self.score_buttons[:-1]):
-            self.keybind_page.register_binding(f'key_{i}', button)
+            print(f"creating binding for button {button.objectName()} (key_{i})")
+            self.keybind_page.register_binding(f'key_{i}', lambda s=button.objectName(): self.click_score_button(s))
         
         # Register category buttons with Alt modifier
         for i, (button, _, _) in enumerate(self.category_buttons):
+            print(f"creating binding for category {button.objectName()} (key_{i})")
             self.keybind_page.register_binding(f'category_{i}', button)
         
         # Other bindings
-        self.keybind_page.register_binding('discard', self.score_buttons[-1])
+        print(f"creating binding for discard button ({self.score_buttons[-1].objectName()})")
+        self.keybind_page.register_binding('discard', lambda: self.click_score_button('discard'))
         self.keybind_page.register_binding('next_image', self.next_button)
         self.keybind_page.register_binding('previous_image', self.prev_button)
         self.keybind_page.register_binding('blur', self.toggle_blur)
         
         # Register with handler
         self.keybind_handler.register_page("scoring", self.keybind_page)
+
+    def click_score_button(self, object_name):
+        btn = self.findChild(QPushButton, object_name)
+        accent_color = self.config_handler.get_color('accent_color')
+        
+        btn.setStyleSheet(f"background-color: {accent_color};")
+
+        self.score_image(object_name)
+        
+        if not self.config_handler.get_value('behaviour.auto_scroll_scores'):
+            self.update_button_colors()
 
     def import_categories(self):
         categories = self.db.images.get_unique_categories(self.active_project.id)
@@ -156,7 +170,7 @@ class ScoringPage(QWidget):
         self.image_handler.score_image(score, None)
         
         # Update UI before loading next image
-        self.update_button_colors()
+        # self.update_button_colors()
         
         # Auto-scroll to next image (if enabled)
         if self.config_handler.get_value('behaviour.auto_scroll_scores'):
@@ -331,8 +345,7 @@ class ScoringPage(QWidget):
             """)
         self.button_states.declare_button_group(self.score_buttons, 'score')
         self.score_layout = layout.itemAt(0).layout()  # Store the score_layout
-        for button in self.score_buttons:
-            button.clicked.connect(lambda checked, s=button.objectName(): self.on_score_button_click(s, button))
+        
         return layout
 
     def check_category_button_name(self):
@@ -414,11 +427,6 @@ class ScoringPage(QWidget):
             self.keybind_page.remove_keybinding(f'category_{i}')
             self.keybind_page.register_binding(f'category_{i}', button)
         self.update_category_button_labels()
-
-    def on_score_button_click(self, score, button):
-        accent_color = self.config_handler.get_color('accent_color')
-        button.setStyleSheet(f"background-color: {accent_color};")
-        QTimer.singleShot(150, lambda: self.score_image(score))
 
     def update_button_colors(self):
         """
