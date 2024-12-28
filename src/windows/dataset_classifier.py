@@ -58,7 +58,7 @@ class DatasetClassifier(QMainWindow):
         view_menu.setToolTipsVisible(True)
 
         actions = UIComponents.create_menu_actions(self.config_handler)
-        self.hide_scored_action, self.auto_scroll_on_scoring_action, self.export_action, self.settings_action, self.menu_button = actions  
+        self.hide_scored_action, self.export_action, self.settings_action, self.menu_button = actions  
 
         button_widget = QWidget()
         layout = QHBoxLayout(button_widget)
@@ -73,7 +73,6 @@ class DatasetClassifier(QMainWindow):
         self.menu_button.clicked.connect(self.switch_mode)
 
         # self.hide_scored_action.triggered.connect(self.toggle_hide_scored_images)
-        # self.auto_scroll_on_scoring_action.triggered.connect(self.toggle_auto_scroll_on_scoring)
         self.export_action.triggered.connect(self.open_export_window)
         self.settings_action.triggered.connect(self.open_settings_window)
 

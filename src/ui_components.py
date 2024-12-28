@@ -108,12 +108,10 @@ class UIComponents:
     def create_menu_actions(config: ConfigHandler):
         hide_scored_action = QAction('Hide Scored Images', checkable=True)
         hide_scored_action.setToolTip('Hides all images that are already scored')
-        auto_scroll_on_scoring_action = QAction('Auto-scroll on scoring', checkable=True, checked=config.get_option('auto_scroll_on_scoring'))
-        auto_scroll_on_scoring_action.setToolTip('Automatically moves to the next image when a score button is clicked')
         export = QAction('Export')
         settings = QAction('Settings')
 
         menu_button = QPushButton("Swtich Mode")
         menu_button.setFixedSize(100, 25)  # Adjust size as needed
 
-        return (hide_scored_action, auto_scroll_on_scoring_action, export, settings, menu_button)
+        return (hide_scored_action, export, settings, menu_button)

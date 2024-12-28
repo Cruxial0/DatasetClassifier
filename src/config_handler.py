@@ -193,6 +193,15 @@ class ConfigHandler:
         with open(self.config_file, 'w') as f:
             yaml.dump(self.config, f, sort_keys=False)
 
+    def _create_default_config(self):
+        """Create a new config file with default values"""
+        try:
+            with open(self.config_file, 'w') as f:
+                yaml.dump(DEFAULT_VALUES, f, sort_keys=False)
+            print(f"Created new config file with default values at: {self.config_file}")
+        except Exception as e:
+            print(f"Error creating default config file: {e}")
+
     def _update_missing_fields(self, current_config: dict, default_config: dict) -> dict:
         """Recursively update config dictionary with any missing fields from defaults"""
         updated_config = current_config.copy()
