@@ -105,6 +105,7 @@ class SettingsWindow(QMainWindow):
         # Initialize pages dict but don't create pages yet
         self._pages = {}
         self._page_creators = {
+            "behaviour": self.create_behaviour_page,
             "export": self.create_export_page,
             "keybinds": self.create_keybinds_page,
             "colors": self.create_colors_page,
@@ -170,6 +171,26 @@ class SettingsWindow(QMainWindow):
             self.colors_updated_callback = callback
         elif callback_type == 'keybinds':
             self.keybinds_updated_callback = callback
+
+    def create_behaviour_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+
+        auto_scroll_scores = QCheckBox("Auto scroll on scoring")
+        auto_scroll_scores.setToolTip("Automatically moves to the next image when a score button is clicked")
+        auto_scroll_scores.setChecked(self.config.get_value('behaviour.auto_scroll_scores'))
+        auto_scroll_scores.checkStateChanged.connect(lambda state: self.config.set_value('behaviour.auto_scroll_scores', state.value > 0))
+
+        auto_scroll_on_tag_condition = QCheckBox("Auto scroll when TagGroup condition is met")
+        auto_scroll_on_tag_condition.setToolTip("Automatically moves to the next TagGroup when a TagGroup condition is met")
+        auto_scroll_on_tag_condition.setChecked(self.config.get_value('behaviour.auto_scroll_on_tag_condition'))
+        auto_scroll_on_tag_condition.checkStateChanged.connect(lambda state: self.config.set_value('behaviour.auto_scroll_on_tag_condition', state.value > 0))
+
+        layout.addWidget(auto_scroll_scores)
+        layout.addWidget(auto_scroll_on_tag_condition)
+
+        layout.addStretch()
+        return page
 
     def create_export_page(self):
         page = QWidget()

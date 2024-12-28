@@ -164,7 +164,6 @@ class TagStatusWidget(QWidget):
         # check how many tags exist in current group
         count = self._get_applied_tags(selected_tags)
         
-        
         if self.active_group.allow_multiple:
             condition = count >= self.active_group.min_tags
             self.seleted_tags_label.setText(f"{count}/{self.active_group.min_tags} selected")

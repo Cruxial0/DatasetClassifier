@@ -10,7 +10,7 @@ class Tag:
 
 @dataclass
 class TagGroup:
-    def __init__(self, id: int, project_id: int, name: str, order: int, is_required: int = 1, allow_multiple: int = 0, min_tags: int = 0):
+    def __init__(self, id: int, project_id: int, name: str, order: int, is_required: int = 1, allow_multiple: int = 0, prevent_auto_scroll: int = 0, min_tags: int = 0):
         self.id = id
         self.project_id = project_id
         self.name = name
@@ -18,6 +18,7 @@ class TagGroup:
         self.allow_multiple = bool(allow_multiple)
         self.min_tags = min_tags
         self.tags: list[Tag] = None
+        self.prevent_auto_scroll = bool(prevent_auto_scroll)
         self.order = order
 
     def add_tags(self, tags: list[tuple[int, str, int]]):

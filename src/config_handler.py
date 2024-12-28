@@ -4,19 +4,17 @@ import os
 
 from src.score_presets import get_preset
 
+default_behaviours = {
+    "auto_scroll_scores": True,
+    "auto_scroll_on_tag_condition": True
+}
+
 default_colors = {
     "accent_color": "#5a9bd8",
     "alternate_color": "#b08463",
     "warning_color": "#d93f00",
     "select_color": "#8c949a",
     "add_color": "#6b8e6b"
-}
-
-default_options = {
-    "hide_scored_images": False,
-    "auto_scroll_on_scoring": True,
-    "treat_categories_as_scoring": False,
-    "write_to_filesystem": False
 }
 
 default_keybinds = {
@@ -60,8 +58,8 @@ default_privacy = {
 
 # Combined defaults for get_value lookup
 DEFAULT_VALUES = {
+    "behaviour": default_behaviours,
     "colors": default_colors,
-    "options": default_options,
     "keybindings": default_keybinds,
     "export_options": default_export_options,
     "scores": default_scores,

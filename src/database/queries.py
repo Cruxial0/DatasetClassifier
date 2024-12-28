@@ -39,6 +39,7 @@ def create_tag_groups_schema():
         is_required BOOLEAN NOT NULL DEFAULT 1,
         allow_multiple BOOLEAN NOT NULL DEFAULT 0,
         min_tags INTEGER DEFAULT 1,
+        prevent_auto_scroll BOOLEAN NOT NULL DEFAULT 0,
         display_order INTEGER DEFAULT 0,
         FOREIGN KEY (project_id) REFERENCES projects(project_id)
     );"""

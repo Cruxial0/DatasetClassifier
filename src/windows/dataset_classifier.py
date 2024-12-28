@@ -53,11 +53,9 @@ class DatasetClassifier(QMainWindow):
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu('File')
         view_menu = menu_bar.addMenu('View')
-        options_menu = menu_bar.addMenu('Options')
 
         file_menu.setToolTipsVisible(True)
         view_menu.setToolTipsVisible(True)
-        options_menu.setToolTipsVisible(True)
 
         actions = UIComponents.create_menu_actions(self.config_handler)
         self.hide_scored_action, self.auto_scroll_on_scoring_action, self.export_action, self.settings_action, self.menu_button = actions  
@@ -72,7 +70,6 @@ class DatasetClassifier(QMainWindow):
         file_menu.addAction(self.export_action)
         file_menu.addAction(self.settings_action)
         view_menu.addAction(self.hide_scored_action)
-        options_menu.addAction(self.auto_scroll_on_scoring_action)
         self.menu_button.clicked.connect(self.switch_mode)
 
         # self.hide_scored_action.triggered.connect(self.toggle_hide_scored_images)

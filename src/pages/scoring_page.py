@@ -156,9 +156,10 @@ class ScoringPage(QWidget):
         # Update UI before loading next image
         self.update_button_colors()
         
-        # Load next image with preloading
-        if self.image_handler.load_next_image():
-            QTimer.singleShot(0, self.display_image)
+        # Auto-scroll to next image (if enabled)
+        if self.config_handler.get_value('behaviour.auto_scroll_scores'):
+            if self.image_handler.load_next_image():
+                QTimer.singleShot(0, self.display_image)
 
     def categorize_image(self, category: str):
         if not self.active_project:

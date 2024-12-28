@@ -21,7 +21,7 @@ class TagQueries:
         
         # First, get all tag groups for the project
         cursor.execute("""
-            SELECT group_id, project_id, group_name, is_required, allow_multiple, min_tags, display_order
+            SELECT group_id, project_id, group_name, is_required, allow_multiple, min_tags, prevent_auto_scroll, display_order
             FROM tag_groups
             WHERE project_id = ?
             ORDER BY display_order
@@ -36,10 +36,11 @@ class TagQueries:
                 id=row[0],
                 project_id=row[1],
                 name=row[2],
-                order=row[6],  # display_order is at index 6
+                order=row[7],  # display_order is at index 7
                 is_required=row[3],
                 allow_multiple=row[4],
-                min_tags=row[5]
+                min_tags=row[5],
+                prevent_auto_scroll=row[6]
             )
             tag_groups.append(tag_group)
             group_mapping[tag_group.id] = len(tag_groups) - 1
@@ -68,16 +69,17 @@ class TagQueries:
         Gets the tag group with the given id from the database, alongside its tags.
         """
         cursor = self.db.cursor()
-        cursor.execute("SELECT group_id, project_id, group_name, is_required, allow_multiple, min_tags, display_order FROM tag_groups WHERE group_id = ?", (group_id,))
+        cursor.execute("SELECT group_id, project_id, group_name, is_required, allow_multiple, min_tags, prevent_auto_scroll, display_order FROM tag_groups WHERE group_id = ?", (group_id,))
         result = cursor.fetchone()
         group = TagGroup(
                 id=result[0],
                 project_id=result[1],
                 name=result[2],
-                order=result[6],  # display_order is at index 6
+                order=result[7],  # display_order is at index 6
                 is_required=result[3],
                 allow_multiple=result[4],
-                min_tags=result[5]
+                min_tags=result[5], 
+                prevent_auto_scroll=result[6]
             )
         cursor.execute("SELECT tag_id, tag_name, display_order FROM tags WHERE group_id = ?", (group_id,))
         for row in cursor.fetchall():
@@ -146,8 +148,8 @@ class TagQueries:
         Updates the tag group with the given id in the database, with the new tag group's fields.
         """
         cursor = self.db.cursor()
-        cursor.execute("UPDATE tag_groups SET group_name = ?, display_order = ?, is_required = ?, allow_multiple = ?, min_tags = ? WHERE group_id = ?", 
-            (tag_group.name, tag_group.order, tag_group.is_required, tag_group.allow_multiple, tag_group.min_tags, tag_group.id))
+        cursor.execute("UPDATE tag_groups SET group_name = ?, display_order = ?, is_required = ?, allow_multiple = ?, min_tags = ?, prevent_auto_scroll = ? WHERE group_id = ?", 
+            (tag_group.name, tag_group.order, tag_group.is_required, tag_group.allow_multiple, tag_group.min_tags, tag_group.prevent_auto_scroll, tag_group.id))
         self.db.commit()
         cursor.close()
 

@@ -69,7 +69,7 @@ class TaggingPage(QWidget):
         scroll_area.setWidgetResizable(True)
 
         nav_button_layout = QHBoxLayout()
-# Remove spacing between buttons
+        # Remove spacing between buttons
         nav_button_layout.setSpacing(0)
         # Center the buttons in the layout
         nav_button_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -88,18 +88,8 @@ class TaggingPage(QWidget):
         self.keybind_page.register_binding('previous_image', prev_button)
         self.keybind_page.register_binding('next_image', next_button)
 
-        to_latest_button_right = QPushButton('>>')
-        to_latest_button_right.setObjectName("to_latest_button_right")
-        to_latest_button_right.setFixedWidth(40)
-
-        to_latest_button_left = QPushButton('<<')
-        to_latest_button_left.setObjectName("to_latest_button_left")
-        to_latest_button_left.setFixedWidth(40)
-
-        nav_button_layout.addWidget(to_latest_button_left)
         nav_button_layout.addWidget(prev_button)
         nav_button_layout.addWidget(next_button)
-        nav_button_layout.addWidget(to_latest_button_right)
         
         image_viewer_layout.addWidget(self.image_label)
         image_viewer_layout.addLayout(nav_button_layout)
@@ -190,12 +180,17 @@ class TaggingPage(QWidget):
             if tag_id not in self.image_tags:
                 self.image_tags.append(tag_id)
         
-        self.status_widget.check_group_conditions(self.image_tags)
+        condition_met = self.status_widget.check_group_conditions(self.image_tags)
+
+        # Auto-scroll when TagGroup condition is met (if enabled) (and not overridden by TagGroup)
+        if not self.current_group.prevent_auto_scroll:
+            if condition_met and self.config_handler.get_value('behaviour.auto_scroll_on_tag_condition'):
+                self.next_group()
+
         self.update_button_colors()
 
     def update_button_colors(self):
         untagged_enabled = self.status_widget.can_add_tag(self.image_tags)
-        print("Untagged enabled:", untagged_enabled)
         for i in range(self.tag_buttons_layout.count()):
             if self.tag_buttons_layout is None:
                 continue
@@ -418,6 +413,8 @@ class TaggingPage(QWidget):
             self.display_image()
 
     def load_next_image(self) -> bool:
+        if self.current_group is None:
+            return False
         if self.image_handler.load_next_image():
             self.display_image()
 
@@ -431,6 +428,8 @@ class TaggingPage(QWidget):
         return False
 
     def load_previous_image(self) -> bool:
+        if self.current_group is None:
+            return False
         if self.image_handler.load_previous_image():
             self.display_image()
 
