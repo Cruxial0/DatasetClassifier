@@ -168,19 +168,36 @@ class TagStatusWidget(QWidget):
         
         condition = count >= self.active_group.min_tags
         self.seleted_tags_label.setText(f"{count}/{self.active_group.min_tags} selected")
-        self.tag_group_status_label.setText("🟢" if condition else "🔴")
+        self._set_status_label(condition)
 
-        self.is_valid = condition
+        if condition and self.active_group.is_required:
+            self.is_valid = True
+        if not condition and self.active_group.is_required:
+            self.is_valid = False
+        if not condition and not self.active_group.is_required:
+            self.is_valid = True
 
         self._update_button_states()
 
-        return condition
+        return self.is_valid
        
     def update_score(self, score: str):
         self.score_label.setText(score)
 
+    def on_options_click(self):
+        self.parent.show_configure_tag_groups()
+
     def _update_button_states(self):
         self.next_button.setEnabled(self.is_valid)
 
-    def on_options_click(self):
-        self.parent.show_configure_tag_groups()
+    def _set_status_label(self, condition: bool):
+        
+        if condition and self.active_group.is_required or condition and not self.active_group.is_required:
+            self.tag_group_status_label.setText("🟢")
+            self.tag_group_status_label.setToolTip("Acceptable")
+        if not condition and self.active_group.is_required:
+            self.tag_group_status_label.setText("🔴")
+            self.tag_group_status_label.setToolTip("Not acceptable")
+        if not condition and not self.active_group.is_required:
+            self.tag_group_status_label.setText("🟡")
+            self.tag_group_status_label.setToolTip("Acceptable, not finished")
