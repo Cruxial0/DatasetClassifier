@@ -441,8 +441,6 @@ class TagGroupsSettings(QWidget):
             item.tag_group.display_order = i
             new_order.append((item.tag_group.id, i))
 
-        print(f"item count: {len(new_order)}")
-
         self.db.tags.update_tag_group_order(new_order)
 
         # Used to update the UI in the Tagging Page
