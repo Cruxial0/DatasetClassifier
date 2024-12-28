@@ -196,3 +196,41 @@ class TagQueries:
         cursor = self.db.cursor()
         cursor.execute("SELECT COUNT(*) FROM image_tags WHERE image_id = ?", (image_id,))
         return cursor.fetchone()[0]
+    
+    def get_latest_unfinished_image_group(self, project_id: int) -> tuple[int, int, int] | None:
+        cursor = self.db.cursor()
+        cursor.execute(
+            """
+            WITH tagged_counts AS (
+                -- Get the count of tags per image per group
+                SELECT 
+                    i.image_id,
+                    i.project_id,
+                    tg.group_id,
+                    tg.display_order,
+                    tg.min_tags,
+                    tg.is_required,
+                    COUNT(it.tag_id) as tag_count
+                FROM images i
+                CROSS JOIN tag_groups tg ON tg.project_id = i.project_id
+                LEFT JOIN tags t ON t.group_id = tg.group_id
+                LEFT JOIN image_tags it ON it.image_id = i.image_id AND it.tag_id = t.tag_id
+                WHERE i.project_id = ?  -- Parameter for project_id
+                GROUP BY i.image_id, tg.group_id
+            )
+            SELECT 
+                tc.image_id,
+                tc.group_id,
+                tc.display_order
+            FROM tagged_counts tc
+            WHERE 
+                tc.is_required = 1 
+                AND tc.tag_count < tc.min_tags
+            ORDER BY 
+                tc.image_id DESC,  -- Get the latest image first
+                tc.display_order ASC  -- Get the first incomplete group by display order
+            LIMIT 1;
+            """, (project_id,))
+        result = cursor.fetchone()
+        cursor.close()
+        return result

@@ -116,6 +116,7 @@ class TaggingPage(QWidget):
         self.status_widget = TagStatusWidget(self)
         self.status_widget.prev_clicked.connect(self.previous_group)
         self.status_widget.next_clicked.connect(self.next_group)
+        self.status_widget.latest_clicked.connect(self.to_latest)
         header_layout.addWidget(self.status_widget)
 
         # Tags
@@ -319,6 +320,32 @@ class TaggingPage(QWidget):
             self.status_widget.set_prev_button_enabled(False)
 
         self.update_tag_groups(skip_update=True)
+
+    def to_latest(self):
+        if not self.image_handler.current_image_id:
+            return
+        
+        result = self.db.tags.get_latest_unfinished_image_group(self.active_project.id)
+        if result is None:
+            return
+
+        image_id, group_id, group_order = result
+
+        print(f"Unfinished tag group: [{image_id}, {group_id}, {group_order}]")
+
+        if self.image_handler.load_image_from_raw_id(image_id):
+            
+            self.display_image()
+
+            self.current_group = self.tag_groups[group_order]
+            self.image_tags = self.db.tags.get_image_tags(self.current_image_id)
+            self.update_tag_groups(skip_update=True)
+
+            condition = self.current_group.order == 0 and not self.image_handler.previous_image_exists()
+            self.status_widget.set_prev_button_enabled(not condition)
+
+            self.update_button_colors()
+            self.update_progress()
 
     def display_image(self):
         """Optimized image display"""

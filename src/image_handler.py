@@ -195,6 +195,13 @@ class ImageHandler:
         if not self.image_ids or self.current_image_id is None:
             return False
         return self.image_ids.index(self.current_image_id) < len(self.image_ids) - 1
+    
+    def load_image_from_raw_id(self, image_id: int) -> bool:
+        if image_id in self.image_ids:
+            self.current_image_id = image_id
+            self.preload_images()
+            return True
+        return False
 
     def get_score(self, image_path: str) -> tuple[str | None, list[str]]:
         """Get score from cache if available"""

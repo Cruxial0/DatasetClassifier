@@ -26,6 +26,8 @@ button_style = """
 class TagStatusWidget(QWidget):
     next_clicked: pyqtSignal = pyqtSignal()
     prev_clicked: pyqtSignal = pyqtSignal()
+    latest_clicked: pyqtSignal = pyqtSignal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
@@ -88,10 +90,18 @@ class TagStatusWidget(QWidget):
         options_button = QPushButton("⚙️")
 
         self.prev_button = QPushButton("<")
+        self.latest_button = QPushButton("🎯")
         self.next_button = QPushButton(">")
+
+        self.prev_button.setFixedWidth(35)
+        self.latest_button.setFixedWidth(35)
+        self.next_button.setFixedWidth(35)
+
+        self.latest_button.setToolTip("Go to latest un-tagged group")
 
         self.prev_button.clicked.connect(self.prev_clicked)
         self.next_button.clicked.connect(self.next_clicked)
+        self.latest_button.clicked.connect(self.latest_clicked)
 
         self.prev_button.setEnabled(False)
         self.next_button.setEnabled(False)
@@ -100,9 +110,11 @@ class TagStatusWidget(QWidget):
         buttons_layout.addWidget(options_button)
         buttons_layout.addStretch(1)
         buttons_layout.addWidget(self.prev_button)
+        buttons_layout.addWidget(self.latest_button)
         buttons_layout.addWidget(self.next_button)
 
-        for button in [skip_button, options_button, self.prev_button, self.next_button]:
+        for button in [skip_button, options_button, self.prev_button, self.latest_button, self.next_button]:
+            button.setFixedHeight(30)
             button.setStyleSheet(button_style)
         
         bottom_row_layout.addLayout(buttons_layout)
