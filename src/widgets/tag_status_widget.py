@@ -27,6 +27,7 @@ class TagStatusWidget(QWidget):
     next_clicked: pyqtSignal = pyqtSignal()
     prev_clicked: pyqtSignal = pyqtSignal()
     latest_clicked: pyqtSignal = pyqtSignal()
+    skip_clicked: pyqtSignal = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -102,6 +103,7 @@ class TagStatusWidget(QWidget):
         self.prev_button.clicked.connect(self.prev_clicked)
         self.next_button.clicked.connect(self.next_clicked)
         self.latest_button.clicked.connect(self.latest_clicked)
+        skip_button.clicked.connect(self.skip_clicked)
 
         self.prev_button.setEnabled(False)
         self.next_button.setEnabled(False)
@@ -130,10 +132,8 @@ class TagStatusWidget(QWidget):
         self.main_layout.addLayout(bottom_row_layout)
 
         # Add click events
-        # skip_button.clicked.connect(self.on_skip_click)
         options_button.clicked.connect(self.on_options_click)
-        # prev_button.clicked.connect(self.parent.load_previous_image)
-        # next_button.clicked.connect(self.parent.load_next_image)
+
 
     def set_tag_groups(self, tag_groups: list[TagGroup]):
         self.tag_groups = tag_groups

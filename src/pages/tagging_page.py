@@ -108,6 +108,7 @@ class TaggingPage(QWidget):
         self.status_widget.prev_clicked.connect(self.previous_group)
         self.status_widget.next_clicked.connect(self.next_group)
         self.status_widget.latest_clicked.connect(self.to_latest)
+        self.status_widget.skip_clicked.connect(self.next_group)
         header_layout.addWidget(self.status_widget)
 
         # Tags
