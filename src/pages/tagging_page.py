@@ -47,6 +47,7 @@ class TaggingPage(QWidget):
 
         # Used in the settings window when updating tags
         self.update_poller.add_method('update_tag_groups', self.update_tag_groups)
+        self.update_poller.add_method('update_tagging_images', self.load_images)
 
         self.keybind_page.register_binding('discard', self.status_widget.prev_button)
         self.keybind_page.register_binding('continue', self.status_widget.next_button)

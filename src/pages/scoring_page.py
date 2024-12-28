@@ -12,6 +12,7 @@ from src.image_handler import ImageHandler
 from src.button_states import ButtonStateManager
 from src.ui_components import UIComponents
 from src.utils import key_to_unicode
+from src.update_poller import UpdatePoller
 
 class ScoringPage(QWidget):
     def __init__(self, parent):
@@ -20,6 +21,7 @@ class ScoringPage(QWidget):
         self.button_states: ButtonStateManager = parent.button_states
         self.db: Database = parent.db
         self.config_handler: ConfigHandler = parent.config_handler
+        self.update_poller: UpdatePoller = parent.update_poller
         self.active_project = None
         
         self.image_handler = ImageHandler(self.db, self.config_handler)
@@ -160,6 +162,8 @@ class ScoringPage(QWidget):
         if self.config_handler.get_value('behaviour.auto_scroll_scores'):
             if self.image_handler.load_next_image():
                 QTimer.singleShot(0, self.display_image)
+        
+        self.update_poller.poll_update('update_tagging_images')
 
     def categorize_image(self, category: str):
         if not self.active_project:
