@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QFrame, QPushButton
-from PyQt6.QtCore import Qt  # Add this import
+from PyQt6.QtCore import Qt, pyqtSignal  # Add this import
 
 from src.config_handler import ConfigHandler
 from src.tagging.tag_group import TagGroup
@@ -24,6 +24,8 @@ button_style = """
 """
 
 class TagStatusWidget(QWidget):
+    next_clicked: pyqtSignal = pyqtSignal()
+    prev_clicked: pyqtSignal = pyqtSignal()
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
@@ -88,6 +90,10 @@ class TagStatusWidget(QWidget):
         self.prev_button = QPushButton("<")
         self.next_button = QPushButton(">")
 
+        self.prev_button.clicked.connect(self.prev_clicked)
+        self.next_button.clicked.connect(self.next_clicked)
+
+        self.prev_button.setEnabled(False)
         self.next_button.setEnabled(False)
 
         buttons_layout.addWidget(skip_button)
@@ -132,6 +138,12 @@ class TagStatusWidget(QWidget):
             self.seleted_tags_label.setText(f"0/{self.active_group.min_tags} selected")
         else:
             self.seleted_tags_label.setText(f"0/1 selected")
+
+    def set_prev_button_enabled(self, enabled: bool):
+        self.prev_button.setEnabled(enabled)
+
+    def set_next_button_enabled(self, enabled: bool):
+        self.next_button.setEnabled(enabled)
 
     def check_group_conditions(self, selected_tags: list[int]) -> bool:
         if self.active_group is None:

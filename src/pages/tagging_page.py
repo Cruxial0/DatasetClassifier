@@ -29,6 +29,7 @@ class TaggingPage(QWidget):
         self.current_image_id: int = None
         self.current_group: TagGroup = None
         self.active_groups: list[TagGroup] = None
+        self.image_tags: list[int] = []
 
         # Initialize keybind handler
         self.keybind_handler = KeybindHandler(self.config_handler)
@@ -41,12 +42,14 @@ class TaggingPage(QWidget):
         self.load_images()
         self.update_button_colors()
 
-        self.image_tags: list[int] = self.db.tags.get_image_tags(self.current_image_id)
+        self.image_tags = self.db.tags.get_image_tags(self.current_image_id)
         self.status_widget.check_group_conditions(self.image_tags)
 
         # Used in the settings window when updating tags
         self.update_poller.add_method('update_tag_groups', self.update_tag_groups)
 
+        self.keybind_page.register_binding('discard', self.status_widget.prev_button)
+        self.keybind_page.register_binding('continue', self.status_widget.next_button)
         self.keybind_page.register_binding('blur', self.blur_manager.toggle_blur)
         self.keybind_handler.register_page("tagging", self.keybind_page)
 
@@ -109,26 +112,10 @@ class TaggingPage(QWidget):
         # Headers
         header_layout = QHBoxLayout()
         header_layout.setContentsMargins(7, 0, 7, 0)
-        # self.tag_group_label = QLabel("TAG_GROUP")
-        # self.tag_group_label.setAlignment(Qt.AlignmentFlag.AlignVCenter)
-        # self.score_label = QLabel("SCORE")
-        # self.tag_group_label.setAlignment(Qt.AlignmentFlag.AlignVCenter)
-        
-        # self.score_label = QLabel("SCORE")
-        # self.score_label.setStyleSheet(f"""
-        #     QLabel {{
-        #         background-color: {self.config_handler.get_color('accent_color')};
-        #         color: white;
-        #         padding: 5px 10px;
-        #         border-radius: 8px;
-        #         font-weight: bold;
-        #     }}
-        # """)
 
-        # header_layout.addWidget(self.tag_group_label)
-        # header_layout.addStretch(1)
-        # header_layout.addWidget(self.score_label)
         self.status_widget = TagStatusWidget(self)
+        self.status_widget.prev_clicked.connect(self.previous_group)
+        self.status_widget.next_clicked.connect(self.next_group)
         header_layout.addWidget(self.status_widget)
 
         # Tags
@@ -150,14 +137,6 @@ class TaggingPage(QWidget):
         # Controls
         controls_layout = QHBoxLayout()
         controls_layout.setContentsMargins(7, 7, 7, 7)
-
-        continue_btn = QPushButton("Continue")
-        skip_btn = QPushButton("Skip")
-
-        continue_btn.clicked.connect(self.next_group)
-
-        controls_layout.addWidget(continue_btn)
-        controls_layout.addWidget(skip_btn)
         
         # Progress bar
         progress_layout = QHBoxLayout()
@@ -283,10 +262,6 @@ class TaggingPage(QWidget):
             self.current_group = self.tag_groups[0]
             self.status_widget.set_tag_groups(self.tag_groups)
         
-        # Update label to tag group name
-        # self.tag_group_label.setText(self.current_group.name)
-        # self.tag_group_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
-
         if self.current_group.tags is None:
             self.current_group.tags = []
         
@@ -302,10 +277,11 @@ class TaggingPage(QWidget):
             self.tag_buttons_layout.addLayout(btn_layout)
 
         self.status_widget.set_active_group(self.current_group.order)
+        self.status_widget.check_group_conditions(self.image_tags)
+        self.update_button_colors()
         self.keybind_handler.register_page("tagging", self.keybind_page)
 
     def next_group(self):
-        print(f"---- NEXT GROUP START ----")
         if self.tag_groups is None or len(self.tag_groups) < 1 or self.current_group is None:
             return
 
@@ -313,18 +289,36 @@ class TaggingPage(QWidget):
             # check if there are more images
             if not self.load_next_image():
                 return
-            print(f"Next image: {self.image_handler.current_image_id}")
             return
         
-        print(f"Current group: {self.current_group.name} ({self.current_group.order}/{len(self.tag_groups)})")
         index = self.current_group.order + 1
         self.current_group = self.tag_groups[index]
 
+        self.status_widget.set_prev_button_enabled(True)
         
-        self.update_tag_groups(skip_update=True)
-        print(f"Next group: {self.current_group.name} ({index}/{len(self.tag_groups)})")
 
-        print(f"---- NEXT GROUP START ----")
+        self.update_tag_groups(skip_update=True)
+
+        if index == len(self.tag_groups) - 1 and not self.image_handler.next_image_exists():
+            self.status_widget.set_next_button_enabled(False)
+
+    def previous_group(self):
+        if self.tag_groups is None or len(self.tag_groups) < 1 or self.current_group is None:
+            return
+
+        if self.current_group.order - 1 < 0:
+            # check if there are more images
+            if not self.load_previous_image():
+                return
+            return
+        
+        index = self.current_group.order - 1
+        self.current_group = self.tag_groups[index]
+
+        if index == 0 and not self.image_handler.previous_image_exists():
+            self.status_widget.set_prev_button_enabled(False)
+
+        self.update_tag_groups(skip_update=True)
 
     def display_image(self):
         """Optimized image display"""
@@ -392,6 +386,7 @@ class TaggingPage(QWidget):
             self.display_image()
 
             self.current_group = self.tag_groups[0]
+            self.image_tags = self.db.tags.get_image_tags(self.current_image_id)
             self.update_tag_groups(skip_update=True)
 
             self.update_button_colors()
@@ -403,7 +398,8 @@ class TaggingPage(QWidget):
         if self.image_handler.load_previous_image():
             self.display_image()
 
-            self.current_group = self.tag_groups[0]
+            self.current_group = self.tag_groups[-1]
+            self.image_tags = self.db.tags.get_image_tags(self.current_image_id)
             self.update_tag_groups(skip_update=True)
 
             self.update_button_colors()
