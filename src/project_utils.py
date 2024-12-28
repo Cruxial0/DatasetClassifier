@@ -37,6 +37,6 @@ def new_project(project_name: str, directories: list[str], db: Database) -> Proj
 
 
 def load_project_from_id(project_id: int, db: Database) -> Project:
-    project = db.projects.load_project(project_id)
+    project = db.projects.load(project_id)
 
     return Project(project[0], project[1], project[2], db)

@@ -282,6 +282,9 @@ class ScoringPage(QWidget):
                 self.button_states.toggle_button(True, 'to_latest_button_right', 'image')
                 self.button_states.toggle_button(False, 'to_latest_button_left', 'image')
         except ValueError:
+            if not self.db.projects.has_scores(self.active_project.id):
+                return
+            
             print("Error: Could not determine image positions")
 
     def create_middle_row(self):
