@@ -166,6 +166,20 @@ class TaggingPage(QWidget):
         self.progress_bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.progress_label = QLabel("0/0")
         self.progress_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        self.progress_bar.setFixedHeight(15)
+        self.progress_bar.setStyleSheet(
+            f"""
+            QProgressBar {{
+                border: 1px solid transparent;
+                border-radius: 5px;
+                text-align: center;
+            }}
+
+            QProgressBar::chunk {{
+                background-color: {self.config_handler.get_color('accent_color')};
+                border-radius: 5px;
+            }}
+            """)
 
         progress_layout.addWidget(self.progress_bar)
         progress_layout.addWidget(self.progress_label)
