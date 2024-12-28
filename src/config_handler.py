@@ -4,19 +4,17 @@ import os
 
 from src.score_presets import get_preset
 
+default_behaviours = {
+    "auto_scroll_scores": True,
+    "auto_scroll_on_tag_condition": True
+}
+
 default_colors = {
     "accent_color": "#5a9bd8",
     "alternate_color": "#b08463",
     "warning_color": "#d93f00",
     "select_color": "#8c949a",
     "add_color": "#6b8e6b"
-}
-
-default_options = {
-    "hide_scored_images": False,
-    "auto_scroll_on_scoring": True,
-    "treat_categories_as_scoring": False,
-    "write_to_filesystem": False
 }
 
 default_keybinds = {
@@ -60,8 +58,8 @@ default_privacy = {
 
 # Combined defaults for get_value lookup
 DEFAULT_VALUES = {
+    "behaviour": default_behaviours,
     "colors": default_colors,
-    "options": default_options,
     "keybindings": default_keybinds,
     "export_options": default_export_options,
     "scores": default_scores,
@@ -78,23 +76,28 @@ class ConfigHandler:
         if not os.path.exists(self.config_file):
             # Create new config file with default values
             self._create_default_config()
+            return DEFAULT_VALUES.copy()
         
         try:
             with open(self.config_file, 'r') as f:
                 loaded_config = yaml.safe_load(f)
-                return loaded_config if loaded_config is not None else {}
+                if loaded_config is None:
+                    loaded_config = {}
+                
+                # Update config with any missing fields
+                updated_config = self._update_missing_fields(loaded_config, DEFAULT_VALUES)
+                
+                # If we added any missing fields, save the updated config
+                if updated_config != loaded_config:
+                    with open(self.config_file, 'w') as f:
+                        yaml.dump(updated_config, f, sort_keys=False)
+                    print(f"Updated config file with missing fields at: {self.config_file}")
+                    
+                return updated_config
+            
         except Exception as e:
             print(f"Error loading config file: {e}")
-            return {}
-
-    def _create_default_config(self):
-        """Create a new config file with default values"""
-        try:
-            with open(self.config_file, 'w') as f:
-                yaml.dump(DEFAULT_VALUES, f, sort_keys=False)
-            print(f"Created new config file with default values at: {self.config_file}")
-        except Exception as e:
-            print(f"Error creating default config file: {e}")
+            return DEFAULT_VALUES.copy()
 
     def get_value(self, path: str) -> Any:
         """Get a value from config using dot notation with fallback to defaults"""
@@ -189,3 +192,25 @@ class ConfigHandler:
     def save_config(self):
         with open(self.config_file, 'w') as f:
             yaml.dump(self.config, f, sort_keys=False)
+
+    def _create_default_config(self):
+        """Create a new config file with default values"""
+        try:
+            with open(self.config_file, 'w') as f:
+                yaml.dump(DEFAULT_VALUES, f, sort_keys=False)
+            print(f"Created new config file with default values at: {self.config_file}")
+        except Exception as e:
+            print(f"Error creating default config file: {e}")
+
+    def _update_missing_fields(self, current_config: dict, default_config: dict) -> dict:
+        """Recursively update config dictionary with any missing fields from defaults"""
+        updated_config = current_config.copy()
+        
+        for key, default_value in default_config.items():
+            if key not in updated_config:
+                updated_config[key] = default_value
+            elif isinstance(default_value, dict) and isinstance(updated_config[key], dict):
+                # Recursively update nested dictionaries
+                updated_config[key] = self._update_missing_fields(updated_config[key], default_value)
+                
+        return updated_config

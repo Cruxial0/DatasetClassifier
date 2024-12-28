@@ -1,22 +1,66 @@
 # DatasetClassifier
-A simple tool to help you speed up your workflow when manually scoring and categorizing images.
+A new spin on manual dataset curation
 
-## Overview
-DatasetClassifier is an efficient and customizable image browser combined with categorization and scoring features. The purpose of DatasetClassifier is to speed up the manual workflow of curating larger datasets. I created it as no real alternatives existed at the time, with the best alternative being manually dragging/dropping images into folders in windows file explorer.
+## Introduction
+DatasetClassifier is a customizable tool aimed at speeding up the workflow of manual dataset curation. The idea behind this application is to speed up the process of reviewing and captioning images.
 
-As an example workflow, I usually use this tool to quickly curate and discard unwanted images from large datasets downloaded from booru. I like to make models of broad subjects, so the datasets usually end up being around 20-30k images. Using this tool, I can get through about 3-4 thousand images an hour, making it much more efficient (not to mention less straining) than windows file explorer.
+### Motivations
+I'll admit, I might be a bit crazy. I like to create datasets of a broad concept, so what I often do is I boot up [Grabber](https://github.com/Bionus/imgbrd-grabber), type in some tags, and suddenly I am left with a dataset of tens of thousands of images. Obviously, not all these images are worth keeping, so manual review is needed. The first time around, I painstakingly drag/dropped images in Windows File Explorer into different folders to sort them. Never again, I said to myself, then a few weeks later I was back at it again, with an even larger dataset...
 
-![DatasetClassifier Interface](https://github.com/user-attachments/assets/20d55a39-b5c4-438c-b7a2-1f9ddef0e3f6)
+I think you see where I'm going with this. Dragging/Dropping images in Windows File Explorer is not very fun.
 
-## Key Features
-1. **Simple Interface**: Select input and output folders at the top of the application.
-2. **Image Browser**: Central panel displays the current image for classification.
-3. **Categorization**: Assign multiple categories to each image for detailed organization.
-4. **Flexible Output**: Images are saved in both the main scoring folder and respective category folders.
-5. **Rule-based Export**: You can define your own rules and customize the export pattern.
-6. **Customization**: Many parts of the interface can be customized to better suit your needs.
+Surprisingly, there were no good options for manual dataset review that met my criteria, so that's where the idea came from.
 
-## Rule-based export
+### Structure
+DatasetClassifier has two main parts:
+1. **The Scoring Part** - This is where you sift through images. You can assign a score to each image, or discard it completely. You can also add categories to images, which will be explained more in detail later.
+2. **The Tagging Part** - This is a reimagined tagging process based around my personal needs. You can define your own checklist which you will have to step through for each image.
+
+#### Scoring
+The scoring process is relatively straight-forward. You see an image, you determine how good that image is for your dataset, and you apply the corresponding score. In my own testing, I am able to get through about 2-3k images per hour using this approach (this rate is without any categorization).
+
+Categories are a way to provide additional information to your images, which can later be used to seperate them into their own directories based on category combinations. Here's an example of how you might use them:
+
+Let's say you define two categories, based on how much manual work they need: `needs_editing` and `needs_cropping`. For each image, you can apply the relevant categories. Later when you export these images, you can define rules that export images with the `needs_editing` category into it's own subfolder, and `needs_cropping` into another subfolder. You can also define a rule to export images with both categories into a third subfolder.
+
+#### Tagging
+The tagging process has a little bit of a learning curve to understand correctly. It works using `Tags` and `TagGroups`. A `TagGroup` is essentially a collection of tags, as the name suggests. It allows you to define conditions that must be met before moving on to tagging the next image. Here's an example of how you may configure your `TagGroups` (using booru tags as an example):
+```
+# Subjects:
+- 1girl
+- 2girls
+- 3girls
+
+Background:
+- simple background
+- classroom
+- scenery
+
+Composition:
+- portrait
+- group photo
+- overview
+```
+
+In this example, you would first select one or more tags from the "# Subjects" group, then move on to the "Background" group and select the relevant tag for that group. This process repeats for every image.
+
+Each group is customizable, so if we wanted the "Composition" group to be optional, we could do that. If we want to enforce **at least** two tags for the "Background" group, we can do that too.
+
+## Customization
+DatasetClassifier is built around the principle of customization. Most things can be customized, including: App Behaviour, Theme Colors, Keybinds, etc.
+
+Some of the more advanced customizations will be explained here.
+
+### Tag Groups
+TagGroups are created on a per-project basis. Each group can contain practically unlimited tags.
+
+Here is an explanation of each property of a TagGroup:
+- **Required:** Whether or not the TagGroup has to be completed in order to proceed
+- **Allow Multiple:** Whether or not the TagGroup allows multiple tags to be selected
+- **Minimum Tags:** Minimum amount of tags required to proceed
+- **Prevent Auto Scroll:** Whether or not to automatically scroll to the next TagGroup when the current TagGroup's condition is met
+
+### Rule-based export
 With rule based export, you can define your own rules.
 
 Here is an example of how the export window might look:
@@ -24,7 +68,7 @@ Here is an example of how the export window might look:
 
 Exports work with priorities. It starts with the highest priority, then works it's way down the list. All images that don't meet a rule will be exported to the base directory.
 
-### Rule Ordering
+#### Rule Ordering
 Say you have these categories: `needs editing, needs cropping, complete`
 
 You may want to export images that need a large amount of manual edits to it's own folder, while still storing other files to their respective output paths. This can be done by selecting multiple categories.
@@ -46,61 +90,17 @@ Here is an example of how you would configure an export for the example above:
 
 In this example, all images with both the `needs editing` and `needs cropping` categories will be exported to `./heavy_edits`, while images that only contain either `needs editing` or `needs cropping` will be exported to their respective folders. Images with the `completed` category, or without categories will be exported to the root of the export directory.
 
-### Options
-**Seperate by Score:** Seperates all images by score, then by category. Images that would be saved to `.` will instead be saved to `./score_9`, `./score_8_up` etc.
-
-## Keyboard-Centric Design
-DatasetClassifier prioritizes efficiency with a keyboard-driven interface. All functions have customizable keybinds, configured through the provided settings interface, or by manually editing the `config.yaml` file.
-The application works with modifier layers. By default, all keybinds are on the middle row of the keyboard (Based on the English QWERTY layout). Using the ALT modifier toggles categories, while CTRL removes categories. Holding ALT or CTRL will highlight which buttons they affect. I encourage you to play around with these, as they will massively speed up your workflow.
-
-### Default Keybinds
-```yaml
-# Scoring
-key_0: A # score_9
-key_1: S # score_8_up
-key_2: D # score_7_up
-key_3: F # score_6_up
-key_4: G # score_5_up
-key_5: H # score_4_up
-key_6: J
-key_7: K
-key_8: L
-key_9: ;
-discard: BACKSPACE
-
-# Navigation
-image_next: Right
-image_previous: Left
-```
-
-## Customization
-Customization is always a core principle of mine. I have added support for customizing things such as keybinds, color themes and scoring presets.
-
-### Scoring Presets
-Scoring Presets are the visual sugar to your scoring. By default it uses the PonyDiffusion convention, which goes as follows:
-```
-score_9, score_8_up, score_7_up, score_6_up, score_5_up, score_4_up
-```
-Understandably, this convention is critiziced by some, which is why DatasetClassifier lets you choose between 6 different scoring presets:
-```yaml
-pdxl_preset = ['score_9', 'score_8_up', 'score_7_up', 'score_6_up', 'score_5_up', 'score_4_up']
-tier_preset = ['S-Tier', 'A-Tier', 'B-Tier', 'C-Tier', 'D-Tier', 'F-Tier']
-numeric_tier_preset = ['Tier 1', 'Tier 2', 'Tier 3', 'Tier 4', 'Tier 5', 'Tier 6']
-performance_tier_preset = ['Outstanding', 'Excellent', 'Good', 'Average', 'Below Average', 'Poor']
-star_tier_preset = ['★★★★★', '★★★★☆', '★★★☆☆', '★★☆☆☆', '★☆☆☆☆', '☆☆☆☆☆']
-booru_tier_preset = ['masterpiece', 'high quality', 'good quality', 'average', 'low quality', 'poor quality']
-```
 
 ## Installation
 ### Windows
 1. Install Python (version 3.8 or greater)
 2. Clone the repository with `git clone https://github.com/Cruxial0/DatasetClassifier.git`
-3. Run `run.bat`
+3. Run `run-win.bat`
 ### Mac
 1. Install Python (version 3.8 or greater)
 2. Clone the repository with `git clone https://github.com/Cruxial0/DatasetClassifier.git`
 3. Open a terminal in the cloned folder
-4. Run command: `sh run.sh`
+4. Run command: `sh run-mac.sh`
 ### Linux
 Not tested
 

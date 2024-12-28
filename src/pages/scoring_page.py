@@ -156,9 +156,10 @@ class ScoringPage(QWidget):
         # Update UI before loading next image
         self.update_button_colors()
         
-        # Load next image with preloading
-        if self.image_handler.load_next_image():
-            QTimer.singleShot(0, self.display_image)
+        # Auto-scroll to next image (if enabled)
+        if self.config_handler.get_value('behaviour.auto_scroll_scores'):
+            if self.image_handler.load_next_image():
+                QTimer.singleShot(0, self.display_image)
 
     def categorize_image(self, category: str):
         if not self.active_project:
@@ -307,6 +308,20 @@ class ScoringPage(QWidget):
     
     def create_scoring_buttons(self):
         layout, self.score_buttons, self.progress_bar, self.progress_label = UIComponents.create_scoring_buttons(self.default_scores, self.button_states.score_enabled, self.config_handler)
+        self.progress_bar.setFixedHeight(15)
+        self.progress_bar.setStyleSheet(
+            f"""
+            QProgressBar {{
+                border: 1px solid transparent;
+                border-radius: 5px;
+                text-align: center;
+            }}
+
+            QProgressBar::chunk {{
+                background-color: {self.config_handler.get_color('accent_color')};
+                border-radius: 5px;
+            }}
+            """)
         self.button_states.declare_button_group(self.score_buttons, 'score')
         self.score_layout = layout.itemAt(0).layout()  # Store the score_layout
         for button in self.score_buttons:

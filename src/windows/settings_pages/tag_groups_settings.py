@@ -1,6 +1,7 @@
 from typing import Callable, Literal
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QListWidget, QListWidgetItem, QPushButton, QSizePolicy, QLineEdit, QMessageBox
-from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QListWidget, QListWidgetItem, QPushButton, QSizePolicy, QLineEdit, QMessageBox, QCheckBox, QSpinBox
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QFont
 
 from src.project import Project
 from src.database.database import Database
@@ -89,23 +90,12 @@ class TagGroupWidget(QWidget):
         button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         button.clicked.connect(self.on_button_clicked)
 
-        required_button = QPushButton("R")
-        required_button.setFixedWidth(30)
-        required_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-
-        min_tags_button = QPushButton(str(self.tag_group.min_tags))
-        min_tags_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        min_tags_button.setFixedWidth(40)
-        min_tags_button.setDisabled(True)
-
         delete_button = QPushButton("-")
         delete_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         delete_button.setFixedWidth(30)
         delete_button.clicked.connect(self.delete_tag_group)
 
         self.main_layout.addWidget(button)
-        self.main_layout.addWidget(required_button)
-        self.main_layout.addWidget(min_tags_button)
         self.main_layout.addWidget(delete_button)
 
     def on_button_clicked(self):
@@ -139,6 +129,137 @@ class TagGroupListItem(QListWidgetItem):
         self.setSizeHint(widget.sizeHint())
 
 
+class TagGroupEditWidget(QWidget):
+    group_updated: pyqtSignal = pyqtSignal(TagGroup)
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.active_group = None
+
+        self.main_layout = QVBoxLayout(self)
+
+        self.group_label = QLabel("Editing:")
+        self.group_label.setFont(QFont("Arial", 10, QFont.Weight.Bold))
+
+        name_edit_layout = QHBoxLayout()
+        self.name_edit = QLineEdit()
+        self.name_save_button = QPushButton("Save")
+
+        name_edit_layout.addWidget(self.name_edit)
+        name_edit_layout.addWidget(self.name_save_button)
+    
+        self.is_required_toggle = QCheckBox("Required")
+        self.is_required_toggle.setToolTip("Whether or not the condition for this TagGroup must be met to proceed")
+
+        min_tags_layout = QHBoxLayout()
+        self.min_tags_label = QLabel("Minimum Tags")
+        self.min_tags_input = QSpinBox()
+        self.allow_multiple_toggle = QCheckBox("Allow Multiple")
+
+        self.min_tags_label.setToolTip("Minimum number of tags required to proceed\nDoes not apply if 'Allow Multiple' is unchecked")
+        self.allow_multiple_toggle.setToolTip("Whether or not multiple tags can be selected for this TagGroup")
+
+        self.min_tags_input.setMinimum(1)
+
+        self.prevent_auto_scroll = QCheckBox("Prevent Auto Scroll")
+        self.prevent_auto_scroll.setToolTip("Prevents auto scrolling when a TagGroup condition is met")
+
+        min_tags_layout.addWidget(self.min_tags_label)
+        min_tags_layout.addWidget(self.min_tags_input)
+        min_tags_layout.addWidget(self.allow_multiple_toggle)
+
+        self.main_layout.addWidget(self.group_label)
+        self.main_layout.addLayout(name_edit_layout)
+        self.main_layout.addWidget(self.is_required_toggle)
+        self.main_layout.addLayout(min_tags_layout)
+        self.main_layout.addWidget(self.prevent_auto_scroll)
+
+        for control in [self.name_edit, self.name_save_button, self.min_tags_input, self.allow_multiple_toggle, self.is_required_toggle, self.prevent_auto_scroll]:
+            control.setEnabled(False)
+
+        # Bind signals
+        self.name_edit.textChanged.connect(self.on_name_edit_changed)
+        self.name_save_button.clicked.connect(self.on_name_edit_saved)
+        self.min_tags_input.valueChanged.connect(self.on_min_tags_changed)
+        self.allow_multiple_toggle.stateChanged.connect(self.on_allow_multiple_changed)
+        self.is_required_toggle.stateChanged.connect(self.on_is_required_changed)
+        self.prevent_auto_scroll.stateChanged.connect(self.on_prevent_auto_scroll_changed)
+
+    def set_tag_group(self, tag_group: TagGroup):
+        self.active_group = tag_group
+        self.group_label.setText(f"Editing: {tag_group.name}")
+        self.name_edit.setText(tag_group.name)
+        self.min_tags_input.setValue(tag_group.min_tags)
+        self.allow_multiple_toggle.setChecked(tag_group.allow_multiple)
+        self.is_required_toggle.setChecked(tag_group.is_required)
+
+        self._handle_button_states()
+
+    def clear_tag_group(self):
+        self.active_group = None
+        self.group_label.setText("Editing:")
+        self.name_edit.setText('')
+        self._handle_button_states()
+
+    def on_name_edit_changed(self):
+        self._handle_button_states()
+
+    def on_allow_multiple_changed(self):
+        self.min_tags_label.setEnabled(self.allow_multiple_toggle.isChecked())
+        self.min_tags_input.setEnabled(self.allow_multiple_toggle.isChecked())
+        self.active_group.allow_multiple = self.allow_multiple_toggle.isChecked()
+
+        self._handle_button_states()
+        self.group_updated.emit(self.active_group)
+
+    def on_is_required_changed(self):
+        self.active_group.is_required = self.is_required_toggle.isChecked()
+
+        self._handle_button_states()
+        self.group_updated.emit(self.active_group)
+
+    def on_name_edit_saved(self):
+        self.active_group.name = self.name_edit.text()
+        self.group_label.setText(f"Editing: {self.active_group.name}")
+        self.group_updated.emit(self.active_group)
+
+        self._handle_button_states()
+
+    def on_min_tags_changed(self):
+        if not self.allow_multiple_toggle.isChecked():
+            self.min_tags_input.setValue(1)
+            return
+        
+        self.active_group.min_tags = self.min_tags_input.value()
+        self.group_updated.emit(self.active_group)
+
+        self._handle_button_states()
+
+    def on_prevent_auto_scroll_changed(self):
+        self.active_group.prevent_auto_scroll = self.prevent_auto_scroll.isChecked()
+        self.group_updated.emit(self.active_group)
+
+        self._handle_button_states()
+
+    def _handle_button_states(self):
+        condition = self.active_group is not None
+        
+        self.name_edit.setEnabled(condition)
+        self.is_required_toggle.setEnabled(condition)
+        self.allow_multiple_toggle.setEnabled(condition)
+        self.prevent_auto_scroll.setEnabled(condition)
+        self.name_save_button.setEnabled(condition)
+        self.min_tags_label.setEnabled(condition)
+        self.min_tags_input.setEnabled(condition)
+        
+        if not condition:
+            return
+            
+        self.name_save_button.setEnabled(self.name_edit.text() != '' and self.name_edit.text().strip() != self.active_group.name)
+
+        self.min_tags_label.setEnabled(self.allow_multiple_toggle.isChecked())
+        self.min_tags_input.setEnabled(self.allow_multiple_toggle.isChecked())
+
 class TagGroupsSettings(QWidget):
     def __init__(self, parent):
         super().__init__()
@@ -160,6 +281,7 @@ class TagGroupsSettings(QWidget):
         column_layout = QVBoxLayout()
 
         tag_groups_label = QLabel("Tag Groups")
+        tag_groups_label.setFont(QFont("Arial", 16, QFont.Weight.Bold))
         column_layout.addWidget(tag_groups_label)
 
         add_layout = QHBoxLayout()
@@ -169,6 +291,7 @@ class TagGroupsSettings(QWidget):
         self.add_group_name_input.setPlaceholderText("Tag Group Name")
 
         add_button.clicked.connect(self.add_tag_group)
+        self.add_group_name_input.returnPressed.connect(self.add_tag_group)
 
         add_layout.addWidget(add_button)
         add_layout.addWidget(self.add_group_name_input)
@@ -199,17 +322,26 @@ class TagGroupsSettings(QWidget):
     def _setup_right_column(self):
         column_layout = QVBoxLayout()
 
-        self.tags_label = QLabel("Tags")
-        column_layout.addWidget(self.tags_label)
+        self.edit_group_label = QLabel("Edit Group")
+        self.edit_group_label.setFont(QFont("Arial", 16, QFont.Weight.Bold))
+        column_layout.addWidget(self.edit_group_label)
 
         add_layout = QHBoxLayout()
         self.add_tag_button = QPushButton("Add Tag")
+
+        self.edit_tag_group_widget = TagGroupEditWidget(parent=self)
+        self.edit_tag_group_widget.group_updated.connect(self.on_tag_group_updated)
+
+        self.tags_label = QLabel("Tags")
+        self.tags_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
 
         self.add_tag_name_input = QLineEdit()
         self.add_tag_name_input.setPlaceholderText("Tag Name")
 
         self.add_tag_button.clicked.connect(self.add_tag)
         self.add_tag_button.setEnabled(False)
+
+        self.add_tag_name_input.returnPressed.connect(self.add_tag)
 
         add_layout.addWidget(self.add_tag_button)
         add_layout.addWidget(self.add_tag_name_input)
@@ -228,6 +360,8 @@ class TagGroupsSettings(QWidget):
         # Connect the model's row moved signal to update the database
         self.tags_list.model().rowsMoved.connect(self.update_tag_order)
 
+        column_layout.addWidget(self.edit_tag_group_widget)
+        column_layout.addWidget(self.tags_label)
         column_layout.addLayout(add_layout)
         column_layout.addWidget(self.tags_list)
 
@@ -247,6 +381,9 @@ class TagGroupsSettings(QWidget):
         group_id = self.db.tags.add_tag_group(name, self.tag_groups_list.count(), self.active_project.id)
         group = TagGroup(group_id, self.active_project.id, name, self.tag_groups_list.count())
         self.tag_groups_list.addItem(TagGroupListItem(tag_group=group, database=self.db, update_poller=self.update_poller, delete_callback=self.remove_ui_component, list_widget=self.tag_groups_list, callback=self.on_tag_group_clicked))
+
+        self.add_group_name_input.clear()
+        self.on_tag_group_clicked(group)
 
         # Used to update the UI in the Tagging Page
         self.update_poller.poll_update('update_tag_groups')
@@ -268,6 +405,8 @@ class TagGroupsSettings(QWidget):
         tag = Tag(tag_id, name, self.active_group.id)
         self.tags_list.addItem(TagListItem(tag=tag, database=self.db, update_poller=self.update_poller, delete_callback=self.remove_ui_component, list_widget = self.tags_list))
 
+        self.add_tag_name_input.clear()
+
         # Used to update the UI in the Tagging Page
         self.update_poller.poll_update('update_tag_groups')
 
@@ -279,9 +418,9 @@ class TagGroupsSettings(QWidget):
                     self.tag_groups_list.takeItem(i)
                     if self.active_group is not None and id == self.active_group.id:
                         self.active_group = None
+                        self.edit_tag_group_widget.clear_tag_group()
                         self.add_tag_button.setEnabled(False)
                         self.tags_list.clear()
-                        self.tags_label.setText("Tags")
                     break
         elif type == 'tag':
             for i in range(self.tags_list.count()):
@@ -333,8 +472,12 @@ class TagGroupsSettings(QWidget):
         self.tags_list.clear()
         self.active_group = group
         self.add_tag_button.setEnabled(True)
+        self.edit_tag_group_widget.set_tag_group(group)
 
         for tag in group.tags:
             self.tags_list.addItem(TagListItem(tag=tag, database=self.db, update_poller=self.update_poller, delete_callback=self.remove_ui_component, list_widget=self.tags_list))
 
-        self.tags_label.setText(f"Tags for \"{group.name}\"")
+    def on_tag_group_updated(self, group: TagGroup):
+        self.db.tags.update_tag_group(group)
+        # Used to update the UI in the Tagging Page
+        self.update_poller.poll_update('update_tag_groups')
