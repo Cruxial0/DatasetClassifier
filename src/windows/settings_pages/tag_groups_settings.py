@@ -187,6 +187,7 @@ class TagGroupEditWidget(QWidget):
         self.min_tags_input.setValue(tag_group.min_tags)
         self.allow_multiple_toggle.setChecked(tag_group.allow_multiple)
         self.is_required_toggle.setChecked(tag_group.is_required)
+        self.prevent_auto_scroll.setChecked(tag_group.prevent_auto_scroll)
 
         self._handle_button_states()
 
