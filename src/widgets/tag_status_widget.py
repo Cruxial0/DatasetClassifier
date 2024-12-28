@@ -162,12 +162,15 @@ class TagStatusWidget(QWidget):
             return
         
         # check how many tags exist in current group
-        count = 0
-        for group_tags in self.active_group.tags:
-            count += 1 if group_tags.id in selected_tags else 0
+        count = self._get_applied_tags(selected_tags)
         
-        condition = count >= self.active_group.min_tags
-        self.seleted_tags_label.setText(f"{count}/{self.active_group.min_tags} selected")
+        
+        if self.active_group.allow_multiple:
+            condition = count >= self.active_group.min_tags
+            self.seleted_tags_label.setText(f"{count}/{self.active_group.min_tags} selected")
+        else:
+            condition = count == 1
+            self.seleted_tags_label.setText(f"{count}/1 selected")
         self._set_status_label(condition)
 
         if condition and self.active_group.is_required:
@@ -181,6 +184,15 @@ class TagStatusWidget(QWidget):
 
         return self.is_valid
        
+    def can_add_tag(self, selected_tags: list[int]) -> bool:
+        if self.active_group is None:
+            return False
+        
+        count = self._get_applied_tags(selected_tags)
+        limit = 1 if not self.active_group.allow_multiple else 9999
+
+        return count + 1 <= limit
+
     def update_score(self, score: str):
         self.score_label.setText(score)
 
@@ -189,6 +201,12 @@ class TagStatusWidget(QWidget):
 
     def _update_button_states(self):
         self.next_button.setEnabled(self.is_valid)
+
+    def _get_applied_tags(self, selected_tags: list[int]) -> int:
+        count = 0
+        for group_tags in self.active_group.tags:
+            count += 1 if group_tags.id in selected_tags else 0
+        return count
 
     def _set_status_label(self, condition: bool):
         

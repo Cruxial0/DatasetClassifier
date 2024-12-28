@@ -71,10 +71,10 @@ def set_dark_mode(app):
    
    app.setPalette(palette)
    app.setStyleSheet(
-      """
-    QPushButton:disabled {
-        background-color: rgb(50, 50, 50);
-        color: rgb(100, 100, 100);
-    }
-"""
+    """
+        QPushButton:disabled {
+            background-color: rgb(50, 50, 50);
+            color: rgb(100, 100, 100);
+        }
+    """
    )

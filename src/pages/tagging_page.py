@@ -194,6 +194,8 @@ class TaggingPage(QWidget):
         self.update_button_colors()
 
     def update_button_colors(self):
+        untagged_enabled = self.status_widget.can_add_tag(self.image_tags)
+        print("Untagged enabled:", untagged_enabled)
         for i in range(self.tag_buttons_layout.count()):
             if self.tag_buttons_layout is None:
                 continue
@@ -204,12 +206,19 @@ class TaggingPage(QWidget):
                 continue
 
             btn = layout.itemAt(1).widget()
-            if not isinstance(btn, QPushButton) or not btn.isEnabled():
+            if not isinstance(btn, QPushButton):
                 continue
             
+            # Reset button state
+            btn.setEnabled(True)
+
             tag_id = int(btn.objectName().split('_')[-1])
+            
             if self.db.tags.image_has_tag(self.current_image_id, tag_id):
                 btn.setStyleSheet(f"background-color: {self.config_handler.get_color('accent_color')}; color: white;")
+            elif not untagged_enabled:
+                btn.setEnabled(False)
+                btn.setStyleSheet(f"background-color: rgb(50, 50, 50); color: rgb(100, 100, 100);")
             else:
                 btn.setStyleSheet(f"background-color: {self.config_handler.get_color('background_color')}; color: white;")
 
