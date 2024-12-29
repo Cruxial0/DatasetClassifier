@@ -56,12 +56,10 @@ class ScoringPage(QWidget):
     def setup_keybinds(self):
         # Register score buttons (0-9)
         for i, button in enumerate(self.score_buttons[:-1]):
-            print(f"creating binding for button {button.objectName()} (key_{i})")
             self.keybind_page.register_binding(f'key_{i}', lambda s=button.objectName(): self.click_score_button(s))
         
         # Register category buttons with Alt modifier
         for i, (button, _, _) in enumerate(self.category_buttons):
-            print(f"creating binding for category {button.objectName()} (key_{i})")
             self.keybind_page.register_binding(f'category_{i}', button)
         
         # Other bindings
