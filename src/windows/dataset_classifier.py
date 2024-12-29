@@ -76,22 +76,16 @@ class DatasetClassifier(QMainWindow):
         self.export_action.triggered.connect(self.open_export_window)
         self.settings_action.triggered.connect(self.open_settings_window)
 
-    def setup_stacked_widget(self):
-        self.stacked_widget = QStackedWidget()
-        self.setCentralWidget(self.stacked_widget)
-        
-        # Initialize modes
-        self.scoring_mode = ScoringPage(self)
-        self.tagging_mode = TaggingPage(self)
-        
-        # Add to stacked widget
-        self.stacked_widget.addWidget(self.scoring_mode)
-        self.stacked_widget.addWidget(self.tagging_mode)
-
-        self.stackedLayout.addWidget(self.stacked_widget)
-
     def switch_mode(self):
         self.current_mode = 1 if self.current_mode == 0 else 0
+
+        if self.current_mode == 0:
+            self.scoring_page.set_active()
+            self.tagging_page.set_active(False)
+        else:
+            self.tagging_page.set_active()
+            self.scoring_page.set_active(False)
+
         self.stacked_widget.setCurrentIndex(self.current_mode)
 
     def handle_project_loaded(self, project: Project):

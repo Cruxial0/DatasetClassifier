@@ -26,6 +26,10 @@ class TaggingPage(QWidget):
         self.active_project: Project = parent.active_project
         self.image_handler: ImageHandler = ImageHandler(self.db, self.config_handler)
 
+        self.page_active = False
+        self.image_update_due = False
+        self.tag_update_due = False
+
         self.current_image_id: int = None
         self.current_group: TagGroup = None
         self.active_groups: list[TagGroup] = None
@@ -84,10 +88,8 @@ class TaggingPage(QWidget):
         next_button.setFixedWidth(40)
 
         # Register keybindings
-        prev_button.clicked.connect(self.load_previous_image)
-        next_button.clicked.connect(self.load_next_image)
-        self.keybind_page.register_binding('previous_image', prev_button)
-        self.keybind_page.register_binding('next_image', next_button)
+        prev_button.clicked.connect(lambda:self.load_previous_image(absolute=True))
+        next_button.clicked.connect(lambda: self.load_next_image(absolute=True))
 
         nav_button_layout.addWidget(prev_button)
         nav_button_layout.addWidget(next_button)
@@ -266,6 +268,10 @@ class TaggingPage(QWidget):
         return btn_layout
 
     def update_tag_groups(self, skip_update=False):
+        if self.page_active is False:
+            self.tag_update_due = True
+            return
+        
         if not skip_update:
             self.tag_groups = self.db.tags.get_project_tags(self.active_project.id)
 
@@ -415,35 +421,42 @@ class TaggingPage(QWidget):
 
     def load_images(self):
         """Load images for the active project"""
+
+        if self.page_active is False:
+            self.image_update_due = True
+            return
+
         if self.active_project:
             self.image_handler.load_images(self.active_project.id, get_scored_only=True)
             self.update_progress()
             self.display_image()
 
-    def load_next_image(self) -> bool:
+    def load_next_image(self, absolute: bool = False) -> bool:
         if self.current_group is None:
             return False
         if self.image_handler.load_next_image():
             self.display_image()
 
-            self.current_group = self.tag_groups[0]
-            self.image_tags = self.db.tags.get_image_tags(self.current_image_id)
-            self.update_tag_groups(skip_update=True)
+            if not absolute:
+                self.current_group = self.tag_groups[0]
+                self.image_tags = self.db.tags.get_image_tags(self.current_image_id)
+                self.update_tag_groups(skip_update=True)
 
             self.update_button_colors()
             self.update_progress()
             return True
         return False
 
-    def load_previous_image(self) -> bool:
+    def load_previous_image(self, absolute: bool = False) -> bool:
         if self.current_group is None:
             return False
         if self.image_handler.load_previous_image():
             self.display_image()
 
-            self.current_group = self.tag_groups[-1]
-            self.image_tags = self.db.tags.get_image_tags(self.current_image_id)
-            self.update_tag_groups(skip_update=True)
+            if not absolute:
+                self.current_group = self.tag_groups[-1]
+                self.image_tags = self.db.tags.get_image_tags(self.current_image_id)
+                self.update_tag_groups(skip_update=True)
 
             self.update_button_colors()
             self.update_progress()
@@ -463,6 +476,17 @@ class TaggingPage(QWidget):
             if image_path:
                 current_score, _ = self.image_handler.get_score(image_path)
                 self.status_widget.update_score(self.config_handler.get_score(current_score))
+
+    def set_active(self, active: bool = True):
+        self.page_active = active
+
+        if active:
+            if self.image_update_due:
+                self.load_images()
+                self.image_update_due = False
+            if self.tag_update_due:
+                self.update_tag_groups()
+                self.tag_update_due = False
 
     def _clear_layout(self, layout):
         while layout.count():

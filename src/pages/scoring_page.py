@@ -28,6 +28,8 @@ class ScoringPage(QWidget):
         self.default_scores = ['score_0', 'score_1', 'score_2', 'score_3', 'score_4', 'score_5', 'discard']
         self.category_buttons = []
         
+        self.page_active = True
+
         # Initialize keybind handler
         self.keybind_handler = KeybindHandler(self.config_handler)
         self.keybind_page = ScoringKeybindPage(self)
@@ -476,6 +478,9 @@ class ScoringPage(QWidget):
                 button.setStyleSheet(f"background-color: {self.config_handler.get_color('warning_color')}; color: white;")
             else:
                 button.setStyleSheet(f"background-color: {self.config_handler.get_color('alternate_color')}; color: white;")
+
+    def set_active(self, active: bool = True):
+        self.page_active = active
 
     def schedule_ui_update(self, update_type):
         """Schedule a UI update to batch multiple updates together"""
