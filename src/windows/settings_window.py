@@ -277,7 +277,7 @@ class SettingsWindow(QMainWindow):
             self.keybinds_updated_callback()
 
         # Update the UI
-        for row in self.pages["keybinds"].findChildren(QHBoxLayout):
+        for row in self._pages["keybinds"].findChildren(QHBoxLayout):
             label = row.itemAt(0).widget()
             if label.text() == key_name:
                 keybind_widget = row.itemAt(1).widget()
