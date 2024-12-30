@@ -175,12 +175,16 @@ class TaggingPage(QWidget):
         if self.current_image_id is None:
             return
 
+        tag_added = False
+
         if self.db.tags.image_has_tag(self.current_image_id, tag_id):
             self.db.tags.delete_image_tag(self.current_image_id, tag_id)
+            tag_added = False
             if tag_id in self.image_tags:
                 self.image_tags.remove(tag_id)
         else:
             self.db.tags.add_image_tag(self.current_image_id, tag_id)
+            tag_added = True
             if tag_id not in self.image_tags:
                 self.image_tags.append(tag_id)
         
@@ -188,7 +192,7 @@ class TaggingPage(QWidget):
 
         # Auto-scroll when TagGroup condition is met (if enabled) (and not overridden by TagGroup)
         if not self.current_group.prevent_auto_scroll:
-            if condition_met and self.config_handler.get_value('behaviour.auto_scroll_on_tag_condition'):
+            if condition_met and self.config_handler.get_value('behaviour.auto_scroll_on_tag_condition') and tag_added:
                 self.next_group()
 
         self.update_button_colors()

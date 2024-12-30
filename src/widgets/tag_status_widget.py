@@ -68,7 +68,14 @@ class TagStatusWidget(QWidget):
         tag_group_stats_layout.addWidget(self.tag_group_index_label)
 
         # Selected tags
+        tags_selected_layout = QHBoxLayout()
         self.seleted_tags_label = QLabel("0/0 selected")
+        self.auto_scroll_indicator = QLabel("⚡")
+        self.auto_scroll_indicator.setToolTip("When the next tag is added, the next\nTagGroup will be selected automatically")
+
+        tags_selected_layout.addWidget(self.seleted_tags_label)
+        tags_selected_layout.addWidget(self.auto_scroll_indicator)
+        tags_selected_layout.addStretch(1)
 
         # Score
         self.score_label = QLabel("score_0")
@@ -122,7 +129,7 @@ class TagStatusWidget(QWidget):
         bottom_row_layout.addLayout(buttons_layout)
 
         tag_group_layout.addLayout(tag_group_stats_layout)
-        tag_group_layout.addWidget(self.seleted_tags_label)
+        tag_group_layout.addLayout(tags_selected_layout)
 
         top_row_layout.addLayout(tag_group_layout)
         top_row_layout.addStretch(1)
@@ -165,24 +172,31 @@ class TagStatusWidget(QWidget):
         count = self._get_applied_tags(selected_tags)
         
         if self.active_group.allow_multiple:
-            condition = count >= self.active_group.min_tags
+            condition_met = count >= self.active_group.min_tags
             self.seleted_tags_label.setText(f"{count}/{self.active_group.min_tags} selected")
         else:
-            condition = count == 1
+            condition_met = count == 1
             self.seleted_tags_label.setText(f"{count}/1 selected")
-        self._set_status_label(condition)
+        self._set_status_label(condition_met)
 
-        if condition and self.active_group.is_required:
+        if condition_met and self.active_group.is_required:
             self.is_valid = True
-        if not condition and self.active_group.is_required:
+        if not condition_met and self.active_group.is_required:
             self.is_valid = False
-        if not condition and not self.active_group.is_required:
+        if not condition_met and not self.active_group.is_required:
             self.is_valid = True
 
         self._update_button_states()
 
+        will_autoscroll = self.is_valid \
+            and not condition_met \
+            and self._is_condition_met_on_next_add(selected_tags) \
+            and not self.active_group.prevent_auto_scroll \
+            and self.config_handler.get_value("behaviour.auto_scroll_on_tag_condition")
+        self.auto_scroll_indicator.setVisible(will_autoscroll)
+
         return self.is_valid
-       
+
     def can_add_tag(self, selected_tags: list[int]) -> bool:
         if self.active_group is None:
             return False
@@ -218,3 +232,15 @@ class TagStatusWidget(QWidget):
         if not condition and not self.active_group.is_required:
             self.tag_group_status_label.setText("🟡")
             self.tag_group_status_label.setToolTip("Acceptable, not finished")
+
+    def _set_auto_scroll_indicator(self, enabled: bool):
+        self.auto_scroll_indicator.setVisible(enabled)
+
+    def _is_condition_met_on_next_add(self, selected_tags: list[int]):
+        """Checks whether the next tag added will meet (and not exceed) the conditions of the active group"""
+        count = self._get_applied_tags(selected_tags)
+
+        if self.active_group.allow_multiple:
+            return count + 1 == self.active_group.min_tags
+        else:
+            return count + 1 == 1
