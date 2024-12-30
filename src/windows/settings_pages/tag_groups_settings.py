@@ -1,14 +1,16 @@
 from typing import Callable, Literal
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QListWidget, QListWidgetItem, QPushButton, QSizePolicy, QLineEdit, QMessageBox, QCheckBox, QSpinBox
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QListWidget, QListWidgetItem, QPushButton, QSizePolicy, QLineEdit, QMessageBox, QCheckBox, QSpinBox, QFrame
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 
+from src.config_handler import ConfigHandler
 from src.project import Project
 from src.database.database import Database
 from src.tagging.tag_group import Tag, TagGroup
 from src.update_poller import UpdatePoller
 
 from PyQt6.QtCore import QTimer
+from PyQt6.QtGui import QColor, QPalette
 
 from src.windows.settings_pages.settings_widget import SettingsWidget
 
@@ -72,58 +74,128 @@ class TagListItem(QListWidgetItem):
         self.setSizeHint(widget.sizeHint())
 
 class TagGroupWidget(QWidget):
-    def __init__(self, tag_group: TagGroup, database: Database, update_poller: UpdatePoller, callback: Callable, delete_callback: Callable, parent=None):
+    clicked = pyqtSignal(TagGroup)
+    
+    def __init__(self, tag_group: TagGroup, database: Database, update_poller: UpdatePoller, delete_callback: Callable, config_handler: ConfigHandler, parent=None):
         super().__init__(parent)
         self.tag_group = tag_group
         self.db: Database = database
         self.update_poller: UpdatePoller = update_poller
-        self.callback = callback
         self.delete_callback = delete_callback
+        self.config_handler = config_handler
+        self.is_selected = False
+        
+        # Create a frame to handle the selection highlighting
+        self.frame = QFrame(self)
+        self.frame.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Plain)
+        
+        self.init_palette()
         self.initUI()
+        
+    def init_palette(self):
+        # Create base palette
+        self.base_palette = QPalette()
+        self.base_palette.setColor(QPalette.ColorRole.Window, Qt.GlobalColor.transparent)
+        self.base_palette.setColor(QPalette.ColorRole.WindowText, self.palette().text().color())
+        
+        # Create highlight palette
+        self.highlight_palette = QPalette()
+        accent_color = QColor(self.config_handler.get_color('accent_color'))
+        self.highlight_palette.setColor(QPalette.ColorRole.Window, accent_color)
+        self.highlight_palette.setColor(QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
 
     def initUI(self):
-        self.main_layout = QHBoxLayout(self)
+        # Main layout for the widget
+        outer_layout = QVBoxLayout(self)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.addWidget(self.frame)
         
-        button = QPushButton(self.tag_group.name)
-        button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        button.clicked.connect(self.on_button_clicked)
-
+        # Layout for the frame content
+        self.main_layout = QHBoxLayout(self.frame)
+        self.main_layout.setContentsMargins(5, 5, 5, 5)
+        
+        # Create and configure name label
+        self.name_label = QLabel(self.tag_group.name)
+        self.name_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        
+        # Create and configure delete button
         delete_button = QPushButton("-")
         delete_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         delete_button.setFixedWidth(30)
         delete_button.clicked.connect(self.delete_tag_group)
-
-        self.main_layout.addWidget(button)
+        
+        # Add widgets to layout
+        self.main_layout.addWidget(self.name_label)
         self.main_layout.addWidget(delete_button)
-
-    def on_button_clicked(self):
-        # Make sure the tag group is updated
-        self.tag_group = self.db.tags.get_tag_group(self.tag_group.id)
-        self.callback(self.tag_group)
-
+        
+        # Set cursor style
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        
+        # Initialize style
+        self.setSelected(False)
+    
+    def setSelected(self, selected: bool):
+        self.is_selected = selected
+        
+        # Apply the appropriate style
+        if selected:
+            self.frame.setStyleSheet(f"""
+                QFrame {{
+                    background-color: {self.config_handler.get_color('accent_color')};
+                    border: none;
+                }}
+            """)
+            self.name_label.setStyleSheet("color: white;")
+        else:
+            self.frame.setStyleSheet("")
+            self.name_label.setStyleSheet("")
+        
+        # Force update
+        self.update()
+    
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit(self.tag_group)
+        super().mousePressEvent(event)
+    
     def delete_tag_group(self):
-        # Display a dialog to confirm deletion
-        result = QMessageBox.question(self, "Delete Tag Group", "Are you sure you want to delete this tag group?\nThis action cannot be undone.", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        result = QMessageBox.question(
+            self, 
+            "Delete Tag Group", 
+            "Are you sure you want to delete this tag group?\nThis action cannot be undone.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
         if result == QMessageBox.StandardButton.Yes:
             self.delete_callback(self.tag_group.id, 'tag_group')
-
             self.db.tags.delete_tag_group(self.tag_group.id)
 
-            
-
 class TagGroupListItem(QListWidgetItem):
-    def __init__(self, tag_group: TagGroup, database: Database, update_poller: Callable, delete_callback: Callable, list_widget: QListWidget, callback: Callable):
+    def __init__(self, tag_group: TagGroup, database: Database, update_poller: UpdatePoller, delete_callback: Callable, list_widget: QListWidget, config_handler: ConfigHandler, callback: Callable):
         super().__init__(list_widget)
         self.tag_group = tag_group
         
         # Create the widget that will be displayed in the list item
-        widget = TagGroupWidget(tag_group=tag_group, database=database, delete_callback=delete_callback, update_poller=update_poller, callback=callback)
+        self.widget = TagGroupWidget(
+            tag_group=tag_group,
+            database=database,
+            delete_callback=delete_callback,
+            update_poller=update_poller,
+            config_handler=config_handler
+        )
+        
+        # Connect the widget's clicked signal to the callback
+        self.widget.clicked.connect(callback)
         
         # Set the widget for this list item
-        list_widget.setItemWidget(self, widget)
+        list_widget.setItemWidget(self, self.widget)
         
         # Set an appropriate size for the item
-        self.setSizeHint(widget.sizeHint())
+        self.setSizeHint(self.widget.sizeHint())
+        
+    def setSelected(self, selected: bool):
+        print(f"TagGroupListItem setSelected {selected} ({self.tag_group.name})")
+        super().setSelected(selected)
+        self.widget.setSelected(selected)
 
 
 class TagGroupEditWidget(QWidget):
@@ -265,8 +337,10 @@ class TagGroupsSettings(SettingsWidget):
         self.db: Database = parent.db
         self.active_project: Project = parent.project
         self.update_poller: UpdatePoller = parent.update_poller
+        self.config_handler: ConfigHandler = parent.config_handler
 
         self.active_group = None
+        self.selected_item = None  # Track the currently selected item
         self.setupUI()
 
     def navigate_path(self, path: str):
@@ -314,7 +388,14 @@ class TagGroupsSettings(SettingsWidget):
         self.tag_groups_list.setMovement(QListWidget.Movement.Snap)
 
         for tag_group in self.db.tags.get_project_tags(self.active_project.id):
-            tag_group_item = TagGroupListItem(tag_group=tag_group, database=self.db, update_poller=self.update_poller, delete_callback=self.remove_ui_component, list_widget=self.tag_groups_list, callback=self.on_tag_group_clicked)
+            tag_group_item = TagGroupListItem(tag_group=tag_group,
+                                              database=self.db,
+                                              update_poller=self.update_poller,
+                                              delete_callback=self.remove_ui_component,
+                                              list_widget=self.tag_groups_list,
+                                              config_handler=self.config_handler,
+                                              callback=self.on_tag_group_clicked
+                                              )
             self.tag_groups_list.addItem(tag_group_item)
 
         # Connect the model's row moved signal to update the database
@@ -386,7 +467,14 @@ class TagGroupsSettings(SettingsWidget):
 
         group_id = self.db.tags.add_tag_group(name, self.tag_groups_list.count(), self.active_project.id)
         group = TagGroup(group_id, self.active_project.id, name, self.tag_groups_list.count())
-        self.tag_groups_list.addItem(TagGroupListItem(tag_group=group, database=self.db, update_poller=self.update_poller, delete_callback=self.remove_ui_component, list_widget=self.tag_groups_list, callback=self.on_tag_group_clicked))
+        self.tag_groups_list.addItem(TagGroupListItem(
+            tag_group=group,
+            database=self.db,
+            update_poller=self.update_poller,
+            delete_callback=self.remove_ui_component,
+            list_widget=self.tag_groups_list,
+            config_handler=self.config_handler,
+            callback=self.on_tag_group_clicked))
 
         self.add_group_name_input.clear()
         self.on_tag_group_clicked(group)
@@ -421,70 +509,102 @@ class TagGroupsSettings(SettingsWidget):
             for i in range(self.tag_groups_list.count()):
                 item = self.tag_groups_list.item(i)
                 if item.tag_group.id == id:
+                    # Deselect the item before removal
+                    if self.selected_item == item:
+                        widget = self.tag_groups_list.itemWidget(item)
+                        if widget:
+                            widget.setSelected(False)
+                        self.selected_item = None
+                    
                     self.tag_groups_list.takeItem(i)
                     self.update_tag_group_order()
+                    
                     if self.active_group is not None and id == self.active_group.id:
                         self.active_group = None
                         self.edit_tag_group_widget.clear_tag_group()
                         self.add_tag_button.setEnabled(False)
                         self.tags_list.clear()
-                        
                     break
         elif type == 'tag':
             for i in range(self.tags_list.count()):
                 item = self.tags_list.item(i)
-                self.update_tag_order()
                 if item.tag.id == id:
                     self.tags_list.takeItem(i)
+                    self.update_tag_order()
                     break
 
     def update_tag_group_order(self):
         """Update the order of tag groups in the database after drag and drop"""
         items: list[TagGroupListItem] = []
         new_order: list[tuple[int, int]] = []
+        
+        # Collect all items
         for i in range(self.tag_groups_list.count()):
-            item = self.tag_groups_list.item(i)
-            items.append(item)
-
-        for i in range(len(items)):
-            item = items[i]
+            items.append(self.tag_groups_list.item(i))
+        
+        # Reassign display orders sequentially starting from 0
+        for i, item in enumerate(items):
             item.tag_group.display_order = i
             new_order.append((item.tag_group.id, i))
-
+        
         self.db.tags.update_tag_group_order(new_order)
-
-        # Used to update the UI in the Tagging Page
         self.update_poller.poll_update('update_tag_groups')
 
     def update_tag_order(self):
         """Update the order of tags in the database after drag and drop"""
         items: list[TagListItem] = []
         new_order: list[tuple[int, int]] = []
+        
+        # Collect all items
         for i in range(self.tags_list.count()):
-            item = self.tags_list.item(i)
-            items.append(item)
-
-        for i in range(len(items)):
-            item = items[i]
+            items.append(self.tags_list.item(i))
+        
+        # Reassign display orders sequentially starting from 0
+        for i, item in enumerate(items):
             item.tag.display_order = i
             new_order.append((item.tag.id, i))
-
+        
         self.db.tags.update_tag_order(new_order)
-
-        # Used to update the UI in the Tagging Page
         self.update_poller.poll_update('update_tag_groups')
 
     def on_tag_group_clicked(self, group: TagGroup):
-        if group.tags is None: 
+        if group.tags is None:
             group.tags = []
-
+        
+        # Find the clicked item
+        clicked_item = None
+        for i in range(self.tag_groups_list.count()):
+            item = self.tag_groups_list.item(i)
+            if item.tag_group.id == group.id:
+                clicked_item = item
+                break
+        
+        # Handle selection states
+        if self.selected_item is not None:
+            widget = self.tag_groups_list.itemWidget(self.selected_item)
+            if widget:
+                widget.setSelected(False)
+        
+        if clicked_item is not None:
+            widget = self.tag_groups_list.itemWidget(clicked_item)
+            if widget:
+                widget.setSelected(True)
+            self.selected_item = clicked_item
+        
+        # Update the rest of the UI
         self.tags_list.clear()
         self.active_group = group
         self.add_tag_button.setEnabled(True)
         self.edit_tag_group_widget.set_tag_group(group)
-
+        
         for tag in group.tags:
-            self.tags_list.addItem(TagListItem(tag=tag, database=self.db, update_poller=self.update_poller, delete_callback=self.remove_ui_component, list_widget=self.tags_list))
+            self.tags_list.addItem(TagListItem(
+                tag=tag,
+                database=self.db,
+                update_poller=self.update_poller,
+                delete_callback=self.remove_ui_component,
+                list_widget=self.tags_list
+            ))
 
     def on_tag_group_updated(self, group: TagGroup):
         self.db.tags.update_tag_group(group)

@@ -17,6 +17,7 @@ from src.update_poller import UpdatePoller
 class ColorButton(QPushButton):
     def __init__(self, color=QColor, parent=None):  # Add parent parameter
         super().__init__(parent)  # Pass parent to superclass
+        
         alphabet = string.ascii_lowercase + string.digits
         self.name = ''.join(random.choices(alphabet, k=8))
         self.setObjectName(self.name)
@@ -88,6 +89,7 @@ class SettingsWindow(QMainWindow):
         self.db = parent.db
         self.project = parent.active_project
         self.update_poller = parent.update_poller
+        self.config_handler = parent.config_handler
         
         # Create main widget and layout
         main_widget = QWidget()
