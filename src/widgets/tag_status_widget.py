@@ -28,6 +28,7 @@ class TagStatusWidget(QWidget):
     prev_clicked: pyqtSignal = pyqtSignal()
     latest_clicked: pyqtSignal = pyqtSignal()
     skip_clicked: pyqtSignal = pyqtSignal()
+    auto_scroll_indicator_clicked: pyqtSignal = pyqtSignal(bool)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -37,6 +38,8 @@ class TagStatusWidget(QWidget):
 
         self.active_group: TagGroup = None
         self.is_valid = False
+
+        self.auto_scroll_indicator_tooltip = "When the next tag is added, the next\nTagGroup will be selected automatically."
 
         self.initUI()
 
@@ -71,7 +74,8 @@ class TagStatusWidget(QWidget):
         tags_selected_layout = QHBoxLayout()
         self.seleted_tags_label = QLabel("0/0 selected")
         self.auto_scroll_indicator = QLabel("⚡")
-        self.auto_scroll_indicator.setToolTip("When the next tag is added, the next\nTagGroup will be selected automatically")
+        self.auto_scroll_indicator.setToolTip(self.auto_scroll_indicator_tooltip)
+        self.auto_scroll_indicator.mousePressEvent = self._auto_scroll_indicator_click_event
 
         tags_selected_layout.addWidget(self.seleted_tags_label)
         tags_selected_layout.addWidget(self.auto_scroll_indicator)
@@ -193,7 +197,7 @@ class TagStatusWidget(QWidget):
             and self._is_condition_met_on_next_add(selected_tags) \
             and not self.active_group.prevent_auto_scroll \
             and self.config_handler.get_value("behaviour.auto_scroll_on_tag_condition")
-        self.auto_scroll_indicator.setVisible(will_autoscroll)
+        self._set_auto_scroll_indicator(will_autoscroll)
 
         return self.is_valid
 
@@ -236,6 +240,15 @@ class TagStatusWidget(QWidget):
     def _set_auto_scroll_indicator(self, enabled: bool):
         self.auto_scroll_indicator.setVisible(enabled)
 
+        temp_disabled = self.parent.auto_scroll_temp_disabled
+        emoji = "⚡" if not temp_disabled else "🔅"
+        self.auto_scroll_indicator.setText(emoji)
+        if temp_disabled:
+            self.auto_scroll_indicator.setToolTip(f"{self.auto_scroll_indicator_tooltip}\nTemporarily disabled. Click to Enable.")
+        else:
+            self.auto_scroll_indicator.setToolTip(self.auto_scroll_indicator_tooltip)
+        
+
     def _is_condition_met_on_next_add(self, selected_tags: list[int]):
         """Checks whether the next tag added will meet (and not exceed) the conditions of the active group"""
         count = self._get_applied_tags(selected_tags)
@@ -244,3 +257,7 @@ class TagStatusWidget(QWidget):
             return count + 1 == self.active_group.min_tags
         else:
             return count + 1 == 1
+        
+    def _auto_scroll_indicator_click_event(self, event):
+        temp_disabled = self.parent.auto_scroll_temp_disabled
+        self.auto_scroll_indicator_clicked.emit(not temp_disabled)

@@ -35,6 +35,8 @@ class TaggingPage(QWidget):
         self.active_groups: list[TagGroup] = None
         self.image_tags: list[int] = []
 
+        self.auto_scroll_temp_disabled = False
+
         # Initialize keybind handler
         self.keybind_handler = KeybindHandler(self.config_handler)
         self.keybind_page = TaggingKeybindPage(self)
@@ -111,6 +113,7 @@ class TaggingPage(QWidget):
         self.status_widget.next_clicked.connect(self.next_group)
         self.status_widget.latest_clicked.connect(self.to_latest)
         self.status_widget.skip_clicked.connect(self.next_group)
+        self.status_widget.auto_scroll_indicator_clicked.connect(self._set_auto_scroll_pause)
         header_layout.addWidget(self.status_widget)
 
         # Tags
@@ -192,7 +195,7 @@ class TaggingPage(QWidget):
 
         # Auto-scroll when TagGroup condition is met (if enabled) (and not overridden by TagGroup)
         if not self.current_group.prevent_auto_scroll:
-            if condition_met and self.config_handler.get_value('behaviour.auto_scroll_on_tag_condition') and tag_added:
+            if condition_met and self.config_handler.get_value('behaviour.auto_scroll_on_tag_condition') and tag_added and not self.auto_scroll_temp_disabled:
                 self.next_group()
 
         self.update_button_colors()
@@ -330,8 +333,8 @@ class TaggingPage(QWidget):
         self.current_group = self.tag_groups[index]
 
         self.status_widget.set_prev_button_enabled(True)
-        
 
+        self.auto_scroll_temp_disabled = False
         self.update_tag_groups(skip_update=True)
 
         if index == len(self.tag_groups) - 1 and not self.image_handler.next_image_exists():
@@ -349,6 +352,7 @@ class TaggingPage(QWidget):
         
         index = self.current_group.order - 1
         self.current_group = self.tag_groups[index]
+        self.auto_scroll_temp_disabled = False
 
         if index == 0 and not self.image_handler.previous_image_exists():
             self.status_widget.set_prev_button_enabled(False)
@@ -520,3 +524,7 @@ class TaggingPage(QWidget):
                 
             # Delete the item itself
             del item
+
+    def _set_auto_scroll_pause(self, value: bool):
+        self.auto_scroll_temp_disabled = value
+        self.status_widget.check_group_conditions(self.image_tags)

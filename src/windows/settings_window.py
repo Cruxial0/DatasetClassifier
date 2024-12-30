@@ -4,9 +4,9 @@ import sys
 from typing import Any, Literal
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                             QHBoxLayout, QLabel, QCheckBox, QPushButton, 
-                            QStackedWidget, QComboBox, QColorDialog, QSpinBox)
+                            QStackedWidget, QComboBox, QColorDialog, QSpinBox, QSpacerItem)
 from PyQt6.QtCore import Qt, QEvent, pyqtSignal
-from PyQt6.QtGui import QColor, QKeySequence
+from PyQt6.QtGui import QColor, QKeySequence, QFont
 from src.database.database import Database
 from src.project import Project
 from src.score_presets import get_preset, get_preset_list
@@ -186,10 +186,21 @@ class SettingsWindow(QMainWindow):
         page = QWidget()
         layout = QVBoxLayout(page)
 
+        scores_label = QLabel("Scoring")
+        scores_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+
         auto_scroll_scores = QCheckBox("Auto scroll on scoring")
         auto_scroll_scores.setToolTip("Automatically moves to the next image when a score button is clicked")
         auto_scroll_scores.setChecked(self.config.get_value('behaviour.auto_scroll_scores'))
         auto_scroll_scores.checkStateChanged.connect(lambda state: self.set_value('behaviour.auto_scroll_scores', state.value > 0))
+
+        tags_label = QLabel("Tagging")
+        tags_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+
+        auto_scroll_disable_until_enabled = QCheckBox("Disable auto-scroll until enabled (⚡/🔅)")
+        auto_scroll_disable_until_enabled.setToolTip("If enabled, when temporarily disabling auto-scroll, it will\nremain disabled until re-enabled")
+        auto_scroll_disable_until_enabled.setChecked(self.config.get_value('behaviour.auto_scroll_disable_until_enabled'))
+        auto_scroll_disable_until_enabled.checkStateChanged.connect(lambda state: self.set_value('behaviour.auto_scroll_disable_until_enabled', state.value > 0))
 
         auto_scroll_on_tag_condition = QCheckBox("Auto scroll when TagGroup condition is met")
         auto_scroll_on_tag_condition.setToolTip("Automatically moves to the next TagGroup when a TagGroup condition is met")
@@ -201,8 +212,15 @@ class SettingsWindow(QMainWindow):
         to_latest_strict_mode.setChecked(self.config.get_value('behaviour.to_latest_strict_mode'))
         to_latest_strict_mode.checkStateChanged.connect(lambda state: self.set_value('behaviour.to_latest_strict_mode', state.value > 0))
 
+        layout.addWidget(scores_label)
+        layout.addSpacerItem(QSpacerItem(0, 10))
         layout.addWidget(auto_scroll_scores)
+        
+        layout.addSpacerItem(QSpacerItem(0, 20))
+        layout.addWidget(tags_label)
+        layout.addSpacerItem(QSpacerItem(0, 10))
         layout.addWidget(auto_scroll_on_tag_condition)
+        layout.addWidget(auto_scroll_disable_until_enabled)
         layout.addWidget(to_latest_strict_mode)
 
         layout.addStretch()
