@@ -365,10 +365,8 @@ class TaggingPage(QWidget):
 
         image_id, group_id, group_order = result
 
-        print(f"Unfinished tag group: [{image_id}, {group_id}, {group_order}]")
-
-        if self.image_handler.load_image_from_raw_id(image_id):
-            
+        if self.image_handler.load_image_from_raw_id(image_id - 1):
+            print(f"Found tag group: [{self.image_handler.get_absolute_index()}, {group_id}, {group_order}]")
             self.display_image()
 
             self.current_group = self.tag_groups[group_order]
@@ -378,8 +376,11 @@ class TaggingPage(QWidget):
             condition = self.current_group.order == 0 and not self.image_handler.previous_image_exists()
             self.status_widget.set_prev_button_enabled(not condition)
 
+            self.status_widget.check_group_conditions(self.image_tags)
             self.update_button_colors()
             self.update_progress()
+        else:
+            print(f"Failed to load image from raw id: {image_id}")
 
     def display_image(self):
         """Optimized image display"""
