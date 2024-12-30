@@ -334,26 +334,26 @@ class TagQueries:
         cursor.execute("SELECT COUNT(*) FROM image_tags WHERE image_id = ?", (image_id,))
         return cursor.fetchone()[0]
     
-    def get_latest_unfinished_image_group(self, project_id: int) -> tuple[int, int, int] | None:
+    def get_latest_unfinished_image_group(self, project_id: int, strict: bool = False) -> tuple[int, int, int] | None:
         """
-        Retrieves the latest image group for a given project that has not met the minimum required tags.
+        Retrieves the first image group that has not met its minimum tagging requirements.
 
         Args:
-            project_id (int): The ID of the project to query.
+            project_id (int): The ID of the project to query for unfinished image groups.
+            strict (bool, optional): If True, only considers required tag groups.
+                Defaults to True.
 
         Returns:
-            tuple[int, int, int] | None: A tuple containing the image ID, group ID, and display order of the latest
-            unfinished image group, or None if all image groups are complete.
-
-        The function performs the following:
-        - It calculates the count of tags per image per group within the project.
-        - Filters for required groups where the number of tags is less than the minimum required.
-        - Orders the results to retrieve the latest image and the first incomplete group by display order.
+            tuple[int, int, int] | None: A tuple containing the image ID, group ID, and
+                display order of the first unfinished image group, or None if all groups
+                meet their tagging requirements.
         """
+
+        print(f"is strict: {strict}")
 
         cursor = self.db.cursor()
         cursor.execute(
-            """
+            f"""
             WITH tagged_counts AS (
                 -- Get the count of tags per image per group
                 SELECT 
@@ -363,13 +363,15 @@ class TagQueries:
                     tg.display_order,
                     tg.min_tags,
                     tg.is_required,
-                    COUNT(it.tag_id) as tag_count
+                    COUNT(DISTINCT it.tag_id) as tag_count
                 FROM images i
+                INNER JOIN scores s ON s.image_id = i.image_id
                 CROSS JOIN tag_groups tg ON tg.project_id = i.project_id
-                LEFT JOIN tags t ON t.group_id = tg.group_id
-                LEFT JOIN image_tags it ON it.image_id = i.image_id AND it.tag_id = t.tag_id
-                WHERE i.project_id = ?  -- Parameter for project_id
-                GROUP BY i.image_id, tg.group_id
+                LEFT JOIN image_tags it ON it.image_id = i.image_id 
+                LEFT JOIN tags t ON t.group_id = tg.group_id AND it.tag_id = t.tag_id
+                WHERE i.project_id = ?
+                AND s.score != 'discard'
+                GROUP BY i.image_id, tg.group_id, tg.display_order, tg.min_tags, tg.is_required
             )
             SELECT 
                 tc.image_id,
@@ -377,11 +379,10 @@ class TagQueries:
                 tc.display_order
             FROM tagged_counts tc
             WHERE 
-                tc.is_required = 1 
-                AND tc.tag_count < tc.min_tags
+                {f"tc.is_required = 1 AND " if not strict else ""}tc.tag_count < tc.min_tags
             ORDER BY 
-                tc.image_id DESC,  -- Get the latest image first
-                tc.display_order ASC  -- Get the first incomplete group by display order
+                tc.image_id ASC,
+                tc.display_order ASC
             LIMIT 1;
             """, (project_id,))
         result = cursor.fetchone()

@@ -343,7 +343,7 @@ class TaggingPage(QWidget):
         if not self.image_handler.current_image_id:
             return
         
-        result = self.db.tags.get_latest_unfinished_image_group(self.active_project.id)
+        result = self.db.tags.get_latest_unfinished_image_group(self.active_project.id, self.config_handler.get_value('behaviour.to_latest_strict_mode'))
         if result is None:
             return
 

@@ -1,7 +1,7 @@
 import random
 import string
 import sys
-from typing import Literal
+from typing import Any, Literal
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                             QHBoxLayout, QLabel, QCheckBox, QPushButton, 
                             QStackedWidget, QComboBox, QColorDialog, QSpinBox)
@@ -189,15 +189,21 @@ class SettingsWindow(QMainWindow):
         auto_scroll_scores = QCheckBox("Auto scroll on scoring")
         auto_scroll_scores.setToolTip("Automatically moves to the next image when a score button is clicked")
         auto_scroll_scores.setChecked(self.config.get_value('behaviour.auto_scroll_scores'))
-        auto_scroll_scores.checkStateChanged.connect(lambda state: self.config.set_value('behaviour.auto_scroll_scores', state.value > 0))
+        auto_scroll_scores.checkStateChanged.connect(lambda state: self.set_value('behaviour.auto_scroll_scores', state.value > 0))
 
         auto_scroll_on_tag_condition = QCheckBox("Auto scroll when TagGroup condition is met")
         auto_scroll_on_tag_condition.setToolTip("Automatically moves to the next TagGroup when a TagGroup condition is met")
         auto_scroll_on_tag_condition.setChecked(self.config.get_value('behaviour.auto_scroll_on_tag_condition'))
-        auto_scroll_on_tag_condition.checkStateChanged.connect(lambda state: self.config.set_value('behaviour.auto_scroll_on_tag_condition', state.value > 0))
+        auto_scroll_on_tag_condition.checkStateChanged.connect(lambda state: self.set_value('behaviour.auto_scroll_on_tag_condition', state.value > 0))
+
+        to_latest_strict_mode = QCheckBox("Use strict mode for 'to latest' (🎯)")
+        to_latest_strict_mode.setToolTip("If enabled, will ignore the 'is_required' clause,\nand will find the latest TagGroup where 'min_tags' is not met")
+        to_latest_strict_mode.setChecked(self.config.get_value('behaviour.to_latest_strict_mode'))
+        to_latest_strict_mode.checkStateChanged.connect(lambda state: self.set_value('behaviour.to_latest_strict_mode', state.value > 0))
 
         layout.addWidget(auto_scroll_scores)
         layout.addWidget(auto_scroll_on_tag_condition)
+        layout.addWidget(to_latest_strict_mode)
 
         layout.addStretch()
         return page
@@ -411,3 +417,8 @@ class SettingsWindow(QMainWindow):
             self.config.save_config()
             if self.scoring_updated_callback:
                 self.scoring_updated_callback()
+
+    def set_value(self, path: str, value: Any):
+        """Set a value in config using dot notation"""
+        self.config.set_value(path, value)
+        self.config.save_config()

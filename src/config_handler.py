@@ -6,7 +6,8 @@ from src.score_presets import get_preset
 
 default_behaviours = {
     "auto_scroll_scores": True,
-    "auto_scroll_on_tag_condition": True
+    "auto_scroll_on_tag_condition": True,
+    "to_latest_strict_mode": False
 }
 
 default_colors = {
