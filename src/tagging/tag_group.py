@@ -10,7 +10,7 @@ class Tag:
 
 @dataclass
 class TagGroup:
-    def __init__(self, id: int, project_id: int, name: str, order: int, is_required: int = 1, allow_multiple: int = 0, prevent_auto_scroll: int = 0, min_tags: int = 0):
+    def __init__(self, id: int, project_id: int, name: str, order: int, is_required: int = 1, allow_multiple: int = 0, prevent_auto_scroll: int = 0, min_tags: int = 1):
         self.id = id
         self.project_id = project_id
         self.name = name
@@ -27,6 +27,16 @@ class TagGroup:
 
         for tag in tags:
             self.tags.append(Tag(tag[0], tag[1], tag[2]))
+
+    def verify_self(self):
+        """
+        Ensures that the tag group is valid
+        """
+        if self.tags is None:
+            self.tags = []
+        
+        if self.min_tags < 1:
+            self.min_tags = 1
 
     def __repr__(self) -> str:
         return f"TagGroup(id={self.id}, name={self.name}, tags={self.tags}, order={self.order}) {{required:{self.is_required}, allow_multiple:{self.allow_multiple}, min_tags:{self.min_tags}}}"

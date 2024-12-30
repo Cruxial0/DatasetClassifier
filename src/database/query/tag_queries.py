@@ -60,6 +60,7 @@ class TagQueries:
                 tag_id, group_id, tag_name, tag_order = row
                 group_idx = group_mapping[group_id]
                 tag_groups[group_idx].add_tags([(tag_id, tag_name, tag_order)])
+                tag_groups[group_idx].verify_self()
 
         cursor.close()
         return tag_groups
@@ -85,6 +86,7 @@ class TagQueries:
         for row in cursor.fetchall():
             tag_id, tag_name, tag_order = row
             group.add_tags([(tag_id, tag_name, tag_order)])
+            group.verify_self()
         cursor.close()
         return group
         
@@ -147,6 +149,7 @@ class TagQueries:
         """
         Updates the tag group with the given id in the database, with the new tag group's fields.
         """
+        tag_group.verify_self()
         cursor = self.db.cursor()
         cursor.execute("UPDATE tag_groups SET group_name = ?, display_order = ?, is_required = ?, allow_multiple = ?, min_tags = ?, prevent_auto_scroll = ? WHERE group_id = ?", 
             (tag_group.name, tag_group.order, tag_group.is_required, tag_group.allow_multiple, tag_group.min_tags, tag_group.prevent_auto_scroll, tag_group.id))

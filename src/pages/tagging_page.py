@@ -483,6 +483,7 @@ class TaggingPage(QWidget):
         if active:
             if self.image_update_due:
                 self.load_images()
+                self.image_tags = self.db.tags.get_image_tags(self.current_image_id)
                 self.image_update_due = False
             if self.tag_update_due:
                 self.update_tag_groups()
