@@ -204,6 +204,7 @@ class TagGroupEditWidget(QWidget):
         super().__init__(parent)
 
         self.active_group = None
+        self.is_scripted = False
 
         self.main_layout = QVBoxLayout(self)
 
@@ -254,7 +255,9 @@ class TagGroupEditWidget(QWidget):
         self.is_required_toggle.stateChanged.connect(self.on_is_required_changed)
         self.prevent_auto_scroll.stateChanged.connect(self.on_prevent_auto_scroll_changed)
 
-    def set_tag_group(self, tag_group: TagGroup):
+    def set_tag_group(self, tag_group: TagGroup, is_scripted: bool = False):
+        self.is_scripted = is_scripted
+
         self.active_group = tag_group
         self.group_label.setText(f"Editing: {tag_group.name}")
         self.name_edit.setText(tag_group.name)
@@ -262,6 +265,8 @@ class TagGroupEditWidget(QWidget):
         self.allow_multiple_toggle.setChecked(tag_group.allow_multiple)
         self.is_required_toggle.setChecked(tag_group.is_required)
         self.prevent_auto_scroll.setChecked(tag_group.prevent_auto_scroll)
+
+        self.is_scripted = False
 
         self._handle_button_states()
 
@@ -274,24 +279,24 @@ class TagGroupEditWidget(QWidget):
     def on_name_edit_changed(self):
         self._handle_button_states()
 
-    def on_allow_multiple_changed(self):
+    def on_allow_multiple_changed(self,):
         self.min_tags_label.setEnabled(self.allow_multiple_toggle.isChecked())
         self.min_tags_input.setEnabled(self.allow_multiple_toggle.isChecked())
         self.active_group.allow_multiple = self.allow_multiple_toggle.isChecked()
 
         self._handle_button_states()
-        self.group_updated.emit(self.active_group)
+        self.group_updated.emit(self.active_group) if not self.is_scripted else None
 
     def on_is_required_changed(self):
         self.active_group.is_required = self.is_required_toggle.isChecked()
 
         self._handle_button_states()
-        self.group_updated.emit(self.active_group)
+        self.group_updated.emit(self.active_group) if not self.is_scripted else None
 
     def on_name_edit_saved(self):
         self.active_group.name = self.name_edit.text()
         self.group_label.setText(f"Editing: {self.active_group.name}")
-        self.group_updated.emit(self.active_group)
+        self.group_updated.emit(self.active_group) if not self.is_scripted else None
 
         self._handle_button_states()
 
@@ -301,13 +306,13 @@ class TagGroupEditWidget(QWidget):
             return
         
         self.active_group.min_tags = self.min_tags_input.value()
-        self.group_updated.emit(self.active_group)
+        self.group_updated.emit(self.active_group) if not self.is_scripted else None
 
         self._handle_button_states()
 
     def on_prevent_auto_scroll_changed(self):
         self.active_group.prevent_auto_scroll = self.prevent_auto_scroll.isChecked()
-        self.group_updated.emit(self.active_group)
+        self.group_updated.emit(self.active_group) if not self.is_scripted else None
 
         self._handle_button_states()
 
@@ -595,7 +600,7 @@ class TagGroupsSettings(SettingsWidget):
         self.tags_list.clear()
         self.active_group = group
         self.add_tag_button.setEnabled(True)
-        self.edit_tag_group_widget.set_tag_group(group)
+        self.edit_tag_group_widget.set_tag_group(group, True)
         
         for tag in group.tags:
             self.tags_list.addItem(TagListItem(
