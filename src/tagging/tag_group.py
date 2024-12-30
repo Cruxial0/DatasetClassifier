@@ -38,5 +38,11 @@ class TagGroup:
         if self.min_tags < 1:
             self.min_tags = 1
 
+        # Ensure there are no gaps in tags display order
+        self.tags.sort(key=lambda x: x.display_order)
+        for i in range(len(self.tags) - 1):
+            if self.tags[i + 1].display_order - self.tags[i].display_order != 1:
+                self.tags[i + 1].display_order = self.tags[i].display_order + 1
+
     def __repr__(self) -> str:
         return f"TagGroup(id={self.id}, name={self.name}, tags={self.tags}, order={self.order}) {{required:{self.is_required}, allow_multiple:{self.allow_multiple}, min_tags:{self.min_tags}}}"
