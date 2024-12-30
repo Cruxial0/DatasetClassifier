@@ -273,12 +273,24 @@ class TaggingPage(QWidget):
             return
         
         if not skip_update:
+            prev_group_id = 0
+            if self.current_group is not None:
+                prev_group_id = self.current_group.id
+                self.current_group = None
+
             self.tag_groups = self.db.tags.get_project_tags(self.active_project.id)
 
             if self.tag_groups is None or len(self.tag_groups) == 0: 
                 return
+            
+            for i in range(len(self.tag_groups)):
+                if self.tag_groups[i].id == prev_group_id:
+                    self.current_group = self.tag_groups[i]
+                    break
 
-            self.current_group = self.tag_groups[0]
+            if self.current_group is None:
+                self.current_group = self.tag_groups[0]
+
             self.status_widget.set_tag_groups(self.tag_groups)
         
         if self.current_group.tags is None:
