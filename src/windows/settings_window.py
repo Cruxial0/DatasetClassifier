@@ -197,15 +197,15 @@ class SettingsWindow(QMainWindow):
         tags_label = QLabel("Tagging")
         tags_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
 
-        auto_scroll_disable_until_enabled = QCheckBox("Disable auto-scroll until enabled (⚡/🔅)")
-        auto_scroll_disable_until_enabled.setToolTip("If enabled, when temporarily disabling auto-scroll, it will\nremain disabled until re-enabled")
-        auto_scroll_disable_until_enabled.setChecked(self.config.get_value('behaviour.auto_scroll_disable_until_enabled'))
-        auto_scroll_disable_until_enabled.checkStateChanged.connect(lambda state: self.set_value('behaviour.auto_scroll_disable_until_enabled', state.value > 0))
-
         auto_scroll_on_tag_condition = QCheckBox("Auto scroll when TagGroup condition is met")
         auto_scroll_on_tag_condition.setToolTip("Automatically moves to the next TagGroup when a TagGroup condition is met")
         auto_scroll_on_tag_condition.setChecked(self.config.get_value('behaviour.auto_scroll_on_tag_condition'))
         auto_scroll_on_tag_condition.checkStateChanged.connect(lambda state: self.set_value('behaviour.auto_scroll_on_tag_condition', state.value > 0))
+
+        auto_scroll_disable_until_enabled = QCheckBox("Disable auto-scroll until enabled (⚡/🔅)")
+        auto_scroll_disable_until_enabled.setToolTip("If enabled, when temporarily disabling auto-scroll, it will\nremain disabled until re-enabled")
+        auto_scroll_disable_until_enabled.setChecked(self.config.get_value('behaviour.auto_scroll_disable_until_enabled'))
+        auto_scroll_disable_until_enabled.checkStateChanged.connect(lambda state: self.set_value('behaviour.auto_scroll_disable_until_enabled', state.value > 0))
 
         to_latest_strict_mode = QCheckBox("Use strict mode for 'to latest' (🎯)")
         to_latest_strict_mode.setToolTip("If enabled, will ignore the 'is_required' clause,\nand will find the latest TagGroup where 'min_tags' is not met")
