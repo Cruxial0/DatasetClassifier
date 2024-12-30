@@ -1,5 +1,6 @@
 import subprocess
 from PyQt6.QtWidgets import (QHBoxLayout, QMainWindow, QWidget, QStackedWidget, QMessageBox)
+from PyQt6.QtCore import Qt
 from src.export import Exporter
 from src.pages.tagging_page import TaggingPage
 from src.pages.scoring_page import ScoringPage
@@ -24,6 +25,9 @@ class DatasetClassifier(QMainWindow):
         self.config_handler = ConfigHandler()
         self.button_states = ButtonStateManager()
         self.update_poller = UpdatePoller()
+
+        self.settings_window = None
+    
         self.current_mode = 0
         self.initUI()
 
@@ -108,9 +112,23 @@ class DatasetClassifier(QMainWindow):
         """Update button colors across all pages"""
         self.scoring_page.update_button_colors()
 
-    def open_settings_window(self, page: str = None):
-        settings_window = SettingsWindow(self.config_handler, self, page)
-        settings_window.show()
+    def open_settings_window(self, path: str = None):
+        if self.settings_window is not None:
+            self.settings_window.setWindowState(self.settings_window.windowState() & ~Qt.WindowState.WindowMinimized | Qt.WindowState.WindowActive)
+            self.settings_window.setFocus(Qt.FocusReason.PopupFocusReason)
+            self.settings_window.activateWindow()
+
+            self.settings_window.navigate_path(path)
+            return
+
+        self.settings_window = SettingsWindow(self.config_handler, self, path)
+    
+        def handle_close(event):
+            self.settings_window = None
+            event.accept()
+        
+        self.settings_window.closeEvent = handle_close
+        self.settings_window.show()
 
     def open_export_window(self):
         self.export_popup = ExportPopup(self.export_callback, self.db.images.get_unique_categories(self.active_project.id), self.config_handler)

@@ -10,6 +10,8 @@ from src.update_poller import UpdatePoller
 
 from PyQt6.QtCore import QTimer
 
+from src.windows.settings_pages.settings_widget import SettingsWidget
+
 class TagWidget(QWidget):
     def __init__(self, tag: Tag, database: Database, update_poller: UpdatePoller, delete_callback: Callable, parent=None):
         super().__init__(parent)
@@ -256,7 +258,7 @@ class TagGroupEditWidget(QWidget):
         self.min_tags_label.setEnabled(self.allow_multiple_toggle.isChecked())
         self.min_tags_input.setEnabled(self.allow_multiple_toggle.isChecked())
 
-class TagGroupsSettings(QWidget):
+class TagGroupsSettings(SettingsWidget):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
@@ -266,6 +268,14 @@ class TagGroupsSettings(QWidget):
 
         self.active_group = None
         self.setupUI()
+
+    def navigate_path(self, path: str):
+        # Find the TagGroup with the name of the path
+
+        for i in range(self.tag_groups_list.count()):
+            item = self.tag_groups_list.item(i)
+            if item.tag_group.name.replace(' ', '_').replace('.', "_").lower() == path.strip():
+                self.on_tag_group_clicked(item.tag_group)
 
     def setupUI(self):
         self.main_layout = QHBoxLayout(self)

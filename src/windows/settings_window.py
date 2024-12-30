@@ -129,7 +129,7 @@ class SettingsWindow(QMainWindow):
         layout.addWidget(self.content_stack)
         
         if page:
-            self.switch_page(page)
+            self.navigate_path(page)
             return
 
         # Select first page by default
@@ -137,6 +137,14 @@ class SettingsWindow(QMainWindow):
         if first_button:
             first_button.setChecked(True)
             self.switch_page(list(self._page_creators.keys())[0])
+
+    def navigate_path(self, path: str):
+        """Navigate to a path in the settings window based on dot notation"""
+        page = path.split('.')[0]
+        self.switch_page(page)
+
+        if page in ['tag_groups']:
+            self._pages[page].navigate_path(".".join(path.split('.')[1:]))
 
     def get_page(self, page_name: str):
         """Get or create a page"""
