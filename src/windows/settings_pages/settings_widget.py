@@ -132,6 +132,7 @@ class SettingsWidget(QWidget):
         layout.addWidget(QLabel(label))
         spinbox = QSpinBox()
         spinbox.setRange(mix_max[0], mix_max[1])
+        spinbox.setMinimumWidth(80)
         spinbox.setValue(self.config_handler.get_value(setting))
         
         spinbox.valueChanged.connect(lambda value: self.set_value(setting, value))
