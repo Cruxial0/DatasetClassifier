@@ -78,7 +78,7 @@ class DatasetClassifier(QMainWindow):
 
         # self.hide_scored_action.triggered.connect(self.toggle_hide_scored_images)
         self.export_action.triggered.connect(self.open_export_window)
-        self.settings_action.triggered.connect(self.open_settings_window)
+        self.settings_action.triggered.connect(lambda: self.open_settings_window())
 
     def switch_mode(self):
         self.current_mode = 1 if self.current_mode == 0 else 0
@@ -121,7 +121,7 @@ class DatasetClassifier(QMainWindow):
             self.settings_window.navigate_path(path)
             return
 
-        self.settings_window = SettingsWindow(self.config_handler, self, path)
+        self.settings_window = SettingsWindow(self, path)
     
         def handle_close(event):
             self.settings_window = None
