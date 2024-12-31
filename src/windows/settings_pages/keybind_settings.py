@@ -27,6 +27,8 @@ class KeybindSettingsPage(SettingsWidget):
             "Blur": loaded_keybinds['blur']
         }
         
+        layout.addLayout(self._create_header("Keybinds"))
+
         for key, value in keybinds.items():
             row = QHBoxLayout()
             label = QLabel(key)

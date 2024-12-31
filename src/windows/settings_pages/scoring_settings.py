@@ -10,6 +10,7 @@ class ScoringSettingsPage(SettingsWidget):
     def init_ui(self):
         layout = QVBoxLayout(self)
         
+        layout.addLayout(self._create_header("Preset"))
         scores_combobox = self._create_combobox("Scoring Preset", self.presets, 'scores.preset', callback=self.set_preset)
         
         layout.addLayout(scores_combobox)
@@ -25,7 +26,7 @@ class ScoringSettingsPage(SettingsWidget):
 
         self.config_handler.set_scores(scores)
         self.config_handler.save_config()
-        
+
         self._update_button_names(scores)
             
     def _update_button_names(self, scores):

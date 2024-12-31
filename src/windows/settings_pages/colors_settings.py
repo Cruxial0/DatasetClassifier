@@ -19,6 +19,8 @@ class ColorsSettingsPage(SettingsWidget):
             "Warning Color": QColor.fromString(loaded_colors['warning_color'])
         }
         
+        layout.addLayout(self._create_header("Main Colors"))
+
         for name, color in colors.items():
             row = QHBoxLayout()
             label = QLabel(name, self)
