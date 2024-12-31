@@ -337,12 +337,7 @@ class TagGroupEditWidget(QWidget):
 
 class TagGroupsSettings(SettingsWidget):
     def __init__(self, parent):
-        super().__init__()
-        self.parent = parent
-        self.db: Database = parent.db
-        self.active_project: Project = parent.project
-        self.update_poller: UpdatePoller = parent.update_poller
-        self.config_handler: ConfigHandler = parent.config_handler
+        super().__init__(parent)
 
         self.active_group = None
         self.selected_item = None  # Track the currently selected item
