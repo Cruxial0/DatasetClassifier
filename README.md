@@ -90,6 +90,11 @@ Here is an example of how you would configure an export for the example above:
 
 In this example, all images with both the `needs editing` and `needs cropping` categories will be exported to `./heavy_edits`, while images that only contain either `needs editing` or `needs cropping` will be exported to their respective folders. Images with the `completed` category, or without categories will be exported to the root of the export directory.
 
+## Plans
+- [ ] **Conditional TagGroups:** TagGroups that can only be accessed if a certain condition is met, for example if `X` tag has been added or `Y` TagGroup is finished
+- [ ] **Conditional Tags:** Tags that will automatically be added on export. Conditions will be customizable.
+- [ ] **Export Window Rework:** The export window is not in a good state (but usable for now). It needs a full rewrite.
+- [ ] **Project Export/Import:** A feature to import/export a project with all it's TagGroups, images and tag data.
 
 ## Installation
 ### Windows
