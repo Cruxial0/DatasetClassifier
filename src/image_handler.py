@@ -198,7 +198,8 @@ class ImageHandler:
     
     def load_image_from_raw_id(self, image_id: int) -> bool:
         if image_id in self.image_ids:
-            self.current_image_id = image_id
+            idx = self.image_ids.index(image_id) - 1
+            self.current_image_id = self.image_ids[idx]
             self.preload_images()
             return True
         return False

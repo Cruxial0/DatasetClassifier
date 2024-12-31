@@ -369,7 +369,7 @@ class TaggingPage(QWidget):
 
         image_id, group_id, group_order = result
 
-        if self.image_handler.load_image_from_raw_id(image_id - 1):
+        if self.image_handler.load_image_from_raw_id(image_id):
             print(f"Found tag group: [{self.image_handler.get_absolute_index()}, {group_id}, {group_order}]")
             self.display_image()
 
