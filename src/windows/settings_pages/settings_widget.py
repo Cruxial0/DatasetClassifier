@@ -77,7 +77,6 @@ class SettingsWidget(QWidget):
         
         checkbox = QCheckBox(text, self)
         checkbox.setToolTip(tooltip)
-        print(f"Setting {setting} to {self.config_handler.get_value(setting)}")
         checkbox.setChecked(self.config_handler.get_value(setting))
         
         def on_change(state):
