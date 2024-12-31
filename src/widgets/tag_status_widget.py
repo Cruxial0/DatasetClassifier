@@ -23,6 +23,16 @@ button_style = """
     }
 """
 
+tooltip_style = """
+    QToolTip {
+        background-color: #1e1e1e;
+        color: white;
+        border: 1px solid #3a3a3a;
+        border-radius: 5px;
+        padding: 2px;
+    }
+"""
+
 class TagStatusWidget(QWidget):
     next_clicked: pyqtSignal = pyqtSignal()
     prev_clicked: pyqtSignal = pyqtSignal()
@@ -65,6 +75,7 @@ class TagStatusWidget(QWidget):
         self.tag_group_index_label = QLabel("(0/0)")
 
         self.tag_group_name_label.setStyleSheet("color: white; font-weight: bold;")
+        self.tag_group_status_label.setStyleSheet(tooltip_style)
 
         tag_group_stats_layout.addWidget(self.tag_group_status_label)
         tag_group_stats_layout.addWidget(self.tag_group_name_label)
@@ -74,6 +85,7 @@ class TagStatusWidget(QWidget):
         tags_selected_layout = QHBoxLayout()
         self.seleted_tags_label = QLabel("0/0 selected")
         self.auto_scroll_indicator = QLabel("⚡")
+        self.auto_scroll_indicator.setStyleSheet(tooltip_style)
         self.auto_scroll_indicator.setToolTip(self.auto_scroll_indicator_tooltip)
         self.auto_scroll_indicator.mousePressEvent = self._auto_scroll_indicator_click_event
 
