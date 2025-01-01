@@ -90,8 +90,8 @@ class TaggingPage(QWidget):
         next_button.setFixedWidth(40)
 
         # Register keybindings
-        prev_button.clicked.connect(lambda:self.load_previous_image(absolute=True))
-        next_button.clicked.connect(lambda: self.load_next_image(absolute=True))
+        prev_button.clicked.connect(self.prev_image_clicked)
+        next_button.clicked.connect(self.next_image_clicked)
 
         nav_button_layout.addWidget(prev_button)
         nav_button_layout.addWidget(next_button)
@@ -179,6 +179,7 @@ class TaggingPage(QWidget):
             return
 
         tag_added = False
+        will_be_valid = self.status_widget._is_condition_met_on_next_add(self.image_tags)
 
         if self.db.tags.image_has_tag(self.current_image_id, tag_id):
             self.db.tags.delete_image_tag(self.current_image_id, tag_id)
@@ -191,7 +192,7 @@ class TaggingPage(QWidget):
             if tag_id not in self.image_tags:
                 self.image_tags.append(tag_id)
         
-        condition_met = self.status_widget.check_group_conditions(self.image_tags)
+        condition_met = self.status_widget.check_group_conditions(self.image_tags) and will_be_valid
 
         # Auto-scroll when TagGroup condition is met (if enabled) (and not overridden by TagGroup)
         if not self.current_group.prevent_auto_scroll:
@@ -509,6 +510,16 @@ class TaggingPage(QWidget):
             if self.tag_update_due:
                 self.update_tag_groups()
                 self.tag_update_due = False
+
+    def next_image_clicked(self):
+        self.load_next_image(absolute=True)
+        self.image_tags = self.db.tags.get_image_tags(self.current_image_id)
+        self.status_widget.check_group_conditions(self.image_tags)
+
+    def prev_image_clicked(self):
+        self.load_previous_image(absolute=True)
+        self.image_tags = self.db.tags.get_image_tags(self.current_image_id)
+        self.status_widget.check_group_conditions(self.image_tags)
 
     def _clear_layout(self, layout):
         while layout.count():
