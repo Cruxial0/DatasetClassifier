@@ -5,6 +5,8 @@ import pytz
 from zoneinfo import ZoneInfo
 from typing import Optional
 from tzlocal import get_localzone
+import platform
+import subprocess
 
 def get_image_files(directory):
     return [f for f in os.listdir(directory) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.bmp'))]
@@ -125,3 +127,29 @@ def get_time_ago(timestamp_str: str, timezone: Optional[str] = None) -> str:
         months = int(seconds / 2592000)
         unit = "month" if months == 1 else "months"
         return f"{months} {unit} ago"
+    
+def open_directory(path):
+    """
+    Opens the specified directory in the system's default file explorer.
+    Works across Windows, macOS, and Linux.
+    
+    Args:
+        path (str): The directory path to open
+    """
+    # Normalize path separators for the current platform
+    path = os.path.normpath(path)
+    
+    system = platform.system().lower()
+    
+    try:
+        if system == 'windows':
+            subprocess.Popen(['explorer', path])
+        elif system == 'darwin':  # macOS
+            subprocess.Popen(['open', path])
+        elif system == 'linux':
+            subprocess.Popen(['xdg-open', path])
+        else:
+            raise OSError(f"Unsupported operating system: {system}")
+            
+    except Exception as e:
+        print(f"Error opening directory: {e}")

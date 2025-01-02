@@ -95,7 +95,7 @@ class ExportPopup(QWidget):
 
         # Output directory selector
         dir_layout = QHBoxLayout()
-        self.dir_input = QLineEdit()
+        self.dir_input = QLineEdit(self)
         dir_button = QPushButton("Select output path")
         dir_button.clicked.connect(self.select_directory)
         dir_layout.addWidget(self.dir_input)

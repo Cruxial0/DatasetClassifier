@@ -15,6 +15,7 @@ from src.windows.settings_window import SettingsWindow
 from src.popups.new_project_popup import NewProjectPopup
 from src.popups.migrate_project_popup import MigrateProjectPopup
 from src.update_poller import UpdatePoller
+from src.utils import open_directory
 
 # dataset_classifier.py
 class DatasetClassifier(QMainWindow):
@@ -168,4 +169,4 @@ class DatasetClassifier(QMainWindow):
             if dir_confirm == QMessageBox.StandardButton.Yes:
                 exporter.export()
                 QMessageBox.information(self, "Workspace", "The workspace has been exported.")
-                subprocess.Popen(f'explorer "{exporter.output_dir.replace('//', '\\').replace('/', '\\')}"')
+                open_directory(exporter.output_dir)
