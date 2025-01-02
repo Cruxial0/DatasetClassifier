@@ -171,7 +171,8 @@ class TaggingPage(QWidget):
         self.main_layout.addLayout(tagging_layout, 3)
 
     def show_configure_tag_groups(self):
-        self.parent.open_settings_window(f'tag_groups.{self.current_group.name.replace(" ", "_").replace('.', "_").lower()}')
+        group_name = None if self.current_group is None else self.current_group.name.replace(" ", "_").replace('.', "_").lower()
+        self.parent.open_settings_window(f'tag_groups.{group_name}')
 
     def tag_button_click(self, tag_id: int):
         
