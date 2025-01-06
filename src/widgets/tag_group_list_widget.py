@@ -1,15 +1,17 @@
+from typing import Callable, Literal
 from PyQt6.QtWidgets import (QListWidgetItem, QWidget, QHBoxLayout, 
                             QVBoxLayout, QLabel, QPushButton, 
                             QSpacerItem, QSizePolicy)
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont, QColor
 
 from src.tagging.tag_group import TagGroup
 
 class TagGroupListWidget(QListWidgetItem):
-    def __init__(self, tag_group: TagGroup, indent=0, parent=None):
+    def __init__(self, tag_group: TagGroup, callback: Callable[[Literal['edit', 'tags', 'activation'], TagGroup], None], indent=0, parent=None):
         super().__init__(parent)
         self.tag_group = tag_group
+        self.callback = callback
 
         self.widget = QWidget()
         self.init_ui()
@@ -41,6 +43,7 @@ class TagGroupListWidget(QListWidgetItem):
         
         # Create buttons
         settings_btn = self.create_button("⚙️", "General Settings")
+        settings_btn.clicked.connect(lambda: self.callback('edit', self.tag_group))
         tags_btn = self.create_button("🏷️", "Tags")
         next_btn = self.create_button("▶️", "Conditional Activation")
         
