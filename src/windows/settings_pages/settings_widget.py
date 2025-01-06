@@ -62,7 +62,7 @@ class SettingsWidget(QWidget):
         layout.addSpacerItem(QSpacerItem(0, 10))
         return layout
     
-    def _create_checkbox(self, text: str, tooltip: str, setting: str, callback: Callable[[bool], None] = None) -> QCheckBox:
+    def _create_checkbox(self, text: str, tooltip: str, setting: str | None, callback: Callable[[bool], None] = None) -> QCheckBox:
         """Creates a checkbox for the given setting and connects it to the given callback.
         
         Args:
@@ -77,7 +77,7 @@ class SettingsWidget(QWidget):
         
         checkbox = QCheckBox(text, self)
         checkbox.setToolTip(tooltip)
-        checkbox.setChecked(self.config_handler.get_value(setting))
+        
         
         def on_change(state):
             is_checked = state.value > 0
@@ -85,10 +85,14 @@ class SettingsWidget(QWidget):
             if callback:
                 callback(is_checked)
         
+        if setting is None:
+            return checkbox
+        
+        checkbox.setChecked(self.config_handler.get_value(setting))
         checkbox.checkStateChanged.connect(on_change)
         return checkbox
     
-    def _create_combobox(self, label: str, items: list, setting: str, callback: Callable[[str], None] = None) -> QHBoxLayout:
+    def _create_combobox(self, label: str, items: list, setting: str | None, callback: Callable[[str], None] = None) -> QHBoxLayout:
         """Creates a combobox for the given setting and connects it to the given callback.
         
         Args:
@@ -105,18 +109,24 @@ class SettingsWidget(QWidget):
         layout.addWidget(QLabel(label))
         combo_box = QComboBox()
         combo_box.addItems(items)
-        combo_box.setCurrentText(self.config_handler.get_value(setting))
+        
 
         def on_change(text):
             self.set_value(setting, text)
             if callback:
                 callback(text)
 
-        combo_box.currentTextChanged.connect(on_change)
         layout.addWidget(combo_box)
+        
+        if setting is None:
+            return layout
+        
+        combo_box.setCurrentText(self.config_handler.get_value(setting))
+        combo_box.currentTextChanged.connect(on_change)
+
         return layout
     
-    def _create_spinbox(self, label: str, setting: str, mix_max: tuple[int, int], callback: Callable[[int], None] = None) -> QHBoxLayout:
+    def _create_spinbox(self, label: str, setting: str | None, mix_max: tuple[int, int], callback: Callable[[int], None] = None) -> QHBoxLayout:
         """Creates a SpinBox for the given setting and connects it to the given callback.
     
         Args:
@@ -133,8 +143,13 @@ class SettingsWidget(QWidget):
         spinbox = QSpinBox()
         spinbox.setRange(mix_max[0], mix_max[1])
         spinbox.setMinimumWidth(80)
-        spinbox.setValue(self.config_handler.get_value(setting))
         
-        spinbox.valueChanged.connect(lambda value: self.set_value(setting, value))
         layout.addWidget(spinbox)
+        
+        if setting is None:
+            return layout
+        
+        spinbox.setValue(self.config_handler.get_value(setting))
+        spinbox.valueChanged.connect(lambda value: self.set_value(setting, value))
+        
         return layout
