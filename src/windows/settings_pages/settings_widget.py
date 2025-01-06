@@ -1,5 +1,5 @@
-from typing import Any, Callable
-from PyQt6.QtWidgets import QWidget, QCheckBox, QHBoxLayout, QVBoxLayout, QComboBox, QLabel, QSpinBox, QSpacerItem
+from typing import Any, Callable, Literal
+from PyQt6.QtWidgets import QWidget, QCheckBox, QHBoxLayout, QVBoxLayout, QComboBox, QLabel, QSpinBox, QSpacerItem, QPushButton
 from PyQt6.QtGui import QFont
 from abc import abstractmethod
 
@@ -51,13 +51,15 @@ class SettingsWidget(QWidget):
 
 
     # Helper functions
-    def _create_header(self, text: str, category_break: bool = False) -> QVBoxLayout:
+    def _create_header(self, text: str, category_break: bool = False, **kwargs) -> QVBoxLayout:
+        font_size = kwargs.get('font_size', 12)
         layout = QVBoxLayout()
         if category_break:
             layout.addSpacerItem(QSpacerItem(0, 20))
         label = QLabel(text)
         label.setObjectName(f"settings_page_{text.replace(' ', '_').lower()}_label")
-        label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
+        
+        label.setFont(QFont("Arial", font_size, QFont.Weight.Bold))
         layout.addWidget(label)
         layout.addSpacerItem(QSpacerItem(0, 10))
         return layout
@@ -153,3 +155,22 @@ class SettingsWidget(QWidget):
         spinbox.valueChanged.connect(lambda value: self.set_value(setting, value))
         
         return layout
+    
+    def _create_button(self, text: str, tooltip: str, callback: Callable[[], None] = None) -> QPushButton:
+        """Creates a QPushButton for the given text and tooltip, and connects it to the given callback.
+        
+        Args:
+            text (str): The text to display on the button.
+            tooltip (str): The tooltip to display when hovering over the button.
+            callback (Callable[[], None], optional): The callback to call when the button is clicked. Defaults to None.
+        
+        Returns:
+            QPushButton: The created button.
+        """
+        button = QPushButton(text, self)
+        button.setToolTip(tooltip)
+        
+        if callback is not None:
+            button.clicked.connect(callback)
+
+        return button

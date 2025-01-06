@@ -7,7 +7,7 @@ from src.config_handler import ConfigHandler
 from src.update_poller import UpdatePoller
 
 # Settings Pages
-from src.windows.settings_pages.tag_groups_settings import TagGroupsSettings
+from src.windows.settings_pages.tag_groups_settings import TagGroupSettings
 from src.windows.settings_pages.behaviour_settings import BehaviourSettings
 from src.windows.settings_pages.colors_settings import ColorsSettingsPage
 from src.windows.settings_pages.export_settings import ExportSettingsPage
@@ -49,7 +49,7 @@ class SettingsWindow(QMainWindow):
             "colors": lambda: ColorsSettingsPage(self),
             "scoring": lambda: ScoringSettingsPage(self),
             "privacy": lambda: PrivacySettingsPage(self),
-            "tag_groups": lambda: TagGroupsSettings(self)
+            "tag_groups": lambda: TagGroupSettings(self)
         }
         
         # Add navigation buttons
