@@ -7,16 +7,19 @@ from src.styling.style import Style
 from src.styling.push_button.decision_buttons import AcceptButtonStyle, RejectButtonStyle
 from src.styling.push_button.menu_buttons import MenuButtonStyle
 from src.styling.push_button.score_buttons import DiscardButtonStyle, ScoreButtonStyle
+from src.styling.push_button.push_button import PushButtonStyle
 
 class StyleManager:
     def __init__(self, config: ConfigHandler):
         self.config = config
         self._stylesheets: Dict[Tuple[Type[QObject], str | None], Style] = {
+            # Buttons
             (QPushButton, 'accept'): AcceptButtonStyle(),
             (QPushButton, 'reject'): RejectButtonStyle(),
             (QPushButton, 'menu_tab'): MenuButtonStyle(),
             (QPushButton, 'score_button'): ScoreButtonStyle(),
             (QPushButton, 'discard_button'): DiscardButtonStyle(),
+            (QPushButton, None): PushButtonStyle()
         }
 
     def get_stylesheet(self, component_type: Type[QObject], variant: str | None = None) -> str:

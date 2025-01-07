@@ -26,26 +26,26 @@ class ColorHelper:
         """Adjust RGB values by a factor."""
         return tuple(min(255, max(0, x * factor)) for x in rgb)
 
-    def get_variants(self, hover_adjust: float = 0.25, active_adjust: float = 0.35) -> dict:
+    def get_variants(self, active_adjust: float = 0.15, hover_adjust: float = 0.35) -> dict:
         """
         Generate hover and active color variants.
         
         Args:
-            hover_adjust: Amount to adjust for hover state (default 0.15 = 15%)
             active_adjust: Amount to adjust for active state (default 0.25 = 25%)
+            hover_adjust: Amount to adjust for hover state (default 0.15 = 15%)
         
         Returns:
             dict: Dictionary containing primary, hover, and active colors in hex format
         """
         # Determine if we should lighten or darken based on luminance
         luminance = self._calculate_luminance()
-        hover_factor = 1 - hover_adjust if luminance > 0.5 else 1 + hover_adjust
         active_factor = 1 - active_adjust if luminance > 0.5 else 1 + active_adjust
+        hover_factor = 1 - hover_adjust if luminance > 0.5 else 1 + hover_adjust
         
         # Calculate hover color
         hover_rgb = self._adjust_color(self.rgb, hover_factor)
         hover_color = self._rgb_to_hex(hover_rgb)
-        
+
         # Calculate active color (more pronounced adjustment)
         active_rgb = self._adjust_color(self.rgb, active_factor)
         active_color = self._rgb_to_hex(active_rgb)

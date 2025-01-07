@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 
 
+from src.config_handler import ConfigHandler
 from src.project_utils import load_project_from_id
 from src.project import Project
 from src.database.database import Database
@@ -13,6 +14,7 @@ from src.utils import get_time_ago
 from src.popups.new_project_popup import NewProjectPopup
 from src.popups.migrate_project_popup import MigrateProjectPopup
 from src.windows.dataset_classifier import DatasetClassifier
+from src.styling.style_manager import StyleManager
 
 class ProjectListItem(QListWidgetItem):
     def __init__(self, id: int, name: str, last_updated: str):
@@ -68,6 +70,8 @@ class ProjectSelectionWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.db = Database()
+        self.config_handler = ConfigHandler()
+        self.style_manager = StyleManager(self.config_handler)
         self.initUI()
 
     def initUI(self):
@@ -93,9 +97,11 @@ class ProjectSelectionWindow(QMainWindow):
         new_project_btn = QPushButton("New Project")
         new_project_btn.setWhatsThis("Create a new project")
         new_project_btn.setToolTip("Create a new project")
+        new_project_btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
         new_project_btn.clicked.connect(self.on_new_project)
         
         import_legacy_btn = QPushButton("Import Legacy Database")
+        import_legacy_btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
         import_legacy_btn.clicked.connect(self.on_import_legacy)
         
         functions_layout.addWidget(new_project_btn)
@@ -121,6 +127,10 @@ class ProjectSelectionWindow(QMainWindow):
         open_button = QPushButton("Open")
         delete_button = QPushButton("Delete")
         edit_button = QPushButton("Edit")
+
+        open_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
+        delete_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
+        edit_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
 
         open_button.clicked.connect(self.open_project)
         # delete_button.clicked.connect(self.delete_project)
