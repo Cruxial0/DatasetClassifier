@@ -4,6 +4,7 @@ from PyQt6.QtGui import QPixmap, QKeySequence, QShortcut, QAction
 from PyQt6.QtCore import Qt, QTimer
 
 from src.config_handler import ConfigHandler
+from src.styling.style_manager import StyleManager
 
 class UIComponents:
     @staticmethod
@@ -79,7 +80,7 @@ class UIComponents:
         return layout, category_input, category_add_button, category_button_layout
 
     @staticmethod
-    def create_scoring_buttons(default_scores, state: bool, config: ConfigHandler):
+    def create_scoring_buttons(default_scores, state: bool, config: ConfigHandler, style_manager: StyleManager):
         layout = QVBoxLayout()
 
         score_layout = QHBoxLayout()
@@ -87,9 +88,13 @@ class UIComponents:
         for score in default_scores:
             if score == 'discard':
                 button = QPushButton('discard', enabled=state)
+                button.setCheckable(True)
+                button.setStyleSheet(style_manager.get_stylesheet(QPushButton, 'discard_button'))
             else:
                 button = QPushButton(config.get_score(score), enabled=state)
-                
+                button.setCheckable(True)
+                button.setStyleSheet(style_manager.get_stylesheet(QPushButton, 'score_button'))
+            
             button.setObjectName(score)
             score_layout.addWidget(button)
             score_buttons.append(button)
