@@ -5,6 +5,7 @@ from src.database.database import Database
 from src.project import Project
 from src.config_handler import ConfigHandler
 from src.update_poller import UpdatePoller
+from src.styling.style_manager import StyleManager
 
 # Settings Pages
 from src.windows.settings_pages.tag_groups_settings import TagGroupSettings
@@ -26,6 +27,7 @@ class SettingsWindow(QMainWindow):
         self.active_project: Project = parent.active_project
         self.update_poller: UpdatePoller = parent.update_poller
         self.config_handler: ConfigHandler = parent.config_handler
+        self.style_manager: StyleManager = parent.style_manager
         
         # Create main widget and layout
         main_widget = QWidget()
@@ -56,7 +58,7 @@ class SettingsWindow(QMainWindow):
         for name in self._page_creators.keys():
             btn = QPushButton(name.replace('_', ' ').title())
             btn.setCheckable(True)
-            btn.setFixedHeight(40)
+            btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'menu_tab'))
             btn.clicked.connect(lambda checked, n=name: self.switch_page(n))
             nav_layout.addWidget(btn)
         

@@ -5,16 +5,19 @@ from PyQt6.QtGui import QColor
 from PyQt6.QtCore import pyqtSignal
 
 class ColorButton(QPushButton):
-    color_changed: pyqtSignal = pyqtSignal(QColor)
-    def __init__(self, color=QColor(0, 0, 0), parent=None):
+    color_changed: pyqtSignal = pyqtSignal(str, QColor)
+    def __init__(self, color_name, color=QColor(0, 0, 0), parent=None):
         super().__init__(parent)
         
         alphabet = string.ascii_lowercase + string.digits
+        self.color_name = color_name
         self.name = ''.join(random.choices(alphabet, k=8))
         self.setObjectName(self.name)
         self.color = color
         self.setFixedSize(50, 30)
         self.updateStyle()
+
+        self.clicked.connect(self.chooseColor)
 
     def updateStyle(self):
         self.setStyleSheet(
@@ -27,4 +30,4 @@ class ColorButton(QPushButton):
             self.color = dialog.currentColor()
             self.updateStyle()
 
-            self.color_changed.emit(self.color)
+            self.color_changed.emit(self.color_name,self.color)

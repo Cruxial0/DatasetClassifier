@@ -1,6 +1,6 @@
 from typing import Literal
 from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
-                            QSpinBox, QCheckBox, QPushButton)
+                            QSpinBox, QCheckBox, QPushButton, QSpacerItem)
 from PyQt6.QtCore import Qt, pyqtSignal
 from src.windows.settings_pages.settings_widget import SettingsWidget
 from src.tagging.tag_group import TagGroup
@@ -35,6 +35,8 @@ class TagGroupAddOrEditPage(SettingsWidget):
         layout.addWidget(name_label)
         layout.addWidget(self.name_input)
         
+        layout.addSpacerItem(QSpacerItem(0, 10))
+        
         # Required checkbox
         required_layout = QHBoxLayout()
         required_label_layout = QVBoxLayout()
@@ -59,9 +61,11 @@ class TagGroupAddOrEditPage(SettingsWidget):
         multiple_label_layout.addWidget(multiple_label)
         multiple_label_layout.addWidget(multiple_desc)
         self.multiple_checkbox = QCheckBox()
+        self.multiple_checkbox.setStyleSheet(self.style_manager.get_stylesheet(QCheckBox))
         multiple_layout.addLayout(multiple_label_layout)
         multiple_layout.addWidget(self.multiple_checkbox, alignment=Qt.AlignmentFlag.AlignRight)
         layout.addLayout(multiple_layout)
+        layout.addSpacerItem(QSpacerItem(0, 10))
         
         # Minimum tags spinbox
         min_tags_label = QLabel("Minimum Tags")
@@ -70,30 +74,15 @@ class TagGroupAddOrEditPage(SettingsWidget):
         self.min_tags_spin.setMinimum(0)
         layout.addWidget(min_tags_label)
         layout.addWidget(self.min_tags_spin)
+        layout.addStretch(1)
         
         # Buttons
         button_layout = QHBoxLayout()
-        button_layout.addStretch()
+        button_layout.addStretch(1)
         self.cancel_button = QPushButton("Cancel")
+        self.cancel_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'reject'))
         self.save_button = QPushButton("Save Changes")
-        self.save_button.setStyleSheet("""
-            QPushButton {
-                background-color: #007bff;
-                color: white;
-                padding: 5px 10px;
-                border-radius: 3px;
-            }
-            QPushButton:hover {
-                background-color: #0069d9;
-            }
-            QPushButton:pressed {
-                background-color: #0062cc;
-            }
-            QPushButton:disabled {
-                background-color: #606060;
-                color: #343434;
-            }
-        """)
+        self.save_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'accept'))
         button_layout.addWidget(self.cancel_button)
         button_layout.addWidget(self.save_button)
         layout.addLayout(button_layout)

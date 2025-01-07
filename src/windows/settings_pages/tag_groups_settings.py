@@ -42,7 +42,7 @@ class TagGroupSettings(SettingsWidget):
         header_layout.addLayout(self._create_header("Tag Groups", font_size=14))
         header_layout.addStretch(1)
         new_btn = self._create_button("New", "Create a new tag group")
-        new_btn.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
+        new_btn.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
         new_btn.clicked.connect(self.open_new_tag_group)
         header_layout.addWidget(new_btn)
 

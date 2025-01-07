@@ -1,10 +1,8 @@
-import subprocess
 from PyQt6.QtWidgets import (QHBoxLayout, QMainWindow, QWidget, QStackedWidget, QMessageBox)
 from PyQt6.QtCore import Qt
 from src.export import Exporter
 from src.pages.tagging_page import TaggingPage
 from src.pages.scoring_page import ScoringPage
-from src.project_utils import load_project_from_id
 from src.database.database import Database
 from src.project import Project
 from src.button_states import ButtonStateManager
@@ -12,10 +10,9 @@ from src.config_handler import ConfigHandler
 from src.ui_components import UIComponents
 from src.popups.export_popup import ExportPopup
 from src.windows.settings_window import SettingsWindow
-from src.popups.new_project_popup import NewProjectPopup
-from src.popups.migrate_project_popup import MigrateProjectPopup
 from src.update_poller import UpdatePoller
 from src.utils import open_directory
+from src.styling.style_manager import StyleManager
 
 # dataset_classifier.py
 class DatasetClassifier(QMainWindow):
@@ -26,6 +23,7 @@ class DatasetClassifier(QMainWindow):
         self.config_handler = ConfigHandler()
         self.button_states = ButtonStateManager()
         self.update_poller = UpdatePoller()
+        self.style_manager = StyleManager(self.config_handler)
 
         self.settings_window = None
     

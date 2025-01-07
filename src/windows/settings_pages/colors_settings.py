@@ -13,10 +13,13 @@ class ColorsSettingsPage(SettingsWidget):
         loaded_colors = self.config_handler.get_colors()
         colors = {
             "Accent Color": QColor.fromString(loaded_colors['accent_color']),
-            "Add Color": QColor.fromString(loaded_colors['add_color']),
             "Alternate Color": QColor.fromString(loaded_colors['alternate_color']),
-            "Select Color": QColor.fromString(loaded_colors['select_color']),
-            "Warning Color": QColor.fromString(loaded_colors['warning_color'])
+            "Warning Color": QColor.fromString(loaded_colors['warning_color']),
+            "Disabled Color": QColor.fromString(loaded_colors['disabled_color']),
+            "Button Color": QColor.fromString(loaded_colors['button_color']),
+            "Button Border Color": QColor.fromString(loaded_colors['button_border_color']),
+            "Text Color (Enabled)": QColor.fromString(loaded_colors['text_color']),
+            "Text Color (Disabled)": QColor.fromString(loaded_colors['text_color_disabled']),
         }
         
         layout.addLayout(self._create_header("Main Colors"))
@@ -25,10 +28,10 @@ class ColorsSettingsPage(SettingsWidget):
             row = QHBoxLayout()
             label = QLabel(name, self)
             label.setFixedWidth(100)
-            color_button = ColorButton(color, self)
-            color_button.clicked.connect(lambda _, cb=color_button: cb.chooseColor())
+            color_button = ColorButton(name, color, self)
 
-            color_button.color_changed.connect(lambda c: self.set_color(name, c))
+            print(f"setting callback: (name: {name})")
+            color_button.color_changed.connect(self.set_color)
             row.addWidget(label)
             row.addWidget(color_button)
             row.addStretch()
@@ -37,5 +40,8 @@ class ColorsSettingsPage(SettingsWidget):
         layout.addStretch(1)
 
     def set_color(self, name: str, color: QColor):
-        self.config_handler.set_color(self.get_key_name(name), color.name(format=QColor.NameFormat.HexRgb))
+        print(f"raw name: {name}")
+        dot_path = f"colors.{self.get_key_name(name)}"
+        print(f"path: {dot_path}; color: {color.name(format=QColor.NameFormat.HexRgb)}")
+        self.config_handler.set_value(dot_path, color.name(format=QColor.NameFormat.HexRgb))
         self.config_handler.save_config()

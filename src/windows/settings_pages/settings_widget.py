@@ -1,4 +1,4 @@
-from typing import Any, Callable, Literal
+from typing import Any, Callable
 from PyQt6.QtWidgets import QWidget, QCheckBox, QHBoxLayout, QVBoxLayout, QComboBox, QLabel, QSpinBox, QSpacerItem, QPushButton
 from PyQt6.QtGui import QFont
 from abc import abstractmethod
@@ -7,6 +7,7 @@ from src.database.database import Database
 from src.project import Project
 from src.config_handler import ConfigHandler
 from src.update_poller import UpdatePoller
+from src.styling.style_manager import StyleManager
 
 class SettingsWidget(QWidget):
     def __init__(self, parent=None):
@@ -15,6 +16,7 @@ class SettingsWidget(QWidget):
         self.config_handler: ConfigHandler = parent.config_handler
         self.update_poller: UpdatePoller = parent.update_poller
         self.active_project: Project = parent.active_project
+        self.style_manager: StyleManager = parent.style_manager
 
         self.init_ui()
 
@@ -41,13 +43,12 @@ class SettingsWidget(QWidget):
         self.config_handler.save_config()
 
     def get_key_name(self, key: str):
-        formatted = key.lower().replace(' ', '_')
+        formatted = key.lower().replace(' ', '_').replace('(', '').replace(')', '')
         if formatted.startswith('key_'):
             index = int(formatted.split('_')[1]) - 1
             return f"key_{index}"
         return formatted
     
-
 
 
     # Helper functions
