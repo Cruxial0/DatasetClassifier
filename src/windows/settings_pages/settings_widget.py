@@ -1,5 +1,5 @@
 from typing import Any, Callable
-from PyQt6.QtWidgets import QWidget, QCheckBox, QHBoxLayout, QVBoxLayout, QComboBox, QLabel, QSpinBox, QSpacerItem, QPushButton
+from PyQt6.QtWidgets import QWidget, QCheckBox, QHBoxLayout, QVBoxLayout, QComboBox, QLabel, QSpinBox, QSpacerItem, QPushButton, QSizePolicy
 from PyQt6.QtGui import QFont
 from abc import abstractmethod
 
@@ -58,6 +58,7 @@ class SettingsWidget(QWidget):
         if category_break:
             layout.addSpacerItem(QSpacerItem(0, 20))
         label = QLabel(text)
+        label.setStyleSheet(self.style_manager.get_stylesheet(QLabel))
         label.setObjectName(f"settings_page_{text.replace(' ', '_').lower()}_label")
         
         label.setFont(QFont("Arial", font_size, QFont.Weight.Bold))
@@ -65,7 +66,7 @@ class SettingsWidget(QWidget):
         layout.addSpacerItem(QSpacerItem(0, 10))
         return layout
     
-    def _create_checkbox(self, text: str, tooltip: str, setting: str | None, callback: Callable[[bool], None] = None) -> QCheckBox:
+    def _create_checkbox(self, text: str, tooltip: str, setting: str | None, callback: Callable[[bool], None] = None) -> QHBoxLayout:
         """Creates a checkbox for the given setting and connects it to the given callback.
         
         Args:
@@ -78,9 +79,16 @@ class SettingsWidget(QWidget):
             QCheckBox: The created checkbox.
         """
         
-        checkbox = QCheckBox(text, self)
+        layout = QHBoxLayout()
+        checkbox = QCheckBox(parent=self)
         checkbox.setToolTip(tooltip)
+        layout.addWidget(checkbox)
+
+        lbl = QLabel(text)
+        lbl.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'subtext'))
+        layout.addWidget(lbl)
         
+        layout.addStretch(1)
         
         def on_change(state):
             is_checked = state.value > 0
@@ -89,11 +97,11 @@ class SettingsWidget(QWidget):
                 callback(is_checked)
         
         if setting is None:
-            return checkbox
+            return layout
         
         checkbox.setChecked(self.config_handler.get_value(setting))
         checkbox.checkStateChanged.connect(on_change)
-        return checkbox
+        return layout
     
     def _create_combobox(self, label: str, items: list, setting: str | None, callback: Callable[[str], None] = None) -> QHBoxLayout:
         """Creates a combobox for the given setting and connects it to the given callback.
@@ -109,8 +117,12 @@ class SettingsWidget(QWidget):
         """
 
         layout = QHBoxLayout()
-        layout.addWidget(QLabel(label))
+        lbl = QLabel(label)
+        lbl.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'subtext'))
+        layout.addWidget(lbl)
+
         combo_box = QComboBox()
+        combo_box.setStyleSheet(self.style_manager.get_stylesheet(QComboBox))
         combo_box.addItems(items)
         
 
@@ -142,8 +154,12 @@ class SettingsWidget(QWidget):
             QHBoxLayout: A horizontal layout containing the label and the SpinBox.
         """
         layout = QHBoxLayout()
-        layout.addWidget(QLabel(label))
+        lbl = QLabel(label)
+        lbl.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'subtext'))
+        layout.addWidget(lbl)
+
         spinbox = QSpinBox()
+        spinbox.setStyleSheet(self.style_manager.get_stylesheet(QSpinBox))
         spinbox.setRange(mix_max[0], mix_max[1])
         spinbox.setMinimumWidth(80)
         
@@ -157,7 +173,7 @@ class SettingsWidget(QWidget):
         
         return layout
     
-    def _create_button(self, text: str, tooltip: str, callback: Callable[[], None] = None) -> QPushButton:
+    def _create_button(self, text: str, tooltip: str, callback: Callable[[], None] = None, variant: str | None = None) -> QPushButton:
         """Creates a QPushButton for the given text and tooltip, and connects it to the given callback.
         
         Args:
@@ -169,6 +185,7 @@ class SettingsWidget(QWidget):
             QPushButton: The created button.
         """
         button = QPushButton(text, self)
+        button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, variant))
         button.setToolTip(tooltip)
         
         if callback is not None:

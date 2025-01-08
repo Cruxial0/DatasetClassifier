@@ -1,5 +1,5 @@
 from typing import Dict, Type, Tuple
-from PyQt6.QtWidgets import QMainWindow, QWidget, QPushButton, QLabel, QListWidget, QProgressBar, QLineEdit
+from PyQt6.QtWidgets import QMainWindow, QWidget, QPushButton, QLabel, QListWidget, QProgressBar, QComboBox, QLineEdit, QSpinBox
 from PyQt6.QtCore import QObject
 
 from src.config_handler import ConfigHandler
@@ -19,6 +19,8 @@ from src.styling.label.panel_label import ImageViewerStyle, PanelLabelStyle
 from src.styling.line_edit.line_edit import LineEditStyle
 from src.styling.label.keybind_label import KeybindLabelAccentStyle, KeybindLabelDisabledStyle, KeybindLabelStyle
 from src.styling.widget.panel_widget import PanelWidgetStyle
+from src.styling.combo_box.combo_box import ComboBoxStyle
+from src.styling.spin_box.spin_box import SpinBoxStyle
 
 class StyleManager:
     def __init__(self, config: ConfigHandler):
@@ -61,6 +63,12 @@ class StyleManager:
 
             # LineEdit
             (QLineEdit, None): LineEditStyle(),
+
+            # ComboBox
+            (QComboBox, None): ComboBoxStyle(),
+
+            # SpinBox
+            (QSpinBox, None): SpinBoxStyle(),
 
             # List
             (QListWidget, None): ListWidgetStyle(),

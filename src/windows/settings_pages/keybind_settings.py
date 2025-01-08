@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel
+from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QPushButton
 from src.widgets.keyind_widget import KeybindWidget
 from src.windows.settings_pages.settings_widget import SettingsWidget
 
@@ -32,8 +32,10 @@ class KeybindSettingsPage(SettingsWidget):
         for key, value in keybinds.items():
             row = QHBoxLayout()
             label = QLabel(key)
+            label.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'subtext'))
             label.setFixedWidth(100)
             keybind_widget = KeybindWidget(value)
+            keybind_widget.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'score_button'))
             keybind_widget.keyPressed.connect(lambda k, k_name=self.get_key_name(key): self.update_keybind(k_name, k))
             row.addWidget(label)
             row.addWidget(keybind_widget)

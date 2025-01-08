@@ -27,6 +27,7 @@ class ColorsSettingsPage(SettingsWidget):
         for name, color in colors.items():
             row = QHBoxLayout()
             label = QLabel(name, self)
+            label.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'subtext'))
             label.setFixedWidth(100)
             color_button = ColorButton(name, color, self)
 

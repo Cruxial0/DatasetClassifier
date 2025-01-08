@@ -6,11 +6,13 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont, QColor
 
 from src.tagging.tag_group import TagGroup
+from src.styling.style_manager import StyleManager
 
 class TagGroupListWidget(QListWidgetItem):
-    def __init__(self, tag_group: TagGroup, callback: Callable[[Literal['edit', 'tags', 'activation'], TagGroup], None], indent=0, parent=None):
+    def __init__(self, tag_group: TagGroup, style_manager: StyleManager, callback: Callable[[Literal['edit', 'tags', 'activation'], TagGroup], None], parent=None):
         super().__init__(parent)
         self.tag_group = tag_group
+        self.style_manager = style_manager
         self.callback = callback
 
         self.widget = QWidget()
@@ -27,12 +29,13 @@ class TagGroupListWidget(QListWidgetItem):
         
         # Title
         title = QLabel(self.tag_group.name)
+        title.setStyleSheet(self.style_manager.get_stylesheet(QLabel))
         title_font = QFont("Arial", 12, QFont.Weight.Bold)
         title.setFont(title_font)
         
         # Details
         details = QLabel(f"{len(self.tag_group.tags)} tags · {'Required' if self.tag_group.is_required else 'Optional'}")
-        details.setStyleSheet("color: gray; font-size: 12px;")
+        details.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'subtext'))
         
         left_side.addWidget(title)
         left_side.addWidget(details)

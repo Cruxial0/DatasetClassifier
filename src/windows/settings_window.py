@@ -32,6 +32,7 @@ class SettingsWindow(QMainWindow):
         # Create main widget and layout
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
+        self.setStyleSheet(self.style_manager.get_stylesheet(QMainWindow))
         layout = QHBoxLayout(main_widget)
         
         # Create navigation bar

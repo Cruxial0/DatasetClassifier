@@ -48,6 +48,7 @@ class TagGroupSettings(SettingsWidget):
 
         # Create the list widget
         self.list_widget = QListWidget()
+        self.list_widget.setStyleSheet(self.style_manager.get_stylesheet(QListWidget))
         self.list_widget.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
         self.list_widget.setSizeAdjustPolicy(QListWidget.SizeAdjustPolicy.AdjustToContents)
         self.list_widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
@@ -72,7 +73,7 @@ class TagGroupSettings(SettingsWidget):
                 self.switch_page("tag_groups", tag_group=tag_group)
 
         for tag_group in self.tag_groups:
-            item = TagGroupListWidget(tag_group, callback=list_item_button_clicked, parent=self.list_widget)
+            item = TagGroupListWidget(tag_group, self.style_manager, callback=list_item_button_clicked, parent=self.list_widget)
             self.list_widget.addItem(item)
             self.list_widget.setItemWidget(item, item.widget)
 

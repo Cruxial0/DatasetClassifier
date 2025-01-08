@@ -1,6 +1,7 @@
 from typing import Literal
 from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
                             QSpinBox, QCheckBox, QPushButton, QSpacerItem)
+from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt, pyqtSignal
 from src.windows.settings_pages.settings_widget import SettingsWidget
 from src.tagging.tag_group import TagGroup
@@ -24,13 +25,15 @@ class TagGroupAddOrEditPage(SettingsWidget):
         self.title = QLabel(
             "Edit Tag Group" if self.mode == 'edit' else "New Tag Group"
         )
-        self.title.setStyleSheet("font-weight: bold; font-size: 16px;")
+        self.title.setStyleSheet(self.style_manager.get_stylesheet(QLabel))
+        self.title.setFont(QFont("Arial", 12, QFont.Weight.Bold))
         layout.addWidget(self.title)
         
         # Name input
         name_label = QLabel("Name")
-        name_label.setStyleSheet("font-weight: 500;")
+        name_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel))
         self.name_input = QLineEdit()
+        self.name_input.setStyleSheet(self.style_manager.get_stylesheet(QLineEdit))
         self.name_input.setPlaceholderText("Enter group name")
         layout.addWidget(name_label)
         layout.addWidget(self.name_input)
@@ -41,9 +44,9 @@ class TagGroupAddOrEditPage(SettingsWidget):
         required_layout = QHBoxLayout()
         required_label_layout = QVBoxLayout()
         required_label = QLabel("Required")
-        required_label.setStyleSheet("font-weight: 500;")
+        required_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel))
         required_desc = QLabel("Make this group mandatory")
-        required_desc.setStyleSheet("color: gray;")
+        required_desc.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'subtext'))
         required_label_layout.addWidget(required_label)
         required_label_layout.addWidget(required_desc)
         self.required_checkbox = QCheckBox()
@@ -55,13 +58,13 @@ class TagGroupAddOrEditPage(SettingsWidget):
         multiple_layout = QHBoxLayout()
         multiple_label_layout = QVBoxLayout()
         multiple_label = QLabel("Allow Multiple")
-        multiple_label.setStyleSheet("font-weight: 500;")
+        multiple_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel))
         multiple_desc = QLabel("Allow multiple tags selection")
-        multiple_desc.setStyleSheet("color: gray;")
+        multiple_desc.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'subtext'))
         multiple_label_layout.addWidget(multiple_label)
         multiple_label_layout.addWidget(multiple_desc)
         self.multiple_checkbox = QCheckBox()
-        self.multiple_checkbox.setStyleSheet(self.style_manager.get_stylesheet(QCheckBox))
+        # self.multiple_checkbox.setStyleSheet(self.style_manager.get_stylesheet(QCheckBox))
         multiple_layout.addLayout(multiple_label_layout)
         multiple_layout.addWidget(self.multiple_checkbox, alignment=Qt.AlignmentFlag.AlignRight)
         layout.addLayout(multiple_layout)
@@ -69,8 +72,9 @@ class TagGroupAddOrEditPage(SettingsWidget):
         
         # Minimum tags spinbox
         min_tags_label = QLabel("Minimum Tags")
-        min_tags_label.setStyleSheet("font-weight: 500;")
+        min_tags_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel))
         self.min_tags_spin = QSpinBox()
+        self.min_tags_spin.setStyleSheet(self.style_manager.get_stylesheet(QSpinBox))
         self.min_tags_spin.setMinimum(0)
         layout.addWidget(min_tags_label)
         layout.addWidget(self.min_tags_spin)
@@ -80,7 +84,7 @@ class TagGroupAddOrEditPage(SettingsWidget):
         button_layout = QHBoxLayout()
         button_layout.addStretch(1)
         self.cancel_button = QPushButton("Cancel")
-        self.cancel_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'reject'))
+        self.cancel_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
         self.save_button = QPushButton("Save Changes")
         self.save_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'accept'))
         button_layout.addWidget(self.cancel_button)

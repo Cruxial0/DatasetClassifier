@@ -1,4 +1,5 @@
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 import pytz
@@ -153,3 +154,22 @@ def open_directory(path):
             
     except Exception as e:
         print(f"Error opening directory: {e}")
+
+def get_resource_path(relative_path: str) -> str:
+    """
+    Get absolute path to a resource, works for dev and for PyInstaller.
+    
+    Args:
+        relative_path: Path relative to the project root, e.g. 'icons/chevron-down.png'
+    
+    Returns:
+        Absolute path to the resource
+    """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        # If not running as bundled exe, use the script's directory
+        base_path = os.path.dirname(os.path.abspath(__file__)).replace("\\src", "")
+    
+    return os.path.normpath(os.path.join(base_path, relative_path))
