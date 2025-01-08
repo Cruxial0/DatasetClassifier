@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QProgressBar
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPixmap, QTransform, QShortcut, QKeySequence
 
@@ -326,19 +326,7 @@ class ScoringPage(QWidget):
     def create_scoring_buttons(self):
         layout, self.score_buttons, self.progress_bar, self.progress_label = UIComponents.create_scoring_buttons(self.default_scores, self.button_states.score_enabled, self.config_handler, self.style_manager)
         self.progress_bar.setFixedHeight(15)
-        self.progress_bar.setStyleSheet(
-            f"""
-            QProgressBar {{
-                border: 1px solid transparent;
-                border-radius: 5px;
-                text-align: center;
-            }}
-
-            QProgressBar::chunk {{
-                background-color: {self.config_handler.get_color('accent_color')};
-                border-radius: 5px;
-            }}
-            """)
+        self.progress_bar.setStyleSheet(self.style_manager.get_stylesheet(QProgressBar))
         self.button_states.declare_button_group(self.score_buttons, 'score')
         self.score_layout = layout.itemAt(0).layout()  # Store the score_layout
 

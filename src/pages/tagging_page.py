@@ -14,6 +14,7 @@ from src.update_poller import UpdatePoller
 from src.tagging.tag_group import Tag, TagGroup
 from src.utils import key_to_unicode
 from src.widgets.tag_status_widget import TagStatusWidget
+from src.styling.style_manager import StyleManager
 
 class TaggingPage(QWidget):
     def __init__(self, parent):
@@ -25,6 +26,7 @@ class TaggingPage(QWidget):
         self.config_handler: ConfigHandler = parent.config_handler
         self.active_project: Project = parent.active_project
         self.image_handler: ImageHandler = ImageHandler(self.db, self.config_handler)
+        self.style_manager: StyleManager = parent.style_manager
 
         self.page_active = False
         self.image_update_due = False
@@ -144,19 +146,7 @@ class TaggingPage(QWidget):
         self.progress_label = QLabel("0/0")
         self.progress_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         self.progress_bar.setFixedHeight(15)
-        self.progress_bar.setStyleSheet(
-            f"""
-            QProgressBar {{
-                border: 1px solid transparent;
-                border-radius: 5px;
-                text-align: center;
-            }}
-
-            QProgressBar::chunk {{
-                background-color: {self.config_handler.get_color('accent_color')};
-                border-radius: 5px;
-            }}
-            """)
+        self.progress_bar.setStyleSheet(self.style_manager.get_stylesheet(QProgressBar))
 
         progress_layout.addWidget(self.progress_bar)
         progress_layout.addWidget(self.progress_label)

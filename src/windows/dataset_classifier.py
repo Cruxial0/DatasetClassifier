@@ -26,7 +26,9 @@ class DatasetClassifier(QMainWindow):
         self.style_manager = StyleManager(self.config_handler)
 
         self.settings_window = None
-    
+        
+        self.setStyleSheet(self.style_manager.get_stylesheet(QMainWindow))
+        
         self.current_mode = 0
         self.initUI()
 

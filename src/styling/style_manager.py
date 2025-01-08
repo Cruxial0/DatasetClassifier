@@ -1,5 +1,5 @@
 from typing import Dict, Type, Tuple
-from PyQt6.QtWidgets import QMainWindow, QWidget, QPushButton, QLabel, QListWidget
+from PyQt6.QtWidgets import QMainWindow, QWidget, QPushButton, QLabel, QListWidget, QProgressBar
 from PyQt6.QtCore import QObject
 
 from src.config_handler import ConfigHandler
@@ -12,6 +12,7 @@ from src.styling.label.default_label import LabelStyle
 from src.styling.widget.widget_background import WidgetBackgroundStyle
 from src.styling.window.default_window import DefaultWindowStyle
 from src.styling.list.list_view import ListWidgetStyle
+from src.styling.progress_bar.progress_bar import ProgressBarStyle
 
 class StyleManager:
     def __init__(self, config: ConfigHandler):
@@ -46,6 +47,9 @@ class StyleManager:
 
             # List
             (QListWidget, None): ListWidgetStyle(),
+
+            # ProgressBar
+            (QProgressBar, None): ProgressBarStyle(),
 
             # QMainWindow
             (QMainWindow, None): DefaultWindowStyle(),
