@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import (QHBoxLayout, QMainWindow, QWidget, QStackedWidget, QMessageBox)
+from PyQt6.QtWidgets import (QHBoxLayout, QMainWindow, QWidget, QStackedWidget, QMessageBox, QMenu, QMenuBar, QPushButton)
 from PyQt6.QtCore import Qt
 from src.export import Exporter
 from src.pages.tagging_page import TaggingPage
@@ -56,20 +56,25 @@ class DatasetClassifier(QMainWindow):
 
     def create_menu_bar(self):
         menu_bar = self.menuBar()
+        menu_bar.setStyleSheet(self.style_manager.get_stylesheet(QMenuBar))
+
         file_menu = menu_bar.addMenu('File')
         view_menu = menu_bar.addMenu('View')
 
         file_menu.setToolTipsVisible(True)
+        file_menu.setStyleSheet(self.style_manager.get_stylesheet(QMenu))
         view_menu.setToolTipsVisible(True)
+        view_menu.setStyleSheet(self.style_manager.get_stylesheet(QMenu))
 
         actions = UIComponents.create_menu_actions(self.config_handler)
         self.hide_scored_action, self.export_action, self.settings_action, self.menu_button = actions  
 
         button_widget = QWidget()
+        button_widget.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'accent'))
         layout = QHBoxLayout(button_widget)
         layout.addStretch()  # This pushes the button to the right
         layout.addWidget(self.menu_button)
-        layout.setContentsMargins(0, 7, 7, 0)  
+        layout.setContentsMargins(0, 0, 0, 0)  
         menu_bar.setCornerWidget(button_widget)
 
         file_menu.addAction(self.export_action)
