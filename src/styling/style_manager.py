@@ -1,9 +1,11 @@
 from typing import Dict, Type, Tuple
-from PyQt6.QtWidgets import QMainWindow, QWidget, QPushButton, QLabel, QListWidget, QProgressBar
+from PyQt6.QtWidgets import QMainWindow, QWidget, QPushButton, QLabel, QListWidget, QProgressBar, QLineEdit
 from PyQt6.QtCore import QObject
 
 from src.config_handler import ConfigHandler
 from src.styling.style import Style
+
+# Styles
 from src.styling.push_button.decision_buttons import AcceptButtonStyle, RejectButtonStyle
 from src.styling.push_button.menu_buttons import MenuButtonStyle
 from src.styling.push_button.score_buttons import DiscardButtonStyle, ScoreButtonStyle
@@ -13,6 +15,8 @@ from src.styling.widget.widget_background import WidgetBackgroundStyle
 from src.styling.window.default_window import DefaultWindowStyle
 from src.styling.list.list_view import ListWidgetStyle
 from src.styling.progress_bar.progress_bar import ProgressBarStyle
+from src.styling.label.panel_label import ImageViewerStyle, PanelLabelStyle
+from src.styling.line_edit.line_edit import LineEditStyle
 
 class StyleManager:
     def __init__(self, config: ConfigHandler):
@@ -40,7 +44,12 @@ class StyleManager:
             (QPushButton, None): PushButtonStyle(),
 
             # Labels
+            (QLabel, 'image_viewer'): ImageViewerStyle(),
+            (QLabel, 'panel'): PanelLabelStyle(),
             (QLabel, None): LabelStyle(),
+
+            # LineEdit
+            (QLineEdit, None): LineEditStyle(),
 
             # Widgets
             (QWidget, None): WidgetBackgroundStyle(),
@@ -60,4 +69,6 @@ class StyleManager:
     
     def _get_or_default(self, component_type: Type[QObject], variant: str | None = None) -> str:
         style = self._stylesheets.get((component_type, variant))
+        if style is None:
+            print(f"WARNING: No style found for component type: {component_type.__name__} (variant: {variant})")
         return "" if style is None else style.get_style(self.config)

@@ -24,14 +24,16 @@ class UIComponents:
         return layout, input_path, input_button
 
     @staticmethod
-    def create_image_viewer(state: bool):
+    def create_image_viewer(state: bool, style_manager: StyleManager):
         layout = QHBoxLayout()
         
         container_left = QVBoxLayout()
         
         prev_button = QPushButton('<', enabled=state)
+        prev_button.setStyleSheet(style_manager.get_stylesheet(QPushButton))
         prev_button.setObjectName("prev_button")
         to_latest_button_left = QPushButton('<<', enabled=state)
+        to_latest_button_left.setStyleSheet(style_manager.get_stylesheet(QPushButton))
         to_latest_button_left.setObjectName("to_latest_button_left")
 
         container_left.addSpacerItem(QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
@@ -42,9 +44,11 @@ class UIComponents:
         layout.addLayout(container_left)
 
         image_label = QLabel()
+        image_label.setStyleSheet(style_manager.get_stylesheet(QLabel, 'image_viewer'))
         image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         image_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         scroll_area = QScrollArea()
+        scroll_area.setStyleSheet("background-color: transparent;")
         scroll_area.setWidget(image_label)
         scroll_area.setWidgetResizable(True)
         layout.addWidget(scroll_area)
@@ -52,8 +56,10 @@ class UIComponents:
         container_right = QVBoxLayout()
         
         next_button = QPushButton('>', enabled=state)
+        next_button.setStyleSheet(style_manager.get_stylesheet(QPushButton))
         next_button.setObjectName("next_button")
         to_latest_button_right = QPushButton('>>', enabled=state)
+        to_latest_button_right.setStyleSheet(style_manager.get_stylesheet(QPushButton))
         to_latest_button_right.setObjectName("to_latest_button_right")
 
         container_right.addSpacerItem(QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
@@ -66,11 +72,13 @@ class UIComponents:
         return layout, prev_button, image_label, next_button, to_latest_button_right, to_latest_button_left
 
     @staticmethod
-    def create_category_buttons(state: bool):
+    def create_category_buttons(state: bool, style_manager: StyleManager):
         layout = QVBoxLayout()
         category_input = QLineEdit(enabled=state)
         category_input.setPlaceholderText('Add category')
+        category_input.setStyleSheet(style_manager.get_stylesheet(QLineEdit))
         category_add_button = QPushButton('Add', enabled=state)
+        category_add_button.setStyleSheet(style_manager.get_stylesheet(QPushButton))
         category_add_button.setObjectName('category_add_button')
         layout.addWidget(category_input)
         layout.addWidget(category_add_button)
@@ -101,7 +109,9 @@ class UIComponents:
         layout.addLayout(score_layout)
 
         progress_bar = QProgressBar()
+        progress_bar.setStyleSheet(style_manager.get_stylesheet(QProgressBar))
         progress_label = QLabel('0/0')
+        progress_label.setStyleSheet(style_manager.get_stylesheet(QLabel, 'panel'))
         progress_layout = QHBoxLayout()
         progress_layout.addWidget(progress_bar)
         progress_layout.addWidget(progress_label)

@@ -304,7 +304,7 @@ class ScoringPage(QWidget):
     def create_middle_row(self):
         layout = QHBoxLayout()
         
-        image_viewer_layout, self.prev_button, self.image_label, self.next_button, self.to_latest_button_right, self.to_latest_button_left = UIComponents.create_image_viewer(self.button_states.image_enabled)
+        image_viewer_layout, self.prev_button, self.image_label, self.next_button, self.to_latest_button_right, self.to_latest_button_left = UIComponents.create_image_viewer(self.button_states.image_enabled, self.style_manager)
         layout.addLayout(image_viewer_layout, 7)
 
         self.prev_button.clicked.connect(self.load_previous_image)
@@ -312,7 +312,7 @@ class ScoringPage(QWidget):
         self.to_latest_button_right.clicked.connect(self.load_latest_image)
         self.to_latest_button_left.clicked.connect(self.load_latest_image)
 
-        category_buttons_layout, self.category_input, self.category_add_button, self.category_button_layout = UIComponents.create_category_buttons(self.button_states.category_enabled)
+        category_buttons_layout, self.category_input, self.category_add_button, self.category_button_layout = UIComponents.create_category_buttons(self.button_states.category_enabled, self.style_manager)
         layout.addLayout(category_buttons_layout, 3)
 
         self.category_input.textChanged.connect(self.check_category_button_name)
@@ -325,8 +325,6 @@ class ScoringPage(QWidget):
     
     def create_scoring_buttons(self):
         layout, self.score_buttons, self.progress_bar, self.progress_label = UIComponents.create_scoring_buttons(self.default_scores, self.button_states.score_enabled, self.config_handler, self.style_manager)
-        self.progress_bar.setFixedHeight(15)
-        self.progress_bar.setStyleSheet(self.style_manager.get_stylesheet(QProgressBar))
         self.button_states.declare_button_group(self.score_buttons, 'score')
         self.score_layout = layout.itemAt(0).layout()  # Store the score_layout
 
