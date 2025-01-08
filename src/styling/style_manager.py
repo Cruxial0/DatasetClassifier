@@ -10,13 +10,15 @@ from src.styling.push_button.decision_buttons import AcceptButtonStyle, RejectBu
 from src.styling.push_button.menu_buttons import MenuButtonStyle
 from src.styling.push_button.score_buttons import DiscardButtonStyle, ScoreButtonStyle
 from src.styling.push_button.push_button import PushButtonAccentStyle, PushButtonStyle, PushButtonWarningStyle
-from src.styling.label.default_label import LabelStyle
+from src.styling.label.default_label import LabelStyle, SubtextLabelStyle
 from src.styling.widget.widget_background import WidgetBackgroundStyle
 from src.styling.window.default_window import DefaultWindowStyle
 from src.styling.list.list_view import ListWidgetStyle
 from src.styling.progress_bar.progress_bar import ProgressBarStyle
 from src.styling.label.panel_label import ImageViewerStyle, PanelLabelStyle
 from src.styling.line_edit.line_edit import LineEditStyle
+from src.styling.label.keybind_label import KeybindLabelAccentStyle, KeybindLabelDisabledStyle, KeybindLabelStyle
+from src.styling.widget.panel_widget import PanelWidgetStyle
 
 class StyleManager:
     def __init__(self, config: ConfigHandler):
@@ -46,13 +48,19 @@ class StyleManager:
             # Labels
             (QLabel, 'image_viewer'): ImageViewerStyle(),
             (QLabel, 'panel'): PanelLabelStyle(),
+            (QLabel, 'keybind'): KeybindLabelStyle(),
+            (QLabel, 'keybind_accent'): KeybindLabelAccentStyle(),
+            (QLabel, 'keybind_disabled'): KeybindLabelDisabledStyle(),
+            (QLabel, 'bold'): LabelStyle(bold=True),
+            (QLabel, 'subtext'): SubtextLabelStyle(),
             (QLabel, None): LabelStyle(),
+
+            # Widgets
+            (QWidget, 'panel'): PanelWidgetStyle(),
+            (QWidget, None): WidgetBackgroundStyle(),
 
             # LineEdit
             (QLineEdit, None): LineEditStyle(),
-
-            # Widgets
-            (QWidget, None): WidgetBackgroundStyle(),
 
             # List
             (QListWidget, None): ListWidgetStyle(),

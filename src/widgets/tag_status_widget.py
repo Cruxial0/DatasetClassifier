@@ -3,6 +3,7 @@ from PyQt6.QtCore import Qt, pyqtSignal  # Add this import
 
 from src.config_handler import ConfigHandler
 from src.tagging.tag_group import TagGroup
+from src.styling.style_manager import StyleManager
 
 button_style = """
     QPushButton {
@@ -45,6 +46,7 @@ class TagStatusWidget(QWidget):
         self.parent = parent
 
         self.config_handler: ConfigHandler = self.parent.config_handler
+        self.style_manager: StyleManager = self.parent.style_manager
 
         self.active_group: TagGroup = None
         self.is_valid = False
@@ -55,7 +57,7 @@ class TagStatusWidget(QWidget):
 
     def initUI(self):
         container = QFrame(self)
-        container.setStyleSheet("background-color: #292929; border-radius: 8px;")
+        container.setStyleSheet(self.style_manager.get_stylesheet(QWidget, 'panel'))
         container.setFrameShadow(QFrame.Shadow.Raised)
 
         self.main_layout = QVBoxLayout(container)
@@ -74,7 +76,8 @@ class TagStatusWidget(QWidget):
         self.tag_group_name_label = QLabel("GROUP_TITLE")
         self.tag_group_index_label = QLabel("(0/0)")
 
-        self.tag_group_name_label.setStyleSheet("color: white; font-weight: bold;")
+        self.tag_group_name_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'bold'))
+        self.tag_group_index_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'subtext'))
         self.tag_group_status_label.setStyleSheet(tooltip_style)
 
         tag_group_stats_layout.addWidget(self.tag_group_status_label)
@@ -84,6 +87,7 @@ class TagStatusWidget(QWidget):
         # Selected tags
         tags_selected_layout = QHBoxLayout()
         self.seleted_tags_label = QLabel("0/0 selected")
+        self.seleted_tags_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'subtext'))
         self.auto_scroll_indicator = QLabel("⚡")
         self.auto_scroll_indicator.setStyleSheet(tooltip_style)
         self.auto_scroll_indicator.setToolTip(self.auto_scroll_indicator_tooltip)
