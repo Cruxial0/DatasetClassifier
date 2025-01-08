@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QProgressBar
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPixmap, QTransform, QShortcut, QKeySequence
 
@@ -13,6 +13,7 @@ from src.button_states import ButtonStateManager
 from src.ui_components import UIComponents
 from src.utils import key_to_unicode
 from src.update_poller import UpdatePoller
+from src.styling.style_manager import StyleManager
 
 class ScoringPage(QWidget):
     def __init__(self, parent):
@@ -20,6 +21,7 @@ class ScoringPage(QWidget):
         self.parent = parent
         self.button_states: ButtonStateManager = parent.button_states
         self.db: Database = parent.db
+        self.style_manager: StyleManager = parent.style_manager
         self.config_handler: ConfigHandler = parent.config_handler
         self.update_poller: UpdatePoller = parent.update_poller
         self.active_project = None
@@ -65,7 +67,6 @@ class ScoringPage(QWidget):
             self.keybind_page.register_binding(f'category_{i}', button)
         
         # Other bindings
-        print(f"creating binding for discard button ({self.score_buttons[-1].objectName()})")
         self.keybind_page.register_binding('discard', lambda: self.click_score_button('discard'))
         self.keybind_page.register_binding('next_image', self.next_button)
         self.keybind_page.register_binding('previous_image', self.prev_button)
@@ -75,11 +76,6 @@ class ScoringPage(QWidget):
         self.keybind_handler.register_page("scoring", self.keybind_page)
 
     def click_score_button(self, object_name):
-        btn = self.findChild(QPushButton, object_name)
-        accent_color = self.config_handler.get_color('accent_color')
-        
-        btn.setStyleSheet(f"background-color: {accent_color};")
-
         self.score_image(object_name)
         
         if not self.config_handler.get_value('behaviour.auto_scroll_scores'):
@@ -308,7 +304,7 @@ class ScoringPage(QWidget):
     def create_middle_row(self):
         layout = QHBoxLayout()
         
-        image_viewer_layout, self.prev_button, self.image_label, self.next_button, self.to_latest_button_right, self.to_latest_button_left = UIComponents.create_image_viewer(self.button_states.image_enabled)
+        image_viewer_layout, self.prev_button, self.image_label, self.next_button, self.to_latest_button_right, self.to_latest_button_left = UIComponents.create_image_viewer(self.button_states.image_enabled, self.style_manager)
         layout.addLayout(image_viewer_layout, 7)
 
         self.prev_button.clicked.connect(self.load_previous_image)
@@ -316,7 +312,7 @@ class ScoringPage(QWidget):
         self.to_latest_button_right.clicked.connect(self.load_latest_image)
         self.to_latest_button_left.clicked.connect(self.load_latest_image)
 
-        category_buttons_layout, self.category_input, self.category_add_button, self.category_button_layout = UIComponents.create_category_buttons(self.button_states.category_enabled)
+        category_buttons_layout, self.category_input, self.category_add_button, self.category_button_layout = UIComponents.create_category_buttons(self.button_states.category_enabled, self.style_manager)
         layout.addLayout(category_buttons_layout, 3)
 
         self.category_input.textChanged.connect(self.check_category_button_name)
@@ -328,23 +324,12 @@ class ScoringPage(QWidget):
         return layout
     
     def create_scoring_buttons(self):
-        layout, self.score_buttons, self.progress_bar, self.progress_label = UIComponents.create_scoring_buttons(self.default_scores, self.button_states.score_enabled, self.config_handler)
-        self.progress_bar.setFixedHeight(15)
-        self.progress_bar.setStyleSheet(
-            f"""
-            QProgressBar {{
-                border: 1px solid transparent;
-                border-radius: 5px;
-                text-align: center;
-            }}
-
-            QProgressBar::chunk {{
-                background-color: {self.config_handler.get_color('accent_color')};
-                border-radius: 5px;
-            }}
-            """)
+        layout, self.score_buttons, self.progress_bar, self.progress_label = UIComponents.create_scoring_buttons(self.default_scores, self.button_states.score_enabled, self.config_handler, self.style_manager)
         self.button_states.declare_button_group(self.score_buttons, 'score')
         self.score_layout = layout.itemAt(0).layout()  # Store the score_layout
+
+        for btn in self.score_buttons:
+            btn.clicked.connect(lambda _, s=btn.objectName(): self.click_score_button(s))
         
         return layout
 
@@ -457,16 +442,7 @@ class ScoringPage(QWidget):
             if not isinstance(button, QPushButton) or not button.isEnabled():
                 continue
 
-            style_key = (button.objectName() == current_score, button.objectName() == 'discard')
-            if style_key not in style_cache:
-                if button.objectName() == current_score:
-                    color = self.config_handler.get_color('warning_color' if button.objectName() == 'discard' else 'accent_color')
-                    style_cache[style_key] = f"background-color: {color}; color: white;"
-                else:
-                    color = self.config_handler.get_color('alternate_color') if button.objectName() == 'discard' else ""
-                    style_cache[style_key] = f"background-color: {color}; color: white;" if color else ""
-            
-            button.setStyleSheet(style_cache[style_key])
+            button.setChecked(button.objectName() == current_score)
 
         # Update category buttons
         for i in range(self.category_button_layout.count()):

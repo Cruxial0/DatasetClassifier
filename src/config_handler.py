@@ -15,8 +15,16 @@ default_colors = {
     "accent_color": "#5a9bd8",
     "alternate_color": "#b08463",
     "warning_color": "#d93f00",
-    "select_color": "#8c949a",
-    "add_color": "#6b8e6b"
+    "button_color": "#353535",
+    "button_border_color": "#444444",
+    "button_color_overlay": "#5a9bd8",
+    "button_border_color_overlay": "#5a9bd8",
+    "disabled_color": "#353535",
+    "text_color": "#ffffff",
+    "text_color_disabled": "#545454",
+    "text_color_overlay": "#2d2d2d",
+    "background_color": "#1e1e1e",
+    "panel_color": '#292929'
 }
 
 default_keybinds = {
@@ -145,10 +153,10 @@ class ConfigHandler:
     def get_colors(self):
         return self.get_value('colors') or default_colors
 
-    def get_color(self, color: Literal["accent_color", "alternate_color", "warning_color", "select_color", "add_color"]):
+    def get_color(self, color: str):
         return self.get_value(f'colors.{color}')
     
-    def set_color(self, color: Literal["accent_color", "alternate_color", "warning_color", "select_color", "add_color"], hex_code: str):
+    def set_color(self, color: str, hex_code: str):
         self.set_value(f'colors.{color}', hex_code)
 
     def get_option(self, option: str):

@@ -38,12 +38,14 @@ class ScoringSettingsPage(SettingsWidget):
         buttons_layout = QHBoxLayout()
         for i in range(0, 6):
             button = QPushButton()
+            button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'score_button'))
             button.setObjectName(f'preview_score_{i}')
             buttons_layout.addWidget(button)
             self.buttons.append(button)  # Store button references in a list
 
         # Add a discard button
         discard_button = QPushButton("discard")
+        discard_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'discard_button'))
         discard_button.setObjectName('preview_discard')
         buttons_layout.addWidget(discard_button)
 

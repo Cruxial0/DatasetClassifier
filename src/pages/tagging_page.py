@@ -14,6 +14,7 @@ from src.update_poller import UpdatePoller
 from src.tagging.tag_group import Tag, TagGroup
 from src.utils import key_to_unicode
 from src.widgets.tag_status_widget import TagStatusWidget
+from src.styling.style_manager import StyleManager
 
 class TaggingPage(QWidget):
     def __init__(self, parent):
@@ -25,6 +26,7 @@ class TaggingPage(QWidget):
         self.config_handler: ConfigHandler = parent.config_handler
         self.active_project: Project = parent.active_project
         self.image_handler: ImageHandler = ImageHandler(self.db, self.config_handler)
+        self.style_manager: StyleManager = parent.style_manager
 
         self.page_active = False
         self.image_update_due = False
@@ -68,10 +70,12 @@ class TaggingPage(QWidget):
     def _create_image_viewer(self):
         image_viewer_layout = QVBoxLayout()
         self.image_label = QLabel()
+        self.image_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'image_viewer'))
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.image_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         scroll_area = QScrollArea()
+        scroll_area.setStyleSheet("background-color: transparent;")
         scroll_area.setWidget(self.image_label)
         scroll_area.setWidgetResizable(True)
 
@@ -82,10 +86,12 @@ class TaggingPage(QWidget):
         nav_button_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         prev_button = QPushButton('<')
+        prev_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
         prev_button.setObjectName("prev_button")
         prev_button.setFixedWidth(40)
 
         next_button = QPushButton('>')
+        next_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
         next_button.setObjectName("next_button")
         next_button.setFixedWidth(40)
 
@@ -126,7 +132,7 @@ class TaggingPage(QWidget):
             self.update_tag_groups()
         else:
             add_button = QPushButton("Configure Tag Groups")
-            add_button.setStyleSheet(f"background-color: {self.config_handler.get_color('accent_color')}; color: white;")
+            add_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'accent'))
             add_button.clicked.connect(self.show_configure_tag_groups)
             self.tag_buttons_layout.addWidget(add_button)
 
@@ -142,21 +148,9 @@ class TaggingPage(QWidget):
         self.progress_bar = QProgressBar()
         self.progress_bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.progress_label = QLabel("0/0")
+        self.progress_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'panel'))
         self.progress_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
-        self.progress_bar.setFixedHeight(15)
-        self.progress_bar.setStyleSheet(
-            f"""
-            QProgressBar {{
-                border: 1px solid transparent;
-                border-radius: 5px;
-                text-align: center;
-            }}
-
-            QProgressBar::chunk {{
-                background-color: {self.config_handler.get_color('accent_color')};
-                border-radius: 5px;
-            }}
-            """)
+        self.progress_bar.setStyleSheet(self.style_manager.get_stylesheet(QProgressBar))
 
         progress_layout.addWidget(self.progress_bar)
         progress_layout.addWidget(self.progress_label)
@@ -214,9 +208,10 @@ class TaggingPage(QWidget):
                 continue
 
             first_item = layout.itemAt(1)
-
+            has_label = True
             # This means the button does not have a hotkey label
             if first_item is None:
+                has_label = False
                 first_item = layout.itemAt(0)
 
             btn = first_item.widget()
@@ -229,17 +224,26 @@ class TaggingPage(QWidget):
             tag_id = int(btn.objectName().split('_')[-1])
             
             if self.db.tags.image_has_tag(self.current_image_id, tag_id):
-                btn.setStyleSheet(f"background-color: {self.config_handler.get_color('accent_color')}; color: white;")
+                btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'accent'))
+                if has_label:
+                    label = layout.itemAt(0).widget()
+                    label.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'keybind_accent'))
             elif not untagged_enabled:
                 btn.setEnabled(False)
-                btn.setStyleSheet(f"background-color: rgb(50, 50, 50); color: rgb(100, 100, 100);")
+                if has_label:
+                    label = layout.itemAt(0).widget()
+                    label.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'keybind_disabled'))
             else:
-                btn.setStyleSheet(f"background-color: {self.config_handler.get_color('background_color')}; color: white;")
+                btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
+                if has_label:
+                    label = layout.itemAt(0).widget()
+                    label.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'keybind'))
 
     def create_tag_button(self, tag: Tag) -> QHBoxLayout:
         btn_layout = QHBoxLayout()
         
         btn = QPushButton(tag.name)
+        btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
         btn.setText(tag.name)
         btn.setObjectName(f'tag_button_{tag.id}')
         btn.clicked.connect(lambda: self.tag_button_click(tag.id))
@@ -248,6 +252,7 @@ class TaggingPage(QWidget):
         if tag.display_order < 10:
             key = f'key_{tag.display_order}'
             hotkey_label = QLabel()
+            hotkey_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'keybind'))
             hotkey_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
             
             btn_layout.addWidget(hotkey_label, 0, Qt.AlignmentFlag.AlignVCenter)

@@ -15,9 +15,9 @@ class ExportSettingsPage(SettingsWidget):
         caption_combo.addStretch(1)
 
         layout.addLayout(self._create_header("Captions"))
-        layout.addWidget(self._create_checkbox("Export captions", "Whether or not to export captions", "export_options.export_captions"))
+        layout.addLayout(self._create_checkbox("Export captions", "Whether or not to export captions", "export_options.export_captions"))
         layout.addLayout(caption_combo)
         layout.addLayout(self._create_header("Categorization", category_break=True))
-        layout.addWidget(self._create_checkbox("Seperate by score", "Whether or not to seperate image exports into directories by score", "export_options.seperate_by_score"))
-        layout.addWidget(self._create_checkbox("Delete images from source directory", "Whether or not to delete images from source directory", "export_options.delete_images"))
+        layout.addLayout(self._create_checkbox("Seperate by score", "Whether or not to seperate image exports into directories by score", "export_options.seperate_by_score"))
+        layout.addLayout(self._create_checkbox("Delete images from source directory", "Whether or not to delete images from source directory", "export_options.delete_images"))
         layout.addStretch()

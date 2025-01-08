@@ -5,9 +5,10 @@ from src.database.database import Database
 from src.project import Project
 from src.config_handler import ConfigHandler
 from src.update_poller import UpdatePoller
+from src.styling.style_manager import StyleManager
 
 # Settings Pages
-from src.windows.settings_pages.tag_groups_settings import TagGroupsSettings
+from src.windows.settings_pages.tag_groups_settings import TagGroupSettings
 from src.windows.settings_pages.behaviour_settings import BehaviourSettings
 from src.windows.settings_pages.colors_settings import ColorsSettingsPage
 from src.windows.settings_pages.export_settings import ExportSettingsPage
@@ -26,10 +27,12 @@ class SettingsWindow(QMainWindow):
         self.active_project: Project = parent.active_project
         self.update_poller: UpdatePoller = parent.update_poller
         self.config_handler: ConfigHandler = parent.config_handler
+        self.style_manager: StyleManager = parent.style_manager
         
         # Create main widget and layout
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
+        self.setStyleSheet(self.style_manager.get_stylesheet(QMainWindow))
         layout = QHBoxLayout(main_widget)
         
         # Create navigation bar
@@ -49,14 +52,14 @@ class SettingsWindow(QMainWindow):
             "colors": lambda: ColorsSettingsPage(self),
             "scoring": lambda: ScoringSettingsPage(self),
             "privacy": lambda: PrivacySettingsPage(self),
-            "tag_groups": lambda: TagGroupsSettings(self)
+            "tag_groups": lambda: TagGroupSettings(self)
         }
         
         # Add navigation buttons
         for name in self._page_creators.keys():
             btn = QPushButton(name.replace('_', ' ').title())
             btn.setCheckable(True)
-            btn.setFixedHeight(40)
+            btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'menu_tab'))
             btn.clicked.connect(lambda checked, n=name: self.switch_page(n))
             nav_layout.addWidget(btn)
         
