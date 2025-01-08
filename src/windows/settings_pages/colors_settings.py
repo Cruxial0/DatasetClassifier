@@ -30,7 +30,6 @@ class ColorsSettingsPage(SettingsWidget):
             label.setFixedWidth(100)
             color_button = ColorButton(name, color, self)
 
-            print(f"setting callback: (name: {name})")
             color_button.color_changed.connect(self.set_color)
             row.addWidget(label)
             row.addWidget(color_button)
@@ -40,8 +39,7 @@ class ColorsSettingsPage(SettingsWidget):
         layout.addStretch(1)
 
     def set_color(self, name: str, color: QColor):
-        print(f"raw name: {name}")
         dot_path = f"colors.{self.get_key_name(name)}"
-        print(f"path: {dot_path}; color: {color.name(format=QColor.NameFormat.HexRgb)}")
+
         self.config_handler.set_value(dot_path, color.name(format=QColor.NameFormat.HexRgb))
         self.config_handler.save_config()
