@@ -158,7 +158,7 @@ class ProjectSelectionWindow(QMainWindow):
         main_layout.setStretch(1, 2)
 
     def on_new_project(self):
-        popup = NewProjectPopup(self.db)
+        popup = NewProjectPopup(self.db, self.style_manager)
         popup.show()
         popup.set_callback(self.new_project_created)
 
@@ -168,7 +168,7 @@ class ProjectSelectionWindow(QMainWindow):
         self.close()
 
     def on_import_legacy(self):
-        popup = MigrateProjectPopup(self.db)
+        popup = MigrateProjectPopup(self.db, self.style_manager)
         popup.show()
         popup.set_callback(self.project_migrated)
 

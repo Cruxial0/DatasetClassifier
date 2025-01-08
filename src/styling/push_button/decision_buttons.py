@@ -27,7 +27,6 @@ class AcceptButtonStyle(Style):
         text_color = config.get_value('colors.text_color')
         disabled = config.get_value('colors.disabled_color')
         text_color_disabled = config.get_value('colors.text_color_disabled')
-        print(f"disabled text color: {text_color_disabled}")
         return STYLE.format(colors['primary'], text_color, colors['hover'], colors['active'], disabled, text_color_disabled)
     
 class RejectButtonStyle(Style):

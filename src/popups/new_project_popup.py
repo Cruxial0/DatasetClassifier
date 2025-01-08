@@ -3,14 +3,19 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushB
 from src.database.database import Database
 from src.project import Project
 from src.project_utils import new_project
+from src.styling.style_manager import StyleManager
 
 class NewProjectPopup(QWidget):
-    def __init__(self, database: Database):
+    def __init__(self, database: Database, style_manager: StyleManager):
         super().__init__()
         self.callback = None
         self.projectName = None
         self.directories = []
         self.database = database
+        self.style_manager = style_manager
+
+        self.setStyleSheet(self.style_manager.get_stylesheet(QWidget))
+
         self.createUI()
         self.update_create_enabled()
 
@@ -23,6 +28,7 @@ class NewProjectPopup(QWidget):
         # Project name
         input_layout = QHBoxLayout()
         input_label = QLineEdit()
+        input_label.setStyleSheet(self.style_manager.get_stylesheet(QLineEdit))
         input_label.setPlaceholderText("Project Name")
         input_label.textChanged.connect(lambda text: self.update_project_name(text))
         input_layout.addWidget(input_label)
@@ -30,13 +36,16 @@ class NewProjectPopup(QWidget):
         # Directories
         directories_layout = QHBoxLayout()
         self.directories_list = QListWidget()
+        self.directories_list.setStyleSheet(self.style_manager.get_stylesheet(QListWidget))
         directories_layout.addWidget(self.directories_list)
 
         # + and - buttons
         dir_buttons_layout = QVBoxLayout()
         add_button = QPushButton("+")
+        add_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
         add_button.setFixedWidth(30)
         remove_button = QPushButton("-")
+        remove_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
         remove_button.setFixedWidth(30)
         dir_buttons_layout.addWidget(add_button)
         dir_buttons_layout.addWidget(remove_button)
@@ -55,9 +64,11 @@ class NewProjectPopup(QWidget):
         # Buttons
         buttons_layout = QHBoxLayout()
         self.create_button = QPushButton("Create")
+        self.create_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'accept'))
         self.create_button.clicked.connect(self.create_project)
         
         cancel_button = QPushButton("Cancel")
+        cancel_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
         cancel_button.clicked.connect(self.close)
 
         buttons_layout.addWidget(self.create_button)

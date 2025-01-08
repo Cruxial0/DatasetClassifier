@@ -4,14 +4,19 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushB
 from src.database.database import Database
 from src.project import Project
 from src.project_utils import from_legacy_database
+from src.styling.style_manager import StyleManager
 
 class MigrateProjectPopup(QWidget):
-    def __init__(self, database: Database):
+    def __init__(self, database: Database, style_manager: StyleManager):
         super().__init__()
         self.callback = None
         self.projectName = None
         self.filePath = None
         self.database = database
+        self.style_manager = style_manager
+
+        self.setStyleSheet(self.style_manager.get_stylesheet(QWidget))
+
         self.createUI()
         self.update_migrate_enabled()
 
@@ -24,6 +29,7 @@ class MigrateProjectPopup(QWidget):
         # Project name
         input_layout = QHBoxLayout()
         input_label = QLineEdit()
+        input_label.setStyleSheet(self.style_manager.get_stylesheet(QLineEdit))
         input_label.setPlaceholderText("Project Name")
         input_label.textChanged.connect(lambda text: self.update_project_name(text))
         input_layout.addWidget(input_label)
@@ -31,12 +37,14 @@ class MigrateProjectPopup(QWidget):
         # SQLite selector
         sqlite_layout = QHBoxLayout()
         self.sqlite_input = QLineEdit()
+        self.sqlite_input.setStyleSheet(self.style_manager.get_stylesheet(QLineEdit))
         self.sqlite_input.setReadOnly(True)
         self.sqlite_input.setPlaceholderText("Legacy SQLite file")
         self.sqlite_input.textChanged.connect(lambda text: self.update_migrate_enabled())
         sqlite_layout.addWidget(self.sqlite_input)
 
         self.sqlite_button = QPushButton("Select")
+        self.sqlite_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
         self.sqlite_button.clicked.connect(self.select_sqlite)
         sqlite_layout.addWidget(self.sqlite_button)
 
@@ -49,9 +57,11 @@ class MigrateProjectPopup(QWidget):
         # Buttons
         buttons_layout = QHBoxLayout()
         self.migrate_button = QPushButton("Migrate")
+        self.migrate_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'accept'))
         self.migrate_button.clicked.connect(self.migrate_project)
         
         cancel_button = QPushButton("Cancel")
+        cancel_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
         cancel_button.clicked.connect(self.close)
 
         buttons_layout.addWidget(self.migrate_button)

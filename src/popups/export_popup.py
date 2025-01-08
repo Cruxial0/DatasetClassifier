@@ -2,28 +2,32 @@ import sys
 from typing import List, Set
 from PyQt6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
                              QPushButton, QLineEdit, QFileDialog, QScrollArea, 
-                             QCheckBox, QSpacerItem, QSizePolicy, QLabel, QMessageBox)
+                             QCheckBox, QComboBox, QSpacerItem, QLabel, QMessageBox)
 from PyQt6.QtCore import Qt, QMimeData, QPoint, pyqtSignal
 from PyQt6.QtGui import QDrag, QPalette, QColor
 from pyqt6_multiselect_combobox import MultiSelectComboBox
 
 from src.export_image import ExportRule
 from src.config_handler import ConfigHandler
+from src.styling.style_manager import StyleManager
 
 class RuleComponent(QWidget):
     deleteRequested = pyqtSignal(object)
     dragStarted = pyqtSignal(object)
 
-    def __init__(self, categories: List[str], rule: ExportRule, editable: bool = True, parent=None):
+    def __init__(self, categories: List[str], rule: ExportRule, style_manager: StyleManager, editable: bool = True, parent=None):
         super().__init__(parent)
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         self.rule = rule
         self.editable = editable
+        self.style_manager = style_manager
 
         self.priority_label = QLabel(str(self.rule.priority))
+        self.priority_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'subtext'))
 
         self.combo_box = MultiSelectComboBox()
+        self.combo_box.setStyleSheet(self.style_manager.get_stylesheet(QComboBox))
         self.combo_box.addItems(categories)
         self.combo_box.setDisplayDelimiter(", ")
         if editable:
@@ -35,6 +39,7 @@ class RuleComponent(QWidget):
         self.combo_box.setEnabled(editable)
 
         self.file_path = QLineEdit(self.rule.destination)
+        self.file_path.setStyleSheet(self.style_manager.get_stylesheet(QLineEdit))
         self.file_path.setPlaceholderText("File path...")
         self.file_path.setEnabled(editable)
 
@@ -44,6 +49,7 @@ class RuleComponent(QWidget):
 
         if editable:
             self.delete_button = QPushButton("X")
+            self.delete_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'warning'))
             self.delete_button.clicked.connect(self.request_delete)
             layout.addWidget(self.delete_button)
 
@@ -82,11 +88,15 @@ class RuleComponent(QWidget):
         self.setAutoFillBackground(highlight)
 
 class ExportPopup(QWidget):
-    def __init__(self, export_callback: callable, categories, config: ConfigHandler):
+    def __init__(self, export_callback: callable, categories, config: ConfigHandler, style_manager: StyleManager):
         super().__init__()
         self.categories = categories
         self.export_callback = export_callback
         self.config = config
+        self.style_manager = style_manager
+
+        self.setStyleSheet(self.style_manager.get_stylesheet(QWidget))
+
         self.initUI()
         self.drag_component = None
 
@@ -96,7 +106,9 @@ class ExportPopup(QWidget):
         # Output directory selector
         dir_layout = QHBoxLayout()
         self.dir_input = QLineEdit(self)
+        self.dir_input.setStyleSheet(self.style_manager.get_stylesheet(QLineEdit))
         dir_button = QPushButton("Select output path")
+        dir_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
         dir_button.clicked.connect(self.select_directory)
         dir_layout.addWidget(self.dir_input)
         dir_layout.addWidget(dir_button)
@@ -104,6 +116,7 @@ class ExportPopup(QWidget):
 
         # Add button
         add_button = QPushButton("Add Rule")
+        add_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
         add_button.clicked.connect(self.add_rule)
         layout.addWidget(add_button)
 
@@ -132,16 +145,17 @@ class ExportPopup(QWidget):
         self.checkboxes = {}
         preset, scores = self.config.get_scores()
         for name, label in scores.items():
-            checkbox = QCheckBox(label)
+            checkbox = self.create_checkbox(label, check_layout)
             checkbox.setObjectName(name)
             self.checkboxes[name] = checkbox
             check_layout.addWidget(checkbox)
         layout.addLayout(check_layout)
+        layout.addSpacerItem(QSpacerItem(0, 10))
 
         options_layout = QHBoxLayout()
-        self.export_captions = QCheckBox('Export Captions')
-        self.seperate_by_score = QCheckBox('Seperate by score')
-        self.delete_images = QCheckBox('Delete images from source directory')
+        self.export_captions = self.create_checkbox('Export captions', options_layout)
+        self.seperate_by_score = self.create_checkbox('Seperate by score', options_layout)
+        self.delete_images = self.create_checkbox('Delete images from source directory', options_layout)
         self.export_captions.setChecked(self.config.get_export_option('export_captions'))
         self.seperate_by_score.setChecked(self.config.get_export_option('seperate_by_score'))
         self.delete_images.setChecked(self.config.get_export_option('delete_images'))
@@ -153,8 +167,10 @@ class ExportPopup(QWidget):
         # Buttons
         button_layout = QHBoxLayout()
         export_button = QPushButton("Export")
+        export_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'accept'))
         export_button.clicked.connect(self.export_data)
         cancel_button = QPushButton("Cancel")
+        cancel_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
         cancel_button.clicked.connect(self.close)
         button_layout.addWidget(export_button)
         button_layout.addWidget(cancel_button)
@@ -174,12 +190,26 @@ class ExportPopup(QWidget):
         self.add_rule_component(new_rule)
 
     def add_rule_component(self, rule: ExportRule, editable: bool = True):
-        component = RuleComponent(self.categories, rule, editable, parent=self.scroll_widget)
+        component = RuleComponent(self.categories, rule, self.style_manager, editable, parent=self.scroll_widget)
         component.deleteRequested.connect(self.delete_rule)
         component.dragStarted.connect(self.drag_started)
         self.category_components.insert(0, component)
         self.scroll_layout.insertWidget(0, component)
         self.update_priorities()
+
+    def create_checkbox(self, label, container: QHBoxLayout) -> QCheckBox:
+        layout = QHBoxLayout()
+        checkbox = QCheckBox()
+
+        lbl = QLabel(label)
+        lbl.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'subtext'))
+        
+        layout.addWidget(checkbox)
+        layout.addSpacerItem(QSpacerItem(5, 0))
+        layout.addWidget(lbl)
+        container.addLayout(layout)
+        
+        return checkbox
 
     def delete_rule(self, component):
         if component.rule.priority != 0:  # Prevent deleting the default rule

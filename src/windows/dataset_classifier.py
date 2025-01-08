@@ -28,7 +28,7 @@ class DatasetClassifier(QMainWindow):
         self.settings_window = None
         
         self.setStyleSheet(self.style_manager.get_stylesheet(QMainWindow))
-        
+
         self.current_mode = 0
         self.initUI()
 
@@ -132,7 +132,7 @@ class DatasetClassifier(QMainWindow):
         self.settings_window.show()
 
     def open_export_window(self):
-        self.export_popup = ExportPopup(self.export_callback, self.db.images.get_unique_categories(self.active_project.id), self.config_handler)
+        self.export_popup = ExportPopup(self.export_callback, self.db.images.get_unique_categories(self.active_project.id), self.config_handler, self.style_manager)
         self.export_popup.show()
 
     # Callbacks
