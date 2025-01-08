@@ -28,9 +28,10 @@ class ProjectListItem(QListWidgetItem):
         self.last_updated = last_updated
 
 class ProjectListWidget(QWidget):
-    def __init__(self, database: Database):
+    def __init__(self, database: Database, style_manager: StyleManager):
         super().__init__()
         self.db = database
+        self.style_manager = style_manager
         self.initUI()
 
     def initUI(self):
@@ -38,6 +39,7 @@ class ProjectListWidget(QWidget):
         
         # Create list widget
         self.list_widget = QListWidget()
+        self.list_widget.setStyleSheet(self.style_manager.get_stylesheet(QListWidget))
         self.list_widget.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
         
         # Use a monospace font to ensure proper alignment
@@ -72,6 +74,9 @@ class ProjectSelectionWindow(QMainWindow):
         self.db = Database()
         self.config_handler = ConfigHandler()
         self.style_manager = StyleManager(self.config_handler)
+
+        self.setStyleSheet(self.style_manager.get_stylesheet(QMainWindow))
+
         self.initUI()
 
     def initUI(self):
@@ -87,6 +92,7 @@ class ProjectSelectionWindow(QMainWindow):
         left_column = QVBoxLayout()
 
         welcome_label = QLabel("Welcome!")
+        welcome_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel))
         welcome_label.setMargin(10)
         left_column.addWidget(welcome_label)
         
@@ -112,10 +118,11 @@ class ProjectSelectionWindow(QMainWindow):
         right_column = QVBoxLayout()
 
         project_list_label = QLabel("Recent Projects")
+        project_list_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel))
         project_list_label.setMargin(10)
         right_column.addWidget(project_list_label)
 
-        self.project_list_widget = ProjectListWidget(self.db)
+        self.project_list_widget = ProjectListWidget(self.db, self.style_manager)
         right_column.addWidget(self.project_list_widget)
 
         # Add buttons to right column
@@ -125,11 +132,11 @@ class ProjectSelectionWindow(QMainWindow):
         buttons_layout.setContentsMargins(10, 0, 10, 10)
 
         open_button = QPushButton("Open")
-        delete_button = QPushButton("Delete")
-        edit_button = QPushButton("Edit")
+        delete_button = QPushButton("Delete", enabled=False)
+        edit_button = QPushButton("Edit", enabled=False)
 
-        open_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
-        delete_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
+        open_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'accent'))
+        delete_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'warning'))
         edit_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
 
         open_button.clicked.connect(self.open_project)

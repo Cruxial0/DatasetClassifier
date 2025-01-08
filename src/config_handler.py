@@ -21,7 +21,9 @@ default_colors = {
     "button_border_color_overlay": "#5a9bd8",
     "disabled_color": "#606060",
     "text_color": "#ffffff",
-    "text_color_disabled": "#343434"
+    "text_color_disabled": "#343434",
+    "text_color_overlay": "#c8c8c8",
+    "background_color": "#1e1e1e"
 }
 
 default_keybinds = {

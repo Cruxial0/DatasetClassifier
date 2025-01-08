@@ -5,7 +5,6 @@ from src.theme import set_dark_mode
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    set_dark_mode(app)
     ex = ProjectSelectionWindow()
     ex.show()
     # ex = DatasetClassifier()
