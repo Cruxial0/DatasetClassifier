@@ -14,7 +14,7 @@ default_behaviours = {
 default_colors = {
     "accent_color": "#5a9bd8",
     "alternate_color": "#b08463",
-    "warning_color": "#d85e56",
+    "warning_color": "#963535",
     "button_color": "#353535",
     "button_border_color": "#444444",
     "button_color_overlay": "#5a9bd8",

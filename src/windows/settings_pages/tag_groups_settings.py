@@ -6,6 +6,7 @@ from src.widgets.tag_group_list_widget import TagGroupListWidget
 from src.tagging.tag_group import Tag, TagGroup
 from src.windows.settings_pages.tag_group_pages.tag_group_add_edit import TagGroupAddOrEditPage
 from src.windows.settings_pages.tag_group_pages.tags_page import TagListPage
+from src.windows.settings_pages.tag_group_pages.tag_conditionals import TagConditionalsPage
 
 class TagGroupSettings(SettingsWidget):
     def __init__(self, parent=None):
@@ -14,7 +15,8 @@ class TagGroupSettings(SettingsWidget):
         self._page_creators = {
             "tag_groups": self.tag_group_list_ui,
             "add_or_edit_tag_group": lambda **kwargs: TagGroupAddOrEditPage(self, **kwargs),
-            "tag_page": lambda **kwargs: TagListPage(self, **kwargs)
+            "tag_page": lambda **kwargs: TagListPage(self, **kwargs),
+            "conditionals": lambda **kwargs: TagConditionalsPage(self, **kwargs),
         }
 
         super().__init__(parent)
@@ -74,7 +76,7 @@ class TagGroupSettings(SettingsWidget):
             tag_page: TagListPage = self.stack.currentWidget()
             tag_page.set_group(tag_group)
         elif btn == "activation":
-            self.switch_page("tag_groups", tag_group=tag_group)
+            self.switch_page("conditionals", tag_group=tag_group)
         elif btn == "delete":
             self._delete_tag_group(tag_group)
 

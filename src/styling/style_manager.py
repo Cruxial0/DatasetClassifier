@@ -4,6 +4,7 @@ from PyQt6.QtCore import QObject
 
 from src.config_handler import ConfigHandler
 from src.styling.style import Style
+from src.widgets.tag_search_widget import TagSearchWidget
 
 # Styles
 from src.styling.push_button.decision_buttons import AcceptButtonStyle, RejectButtonStyle
@@ -23,6 +24,8 @@ from src.styling.combo_box.combo_box import ComboBoxStyle
 from src.styling.spin_box.spin_box import SpinBoxStyle
 from src.styling.menu.menu import MenuStyle
 from src.styling.menu.menubar import MenuBarStyle
+from src.styling.tag_search.tag_search import TagSearchStyle
+from src.styling.push_button.function_button import FunctionButtonStyle
 
 class StyleManager:
     def __init__(self, config: ConfigHandler):
@@ -48,6 +51,9 @@ class StyleManager:
             (QPushButton, 'accent'): PushButtonAccentStyle(),
             (QPushButton, 'warning'): PushButtonWarningStyle(),
             (QPushButton, 'panel'): PushButtonPanelStyle(),
+            (QPushButton, 'function_accent'): FunctionButtonStyle(color="colors.accent_color"),
+            (QPushButton, 'function_warning'): FunctionButtonStyle(color="colors.warning_color"),
+            (QPushButton, 'function'): FunctionButtonStyle(),
             (QPushButton, None): PushButtonStyle(),
 
             # Labels
@@ -83,6 +89,9 @@ class StyleManager:
             # Menu
             (QMenu, None): MenuStyle(),
             (QMenuBar, None): MenuBarStyle(),
+
+            # TagSearch
+            (TagSearchWidget, None): TagSearchStyle(),
 
             # QMainWindow
             (QMainWindow, None): DefaultWindowStyle(),

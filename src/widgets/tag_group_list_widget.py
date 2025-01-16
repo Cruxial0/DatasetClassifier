@@ -45,12 +45,16 @@ class TagGroupListWidget(QListWidgetItem):
         
         # Create buttons
         settings_btn = self.create_button("⚙️", "General Settings")
+        settings_btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'function'))
         settings_btn.clicked.connect(lambda: self.callback('edit', self.tag_group))
         tags_btn = self.create_button("🏷️", "Tags")
+        tags_btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'function'))
         tags_btn.clicked.connect(lambda: self.callback('tags', self.tag_group))
         next_btn = self.create_button("▶️", "Conditional Activation")
+        next_btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'function_accent'))
         next_btn.clicked.connect(lambda: self.callback('activation', self.tag_group))
         delete_btn = self.create_button("🗑️", "Delete Group", is_delete=True)
+        delete_btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'function_warning'))
         delete_btn.clicked.connect(lambda: self.callback('delete', self.tag_group))
         
         right_side.addWidget(settings_btn)
@@ -69,31 +73,6 @@ class TagGroupListWidget(QListWidgetItem):
         btn = QPushButton(text)
         btn.setToolTip(tooltip)
         btn.setFixedSize(28, 28)
-        
-        if is_delete:
-            btn.setStyleSheet("""
-                QPushButton {
-                    border: 1px solid #963535;
-                    border-radius: 4px;
-                    padding: 5px;
-                    color: #963535;
-                }
-                QPushButton:hover {
-                    background-color: #963535;
-                    color: white;
-                }
-            """)
-        else:
-            btn.setStyleSheet("""
-                QPushButton {
-                    border: 1px solid #767676;
-                    border-radius: 4px;
-                    padding: 5px;
-                }
-                QPushButton:hover {
-                    background-color: #555555;
-                }
-            """)
         return btn
     
     def update_group(self, tag_group: TagGroup):
