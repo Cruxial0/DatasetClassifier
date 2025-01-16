@@ -28,6 +28,13 @@ class TagGroup:
         for tag in tags:
             self.tags.append(Tag(tag[0], tag[1], tag[2]))
 
+    def get_tag(self, tag_id: int) -> Tag | None:
+        for tag in self.tags:
+            if tag.id == tag_id:
+                return tag
+
+        return None
+
     def verify_self(self):
         """
         Ensures that the tag group is valid

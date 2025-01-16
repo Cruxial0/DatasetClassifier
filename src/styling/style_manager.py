@@ -9,7 +9,7 @@ from src.styling.style import Style
 from src.styling.push_button.decision_buttons import AcceptButtonStyle, RejectButtonStyle
 from src.styling.push_button.menu_buttons import MenuButtonStyle
 from src.styling.push_button.score_buttons import DiscardButtonStyle, ScoreButtonStyle
-from src.styling.push_button.push_button import PushButtonAccentStyle, PushButtonStyle, PushButtonWarningStyle
+from src.styling.push_button.push_button import PushButtonAccentStyle, PushButtonPanelStyle, PushButtonStyle, PushButtonWarningStyle
 from src.styling.label.default_label import LabelStyle, SubtextLabelStyle
 from src.styling.widget.widget_background import WidgetBackgroundStyle
 from src.styling.window.default_window import DefaultWindowStyle
@@ -47,11 +47,13 @@ class StyleManager:
             (QPushButton, 'discard_button'): DiscardButtonStyle(),
             (QPushButton, 'accent'): PushButtonAccentStyle(),
             (QPushButton, 'warning'): PushButtonWarningStyle(),
+            (QPushButton, 'panel'): PushButtonPanelStyle(),
             (QPushButton, None): PushButtonStyle(),
 
             # Labels
             (QLabel, 'image_viewer'): ImageViewerStyle(),
             (QLabel, 'panel'): PanelLabelStyle(),
+            (QLabel, 'panel_alt'): PanelLabelStyle(color="colors.panel_color"),
             (QLabel, 'keybind'): KeybindLabelStyle(),
             (QLabel, 'keybind_accent'): KeybindLabelAccentStyle(),
             (QLabel, 'keybind_disabled'): KeybindLabelDisabledStyle(),

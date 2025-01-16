@@ -8,6 +8,7 @@ STYLE = """
         color: {};
         padding: 5px 10px;
         border-radius: 3px;
+        font-family: Arial;
     }}
     QPushButton:hover {{
         background-color: {};
@@ -22,9 +23,9 @@ STYLE = """
 """
 
 class PushButtonStyle(Style):
-    def __init__(self, color=None, text_color=None):
-        self.color = "colors.button_color" if color is None else color
-        self.text_color = "colors.text_color_overlay" if text_color is None else text_color
+    def __init__(self, color="colors.button_color", text_color="colors.text_color_overlay"):
+        self.color =  color
+        self.text_color =  text_color
         super().__init__()
     def get_style(self, config: ConfigHandler) -> str:
         colors = ColorHelper(config.get_value(self.color)).get_variants()
@@ -46,4 +47,10 @@ class PushButtonWarningStyle(PushButtonStyle):
     def __init__(self):
         color = "colors.warning_color"
         text_color = "colors.text_color"
+        super().__init__(color, text_color)
+
+class PushButtonPanelStyle(PushButtonStyle):
+    def __init__(self):
+        color = "colors.panel_color"
+        text_color = "colors.text_color_overlay"
         super().__init__(color, text_color)

@@ -14,7 +14,7 @@ default_behaviours = {
 default_colors = {
     "accent_color": "#5a9bd8",
     "alternate_color": "#b08463",
-    "warning_color": "#d93f00",
+    "warning_color": "#d85e56",
     "button_color": "#353535",
     "button_border_color": "#444444",
     "button_color_overlay": "#5a9bd8",
@@ -22,7 +22,7 @@ default_colors = {
     "disabled_color": "#353535",
     "text_color": "#ffffff",
     "text_color_disabled": "#545454",
-    "text_color_overlay": "#2d2d2d",
+    "text_color_overlay": "#c8c8c8",
     "background_color": "#1e1e1e",
     "panel_color": '#292929'
 }

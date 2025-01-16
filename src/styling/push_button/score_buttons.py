@@ -8,6 +8,7 @@ STYLE = """
         color: {};
         padding: 5px 10px;
         border-radius: 3px;
+        font-family: Arial;
     }}
     QPushButton:pressed {{
         background-color: {};
