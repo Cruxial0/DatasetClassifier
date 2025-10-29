@@ -7,6 +7,7 @@ from PyQt6.QtGui import QFont, QColor
 
 from src.tagging.tag_group import TagGroup
 from src.styling.style_manager import StyleManager
+from src.styling.styling_utils import create_emoji_font
 
 class TagGroupListWidget(QListWidgetItem):
     def __init__(self, tag_group: TagGroup, style_manager: StyleManager, callback: Callable[[Literal['edit', 'tags', 'activation', 'delete'], TagGroup], None], parent=None):
@@ -45,15 +46,19 @@ class TagGroupListWidget(QListWidgetItem):
         
         # Create buttons
         settings_btn = self.create_button("⚙️", "General Settings")
+        settings_btn.setFont(create_emoji_font())
         settings_btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'function'))
         settings_btn.clicked.connect(lambda: self.callback('edit', self.tag_group))
         tags_btn = self.create_button("🏷️", "Tags")
+        tags_btn.setFont(create_emoji_font())
         tags_btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'function'))
         tags_btn.clicked.connect(lambda: self.callback('tags', self.tag_group))
         next_btn = self.create_button("▶️", "Conditional Activation")
+        next_btn.setFont(create_emoji_font())
         next_btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'function_accent'))
         next_btn.clicked.connect(lambda: self.callback('activation', self.tag_group))
         delete_btn = self.create_button("🗑️", "Delete Group", is_delete=True)
+        delete_btn.setFont(create_emoji_font())
         delete_btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'function_warning'))
         delete_btn.clicked.connect(lambda: self.callback('delete', self.tag_group))
         

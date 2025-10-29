@@ -77,6 +77,8 @@ class TagGroupSettings(SettingsWidget):
             tag_page.set_group(tag_group)
         elif btn == "activation":
             self.switch_page("conditionals", tag_group=tag_group)
+            cond_page: TagConditionalsPage = self.stack.currentWidget()
+            cond_page.set_group(tag_group)
         elif btn == "delete":
             self._delete_tag_group(tag_group)
 
@@ -244,3 +246,8 @@ class TagGroupSettings(SettingsWidget):
             tag_page.tagDeleted.connect(self.delete_tag)
             tag_page.tagRenamed.connect(self.update_list_item)
             tag_page.tagsReordered.connect(self.update_tag_order)
+
+        elif page_name == "conditionals":
+            cond_page: TagConditionalsPage = self._pages.get(page_name)
+            cond_page.cancelClicked.connect(lambda: self.switch_page("tag_groups"))
+            cond_page.conditionSaved.connect(self.save_tag_group)

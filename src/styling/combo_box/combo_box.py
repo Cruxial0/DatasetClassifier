@@ -3,7 +3,7 @@ from src.styling.color_helper import ColorHelper
 from src.styling.style import Style
 from src.utils import get_resource_path
 
-icon_path = get_resource_path('icons/chevron-down.svg')
+icon_path = get_resource_path('../icons/chevron-down.svg')
 
 
 STYLE = """

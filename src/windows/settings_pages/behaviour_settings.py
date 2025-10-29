@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QCheckBox, QSpacerItem
 from PyQt6.QtGui import QFont
 from src.windows.settings_pages.settings_widget import SettingsWidget
-
+from src.styling.styling_utils import inline_emoji
 
 class BehaviourSettings(SettingsWidget):
     def __init__(self, parent=None):
@@ -26,12 +26,12 @@ class BehaviourSettings(SettingsWidget):
             'behaviour.auto_scroll_on_tag_condition'
         ))
         layout.addLayout(self._create_checkbox(
-            "Disable auto-scroll until enabled (⚡/🔅)",
+            f"Disable auto-scroll until enabled ({inline_emoji("⚡")}/{inline_emoji("🔅")})",
             "If enabled, when temporarily disabling auto-scroll, it will\nremain disabled until re-enabled",
             'behaviour.auto_scroll_disable_until_enabled'
         ))
         layout.addLayout(self._create_checkbox(
-            "Use strict mode for 'to latest' (🎯)",
+            f"Use strict mode for 'to latest' ({inline_emoji("🎯")})",
             "If enabled, will ignore the 'is_required' clause,\nand will find the latest TagGroup where 'min_tags' is not met",
             'behaviour.to_latest_strict_mode'
         ))

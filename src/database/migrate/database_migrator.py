@@ -58,33 +58,40 @@ class DatabaseMigration:
 
     def apply_migration(self, version: int, name: str, up_sql: str, down_sql: str) -> bool:
         """Apply a single migration."""
+        conn = self.get_connection()
+        conn.execute("PRAGMA foreign_keys = ON")
+        cursor = conn.cursor()
+
         try:
-            conn = self.get_connection()
-            # Enable foreign keys
-            conn.execute("PRAGMA foreign_keys = ON")
-            
-            # Start transaction
-            cursor = conn.cursor()
-            
-            # Execute the migration
             self.logger.info(f"Applying migration {version}: {name}")
             cursor.executescript(up_sql)
             
-            # Record the migration
             cursor.execute(
                 "INSERT INTO schema_migrations (version, name) VALUES (?, ?)",
                 (version, name)
             )
-            
+
             if self.should_close_connection():
                 conn.commit()
                 conn.close()
-            
+
             return True
-                
+
         except sqlite3.Error as e:
-            self.logger.error(f"Failed to apply migration {version}: {str(e)}")
-            return False
+            # Check if the error is about something that can be skipped
+            if "already exists" in str(e):
+                self.logger.warning(f"Migration {version} skipped: {str(e)}")
+                if self.should_close_connection():
+                    conn.commit()
+                    conn.close()
+                return True  # Return True because we’re treating it as "applied"
+            else:
+                self.logger.error(f"Failed to apply migration {version}: {str(e)}")
+                if self.should_close_connection():
+                    conn.rollback()
+                    conn.close()
+                return False
+
 
     def rollback_migration(self, version: int, down_sql: str) -> bool:
         """Rollback a single migration."""
@@ -111,16 +118,21 @@ class DatabaseMigration:
             self.logger.error(f"Failed to rollback migration {version}: {str(e)}")
             return False
 
-    def migrate(self, migrations: List[Tuple[int, str, str, str]], target_version: Optional[int] = None) -> bool:
+    def migrate(self, migrations: List[Tuple[int, str, str, str]]) -> bool:
         """
         Apply all pending migrations up to target_version.
         migrations: List of tuples (version, name, up_sql, down_sql)
         """
         self.init_migration_table()
         current_version = self.get_current_version()
+        print(f"current version: {current_version}")
+        print(f"migration count: {len(migrations)}")
         
-        if target_version is None:
-            target_version = max(m[0] for m in migrations)
+        print(f"migration versions: {[m[0] for m in migrations]}")
+        print(f"migration versions types: {[type(m[0]) for m in migrations]}")
+        target_version = max(m[0] for m in migrations)
+
+        print(f"target version: {target_version}")
             
         # Sort migrations by version
         migrations.sort(key=lambda x: x[0])
@@ -128,9 +140,11 @@ class DatabaseMigration:
         if target_version > current_version:
             # Apply forward migrations
             for version, name, up_sql, down_sql in migrations:
+                print(f"Migration {version}")
                 if current_version < version <= target_version:
                     if not self.apply_migration(version, name, up_sql, down_sql):
                         return False
+                    print(f"Applied migration")
                     
         elif target_version < current_version:
             # Apply rollback migrations

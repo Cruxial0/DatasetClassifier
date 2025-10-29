@@ -21,7 +21,7 @@ class TagQueries:
         
         # First, get all tag groups for the project
         cursor.execute("""
-            SELECT group_id, project_id, group_name, is_required, allow_multiple, min_tags, prevent_auto_scroll, display_order
+            SELECT group_id, project_id, group_name, is_required, allow_multiple, min_tags, prevent_auto_scroll, display_order, condition
             FROM tag_groups
             WHERE project_id = ?
             ORDER BY display_order
@@ -40,7 +40,8 @@ class TagQueries:
                 is_required=row[3],
                 allow_multiple=row[4],
                 min_tags=row[5],
-                prevent_auto_scroll=row[6]
+                prevent_auto_scroll=row[6],
+                condition=row[8]
             )
             tag_groups.append(tag_group)
             group_mapping[tag_group.id] = len(tag_groups) - 1
@@ -70,7 +71,7 @@ class TagQueries:
         Gets the tag group with the given id from the database, alongside its tags.
         """
         cursor = self.db.cursor()
-        cursor.execute("SELECT group_id, project_id, group_name, is_required, allow_multiple, min_tags, prevent_auto_scroll, display_order FROM tag_groups WHERE group_id = ?", (group_id,))
+        cursor.execute("SELECT group_id, project_id, group_name, is_required, allow_multiple, min_tags, prevent_auto_scroll, display_order, condition FROM tag_groups WHERE group_id = ?", (group_id,))
         result = cursor.fetchone()
         group = TagGroup(
                 id=result[0],
@@ -80,7 +81,8 @@ class TagQueries:
                 is_required=result[3],
                 allow_multiple=result[4],
                 min_tags=result[5], 
-                prevent_auto_scroll=result[6]
+                prevent_auto_scroll=result[6],
+                condition=result[8]
             )
         cursor.execute("SELECT tag_id, tag_name, display_order FROM tags WHERE group_id = ?", (group_id,))
         for row in cursor.fetchall():
@@ -151,8 +153,8 @@ class TagQueries:
         """
         tag_group.verify_self()
         cursor = self.db.cursor()
-        cursor.execute("UPDATE tag_groups SET group_name = ?, display_order = ?, is_required = ?, allow_multiple = ?, min_tags = ?, prevent_auto_scroll = ? WHERE group_id = ?", 
-            (tag_group.name, tag_group.order, tag_group.is_required, tag_group.allow_multiple, tag_group.min_tags, tag_group.prevent_auto_scroll, tag_group.id))
+        cursor.execute("UPDATE tag_groups SET group_name = ?, display_order = ?, is_required = ?, allow_multiple = ?, min_tags = ?, prevent_auto_scroll = ?, condition = ? WHERE group_id = ?", 
+            (tag_group.name, tag_group.order, tag_group.is_required, tag_group.allow_multiple, tag_group.min_tags, tag_group.prevent_auto_scroll, tag_group.condition, tag_group.id))
         self.db.commit()
         cursor.close()
 

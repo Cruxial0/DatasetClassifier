@@ -10,7 +10,6 @@ STYLE = """
         padding: 5px 10px;
         border-radius: 3px;
         height: 30px;
-        font-family: Arial;
     }}
     QPushButton:checked {{
         background-color: {};

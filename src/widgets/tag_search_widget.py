@@ -1,11 +1,8 @@
-from PyQt6.QtWidgets import (
-    QWidget, QLineEdit, QVBoxLayout, QFrame, 
-    QLabel, QScrollArea
-)
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtWidgets import QFrame, QWidget, QVBoxLayout, QLineEdit, QLabel
+from PyQt6.QtCore import Qt, pyqtSignal, QEvent, QRect, QPoint
 from PyQt6.QtGui import QColor, QPalette
 from typing import List, Union
-
+from PyQt6.QtWidgets import QApplication
 from src.tagging.tag_group import Tag, TagGroup
 
 class TagItemWidget(QFrame):
@@ -20,16 +17,16 @@ class TagItemWidget(QFrame):
         layout = QVBoxLayout()
         self.setLayout(layout)
         
-        # Different styling based on item type
         if isinstance(self.item, Tag):
             self.setup_tag_ui()
         elif isinstance(self.item, TagGroup):
             self.setup_taggroup_ui()
         else:
-            print(f"Unknown item type: {type(self.item)}")  # Debug print
+            print(f"Unknown item type: {type(self.item)}")
         
         self.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Raised)
         self.setAutoFillBackground(True)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         
     def setup_tag_ui(self):
         layout = self.layout()
@@ -63,23 +60,38 @@ class TagItemWidget(QFrame):
     def mousePressEvent(self, event):
         self.clicked.emit(self.item)
 
-class TagCompleterPopup(QScrollArea):
+class TagCompleterPopup(QWidget):
     item_selected = pyqtSignal(object)
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.setup_ui()
 
     def setup_ui(self):
         self.setWindowFlags(Qt.WindowType.Popup)
-        self.setWidgetResizable(True)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         
-        self.container = QWidget()
-        self.container_layout = QVBoxLayout()
-        self.container.setLayout(self.container_layout)
-        self.setWidget(self.container)
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(2, 2, 2, 2)
+        self.main_layout.setSpacing(0)
+        
+        self.container = QFrame()
+        self.container.setObjectName("completerContainer")
+        self.container.setStyleSheet("""
+            QFrame#completerContainer {
+                background-color: white;
+                border: 1px solid #aaaaaa;
+                border-radius: 4px;
+            }
+        """)
+        self.container.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.container_layout = QVBoxLayout(self.container)
+        self.container_layout.setContentsMargins(4, 4, 4, 4)
+        self.container_layout.setSpacing(2)
+        self.main_layout.addWidget(self.container)
 
-    def update_items(self, items: List[Union[Tag, TagGroup]]):       
+    def update_items(self, items: List[Union[Tag, TagGroup]]):
         while self.container_layout.count():
             child = self.container_layout.takeAt(0)
             if child.widget():
@@ -87,13 +99,27 @@ class TagCompleterPopup(QScrollArea):
 
         for item in items:
             widget = TagItemWidget(item)
-            widget.clicked.connect(lambda x=item: self.on_item_clicked(x))
+            widget.clicked.connect(self.on_item_clicked)
             self.container_layout.addWidget(widget)
 
         self.adjustSize()
-    
+        max_height = min(300, self.sizeHint().height())
+        self.setFixedHeight(max_height)
+
     def on_item_clicked(self, item):
         self.item_selected.emit(item)
+        self.hide()
+
+    def focusOutEvent(self, event):
+        super().focusOutEvent(event)
+        self.hide()
+
+from PyQt6.QtWidgets import QFrame, QWidget, QVBoxLayout, QLineEdit, QLabel
+from PyQt6.QtCore import Qt, pyqtSignal, QEvent, QRect, QPoint
+from PyQt6.QtGui import QColor, QPalette
+from typing import List, Union
+from PyQt6.QtWidgets import QApplication
+from src.tagging.tag_group import Tag, TagGroup
 
 class TagSearchWidget(QWidget):
     item_selected = pyqtSignal(object)
@@ -105,13 +131,15 @@ class TagSearchWidget(QWidget):
 
     def setup_ui(self):
         layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
         self.search_input = QLineEdit()
+        self.search_input.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.search_input.textChanged.connect(self.on_text_changed)
         layout.addWidget(self.search_input)
 
-        self.popup = TagCompleterPopup()
+        self.popup = TagCompleterPopup(self)
         self.popup.item_selected.connect(self.on_item_selected)
 
     def on_text_changed(self, text: str):
@@ -124,6 +152,7 @@ class TagSearchWidget(QWidget):
         if items:
             self.popup.update_items(items)
             pos = self.search_input.mapToGlobal(self.search_input.rect().bottomLeft())
+            self.popup.setFixedWidth(self.search_input.width())
             self.popup.move(pos)
             self.popup.show()
         else:
@@ -136,3 +165,25 @@ class TagSearchWidget(QWidget):
         self.search_input.setText(item.name)
         self.popup.hide()
         self.item_selected.emit(item)
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.Type.MouseButtonPress:
+            popup_geo = self.popup.geometry()
+            input_pos = self.search_input.mapToGlobal(QPoint(0, 0))
+            input_geo = QRect(input_pos, self.search_input.size())
+            global_pos = event.globalPosition().toPoint()  # Updated to globalPosition()
+            if not (popup_geo.contains(global_pos) or input_geo.contains(global_pos)):
+                self.popup.hide()
+                return True
+        return super().eventFilter(obj, event)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        app = QApplication.instance()
+        if app and not hasattr(self, '_event_filter_installed'):
+            app.installEventFilter(self)
+            self._event_filter_installed = True
+
+    def hideEvent(self, event):
+        super().hideEvent(event)
+        self.popup.hide()

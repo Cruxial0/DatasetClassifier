@@ -3,7 +3,7 @@ from pathlib import Path
 from sqlite3 import Connection, Cursor
 
 from src.project import Project
-from src.database.database import DB_VERSION, Database
+from src.database.database import Database
 from src.utils import get_image_files
 
 def get_base_directory(data: list[tuple[int, str, str, str, list[str], str]]) -> str:

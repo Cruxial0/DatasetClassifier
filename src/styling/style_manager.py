@@ -20,6 +20,7 @@ from src.styling.label.panel_label import ImageViewerStyle, PanelLabelStyle
 from src.styling.line_edit.line_edit import LineEditStyle
 from src.styling.label.keybind_label import KeybindLabelAccentStyle, KeybindLabelDisabledStyle, KeybindLabelStyle
 from src.styling.widget.panel_widget import PanelWidgetStyle
+from src.styling.widget.group_widget import WidgetCurvedOutlineStyle
 from src.styling.combo_box.combo_box import ComboBoxStyle
 from src.styling.spin_box.spin_box import SpinBoxStyle
 from src.styling.menu.menu import MenuStyle
@@ -69,6 +70,7 @@ class StyleManager:
 
             # Widgets
             (QWidget, 'panel'): PanelWidgetStyle(),
+            (QWidget, 'group'): WidgetCurvedOutlineStyle(),
             (QWidget, None): WidgetBackgroundStyle(),
 
             # LineEdit

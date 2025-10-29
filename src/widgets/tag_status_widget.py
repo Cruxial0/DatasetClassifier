@@ -4,6 +4,7 @@ from PyQt6.QtCore import Qt, pyqtSignal  # Add this import
 from src.config_handler import ConfigHandler
 from src.tagging.tag_group import TagGroup
 from src.styling.style_manager import StyleManager
+from src.styling.styling_utils import create_emoji_font
 
 button_style = """
     QPushButton {
@@ -73,6 +74,7 @@ class TagStatusWidget(QWidget):
         # Tag group
         tag_group_stats_layout = QHBoxLayout()
         self.tag_group_status_label = QLabel("🔴")
+        self.tag_group_status_label.setFont(create_emoji_font())
         self.tag_group_name_label = QLabel("GROUP_TITLE")
         self.tag_group_index_label = QLabel("(0/0)")
 
@@ -89,6 +91,7 @@ class TagStatusWidget(QWidget):
         self.seleted_tags_label = QLabel("0/0 selected")
         self.seleted_tags_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'subtext'))
         self.auto_scroll_indicator = QLabel("⚡")
+        self.auto_scroll_indicator.setFont(create_emoji_font())
         self.auto_scroll_indicator.setStyleSheet(tooltip_style)
         self.auto_scroll_indicator.setToolTip(self.auto_scroll_indicator_tooltip)
         self.auto_scroll_indicator.mousePressEvent = self._auto_scroll_indicator_click_event
@@ -116,9 +119,11 @@ class TagStatusWidget(QWidget):
         # Add tag button
         skip_button = QPushButton("Skip")
         options_button = QPushButton("⚙️")
+        options_button.setFont(create_emoji_font())
 
         self.prev_button = QPushButton("<")
         self.latest_button = QPushButton("🎯")
+        self.latest_button.setFont(create_emoji_font())
         self.next_button = QPushButton(">")
 
         self.prev_button.setFixedWidth(35)

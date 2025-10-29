@@ -4,6 +4,7 @@ from PyQt6.QtGui import QFont
 
 from src.tagging.tag_group import Tag
 from src.styling.style_manager import StyleManager
+from src.styling.styling_utils import create_emoji_font
 
 class TagListItem(QWidget):
     deleteClicked = pyqtSignal(int)
@@ -39,14 +40,14 @@ class TagListItem(QWidget):
 
         self.button_stack = QStackedWidget()
         self.editButton = QPushButton("✏️")
-        self.editButton.setFont(QFont("Arial", 12))
         self.confirmButton = QPushButton("✔")
-        self.confirmButton.setFont(QFont("Arial", 12))
 
         self.editButton.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'panel'))
+        self.editButton.setFont(create_emoji_font(base_size=12))
         self.editButton.setFixedHeight(32)
         self.editButton.setFixedWidth(40)
         self.confirmButton.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'accent'))
+        self.confirmButton.setFont(create_emoji_font(base_size=12))
         self.confirmButton.setFixedHeight(32)
         self.confirmButton.setFixedWidth(40)
 
@@ -54,9 +55,9 @@ class TagListItem(QWidget):
         self.button_stack.addWidget(self.confirmButton)
 
         self.deleteButton = QPushButton("🗑")
-        self.deleteButton.setFont(QFont("Arial", 12))
         self.deleteButton.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'warning'))
-        self.deleteButton.setFixedHeight(30)
+        self.deleteButton.setFont(create_emoji_font(base_size=12))
+        self.deleteButton.setFixedHeight(32)
         self.deleteButton.setFixedWidth(40)
 
         container.addWidget(self.indexLabel)

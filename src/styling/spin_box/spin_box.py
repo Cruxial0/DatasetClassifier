@@ -51,4 +51,4 @@ class SpinBoxStyle(Style):
                             colors['hover'],
                             colors['active'],
                             config.get_color("disabled_color"), config.get_color("text_color_disabled"),
-                            get_resource_path('icons/chevron-up.svg').replace('\\', '/'), get_resource_path('icons/chevron-down.svg').replace('\\', '/'))
+                            get_resource_path('../icons/chevron-up.svg').replace('\\', '/'), get_resource_path('../icons/chevron-down.svg').replace('\\', '/'))

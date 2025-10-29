@@ -10,7 +10,7 @@ from src.widgets.tag_widget import TagListItem
 class TagListPage(SettingsWidget):
     tagsReordered = pyqtSignal(list)
     tagAdded = pyqtSignal(int, Tag)
-    tagRenamed = pyqtSignal(int, int, str)
+    tagRenamed = pyqtSignal(TagGroup, int, str)
     tagDeleted = pyqtSignal(int)
     doneClicked = pyqtSignal()
     

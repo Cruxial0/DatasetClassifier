@@ -1,5 +1,6 @@
 .venv
 db
 */**/__pycache__
+*/**/.ropeproject
 __pycache__
 config.yaml

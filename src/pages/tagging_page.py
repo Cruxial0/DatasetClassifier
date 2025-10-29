@@ -330,41 +330,93 @@ class TaggingPage(QWidget):
         if self.tag_groups is None or len(self.tag_groups) < 1 or self.current_group is None:
             return
 
-        if self.current_group.order + 1 >= len(self.tag_groups):
-            # check if there are more images
+        # Start searching from the next group
+        start_index = self.current_group.order + 1
+        
+        # If we're at the end, try to load next image
+        if start_index >= len(self.tag_groups):
             if not self.load_next_image():
                 return
             return
         
-        index = self.current_group.order + 1
-        self.current_group = self.tag_groups[index]
+        # Search for the next available group (condition met)
+        while start_index < len(self.tag_groups):
+            candidate = self.tag_groups[start_index]
+            
+            # Check if this group's activation condition is met
+            if candidate.condition:
+                # Import here to avoid circular imports
+                from src.parser import parse_condition, evaluate_condition
+                try:
+                    parsed = parse_condition(candidate.condition)
+                    if parsed and not evaluate_condition(parsed, self.image_tags, self.tag_groups):
+                        # Condition not met, skip this group
+                        start_index += 1
+                        continue
+                except Exception as e:
+                    # If condition parsing fails, show the group anyway (fail open)
+                    print(f"Warning: Failed to evaluate condition for '{candidate.name}': {e}")
+            
+            # Found an available group!
+            self.current_group = candidate
+            self.status_widget.set_prev_button_enabled(True)
+            self.auto_scroll_temp_disabled = False
+            self.update_tag_groups(skip_update=True)
 
-        self.status_widget.set_prev_button_enabled(True)
-
-        self.auto_scroll_temp_disabled = False
-        self.update_tag_groups(skip_update=True)
-
-        if index == len(self.tag_groups) - 1 and not self.image_handler.next_image_exists():
-            self.status_widget.set_next_button_enabled(False)
+            # Check if we can go further
+            if start_index == len(self.tag_groups) - 1 and not self.image_handler.next_image_exists():
+                self.status_widget.set_next_button_enabled(False)
+            
+            return
+        
+        # No available groups found, load next image
+        if not self.load_next_image():
+            return
 
     def previous_group(self):
         if self.tag_groups is None or len(self.tag_groups) < 1 or self.current_group is None:
             return
 
-        if self.current_group.order - 1 < 0:
-            # check if there are more images
+        # Start searching from the previous group
+        start_index = self.current_group.order - 1
+        
+        # If we're at the beginning, try to load previous image
+        if start_index < 0:
             if not self.load_previous_image():
                 return
             return
         
-        index = self.current_group.order - 1
-        self.current_group = self.tag_groups[index]
-        self.auto_scroll_temp_disabled = False
+        # Search backwards for an available group (condition met)
+        while start_index >= 0:
+            candidate = self.tag_groups[start_index]
+            
+            # Check if this group's activation condition is met
+            if candidate.condition:
+                from src.parser import parse_condition, evaluate_condition
+                try:
+                    parsed = parse_condition(candidate.condition)
+                    if parsed and not evaluate_condition(parsed, self.image_tags, self.tag_groups):
+                        # Condition not met, skip this group
+                        start_index -= 1
+                        continue
+                except Exception as e:
+                    # If condition parsing fails, show the group anyway
+                    print(f"Warning: Failed to evaluate condition for '{candidate.name}': {e}")
+            
+            # Found an available group!
+            self.current_group = candidate
+            self.auto_scroll_temp_disabled = False
 
-        if index == 0 and not self.image_handler.previous_image_exists():
-            self.status_widget.set_prev_button_enabled(False)
+            # Check if we can go further back
+            if start_index == 0 and not self.image_handler.previous_image_exists():
+                self.status_widget.set_prev_button_enabled(False)
 
-        self.update_tag_groups(skip_update=True)
+            self.update_tag_groups(skip_update=True)
+            return
+        
+        # No available groups found, load previous image
+        if not self.load_previous_image():
+            return
 
     def to_latest(self):
         if not self.image_handler.current_image_id:
@@ -381,6 +433,18 @@ class TaggingPage(QWidget):
             self.display_image()
 
             self.current_group = self.tag_groups[group_order]
+            
+            if self.current_group.condition:
+                from src.parser import parse_condition, evaluate_condition
+                try:
+                    parsed = parse_condition(self.current_group.condition)
+                    if parsed and not evaluate_condition(parsed, self.image_tags, self.tag_groups):
+                        # The "latest" group's condition isn't met anymore
+                        # This shouldn't happen, but handle gracefully
+                        print(f"Warning: Latest group condition not met for '{self.current_group.name}'")
+                except Exception as e:
+                    print(f"Warning: Failed to evaluate condition: {e}")
+
             self.image_tags = self.db.tags.get_image_tags(self.current_image_id)
             self.update_tag_groups(skip_update=True)
 
