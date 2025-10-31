@@ -141,6 +141,7 @@ class TagConditionalsPage(SettingsWidget):
         """Clear validation message when user starts typing"""
         self.validation_label.clear()
         self.validation_label.setStyleSheet("")
+        self.validate_condition()
     
     def _set_validation_message(self, message: str, status: str):
         """
@@ -162,6 +163,7 @@ class TagConditionalsPage(SettingsWidget):
                 f"  padding: 8px;"
                 f"  border-radius: 4px;"
                 f"  border: 1px solid {success_color};"
+                f"  font-weight: bold;"
                 f"}}"
             )
         elif status == "error":
@@ -248,7 +250,7 @@ class TagConditionalsPage(SettingsWidget):
             # Show success with parsed representation
             parsed_str = condition_to_string(parsed)
             self._set_validation_message(
-                f"{inline_emoji("✓")} Condition is valid!\nParsed as: {parsed_str}",
+                f"{inline_emoji("✓")} Condition is valid!",
                 "success"
             )
             return True

@@ -25,10 +25,11 @@ class ExportTagRule:
 
 class ExportTagRuleWidget(QWidget):
     """Widget for displaying a single export tag rule in the list"""
-    def __init__(self, rule: ExportTagRule, style_manager, parent=None):
+    def __init__(self, rule: ExportTagRule, style_manager, settings_widget, parent=None):
         super().__init__(parent)
         self.rule = rule
         self.style_manager = style_manager
+        self.settings_widget = settings_widget
         
         self.setup_ui()
     
@@ -59,11 +60,11 @@ class ExportTagRuleWidget(QWidget):
         
         edit_btn = QPushButton("Edit")
         edit_btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'accent'))
-        edit_btn.clicked.connect(lambda: self.parent().parent().parent().edit_rule(self.rule))
+        edit_btn.clicked.connect(lambda: self.settings_widget.edit_rule(self.rule))
         
         delete_btn = QPushButton("Delete")
         delete_btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'warning'))
-        delete_btn.clicked.connect(lambda: self.parent().parent().parent().delete_rule(self.rule))
+        delete_btn.clicked.connect(lambda: self.settings_widget.delete_rule(self.rule))
         
         btn_layout.addWidget(edit_btn)
         btn_layout.addWidget(delete_btn)
@@ -192,7 +193,7 @@ class ExportTagRulesSettings(SettingsWidget):
         
         # Validation button
         validate_btn = QPushButton("Validate Condition")
-        validate_btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
+        validate_btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'function'))
         validate_btn.clicked.connect(self.validate_condition)
         layout.addWidget(validate_btn)
         
@@ -241,7 +242,7 @@ class ExportTagRulesSettings(SettingsWidget):
         
         for rule in self.rules:
             item = QListWidgetItem()
-            widget = ExportTagRuleWidget(rule, self.style_manager, self.rules_list)
+            widget = ExportTagRuleWidget(rule, self.style_manager, self, self.rules_list)
             
             self.rules_list.addItem(item)
             self.rules_list.setItemWidget(item, widget)
