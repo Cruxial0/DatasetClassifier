@@ -105,9 +105,12 @@ class TagListItem(QWidget):
         self.deleteClicked.emit(self.tag.id)
 
     def reset_state(self):
-        self.name_stack.setCurrentIndex(0)
-        self.button_stack.setCurrentIndex(0)
-        self.nameInput.setText(self.nameLabel.text())
+        if self.name_stack:
+            self.name_stack.setCurrentIndex(0)
+        if self.button_stack:
+            self.button_stack.setCurrentIndex(0)
+        if self.nameInput:
+            self.nameInput.setText(self.nameLabel.text())
 
     def set_index_label(self, index: int):
         self.indexLabel.setText(str(index))
