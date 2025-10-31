@@ -83,7 +83,7 @@ class TagListPage(SettingsWidget):
         tag = Tag(-1, self.tag_input.text(), self.tags_list.count())
         if tag and self.selected_group:
             self.create_tag_item(tag)
-            self.selected_group.tags.append(tag)
+            # self.selected_group.tags.append(tag)
             self.tag_input.clear()
             self.tagAdded.emit(self.selected_group.id, tag)
             
