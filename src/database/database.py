@@ -9,6 +9,7 @@ from src.database.query.project_queries import ProjectQueries
 from src.database.query.image_queries import ImageQueries
 from src.database.query.tag_rule_queries import ExportTagRuleQueries
 
+DB_VERSION = 3
 class Database:
     def __init__(self, db_path="./db/dataset_classifier.db"):
         self.db_path = db_path
