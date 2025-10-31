@@ -1,5 +1,5 @@
 from typing import Dict, Type, Tuple
-from PyQt6.QtWidgets import QMainWindow, QMenuBar, QMenu, QWidget, QPushButton, QLabel, QListWidget, QProgressBar, QComboBox, QLineEdit, QSpinBox
+from PyQt6.QtWidgets import QProxyStyle, QMainWindow, QMenuBar, QMenu, QWidget, QPushButton, QLabel, QListWidget, QCheckBox, QProgressBar, QComboBox, QLineEdit, QMessageBox, QTextEdit, QGroupBox, QSpinBox
 from PyQt6.QtCore import QObject
 
 from src.config_handler import ConfigHandler
@@ -18,6 +18,7 @@ from src.styling.list.list_view import ListWidgetStyle
 from src.styling.progress_bar.progress_bar import ProgressBarStyle
 from src.styling.label.panel_label import ImageViewerStyle, PanelLabelStyle
 from src.styling.line_edit.line_edit import LineEditStyle
+from src.styling.text_edit.text_edit import TextEditStyle
 from src.styling.label.keybind_label import KeybindLabelAccentStyle, KeybindLabelDisabledStyle, KeybindLabelStyle
 from src.styling.widget.panel_widget import PanelWidgetStyle
 from src.styling.widget.group_widget import WidgetCurvedOutlineStyle
@@ -27,6 +28,10 @@ from src.styling.menu.menu import MenuStyle
 from src.styling.menu.menubar import MenuBarStyle
 from src.styling.tag_search.tag_search import TagSearchStyle
 from src.styling.push_button.function_button import FunctionButtonStyle
+from src.styling.check_box.check_box import CheckBoxStyle
+from src.styling.check_box.check_box_warning import CheckBoxWarningStyle
+from src.styling.group_box.group_box import GroupBoxStyle
+from src.styling.message_box.message_box import MessageBoxStyle
 
 class StyleManager:
     def __init__(self, config: ConfigHandler):
@@ -72,9 +77,19 @@ class StyleManager:
             (QWidget, 'panel'): PanelWidgetStyle(),
             (QWidget, 'group'): WidgetCurvedOutlineStyle(),
             (QWidget, None): WidgetBackgroundStyle(),
+            
+            # CheckBox
+            (QCheckBox, None): CheckBoxStyle(),
+            (QCheckBox, 'warning'): CheckBoxWarningStyle(),
+
+            # GroupBox
+            (QGroupBox, None): GroupBoxStyle(),
 
             # LineEdit
             (QLineEdit, None): LineEditStyle(),
+
+            # TextEdit
+            (QTextEdit, None): TextEditStyle(),
 
             # ComboBox
             (QComboBox, None): ComboBoxStyle(),
@@ -92,6 +107,9 @@ class StyleManager:
             (QMenu, None): MenuStyle(),
             (QMenuBar, None): MenuBarStyle(),
 
+            # MessageBox
+            (QMessageBox, None): MessageBoxStyle(),
+
             # TagSearch
             (TagSearchWidget, None): TagSearchStyle(),
 
@@ -99,10 +117,18 @@ class StyleManager:
             (QMainWindow, None): DefaultWindowStyle(),
         }
 
-    def get_stylesheet(self, component_type: Type[QObject], variant: str | None = None) -> str:
+    def get_stylesheet(self, component_type: Type[QObject], variant: str = None) -> str:
         return self._get_or_default(component_type, variant)
     
-    def _get_or_default(self, component_type: Type[QObject], variant: str | None = None) -> str:
+    def get_proxy_style(self, component_type: Type[QObject], variant: str = None, base_style=None) -> QProxyStyle:
+        style = self._stylesheets.get((component_type, variant))
+        if style is None:
+            print(f"WARNING: No style found for component type: {component_type.__name__} (variant: {variant})")
+        if hasattr(style, 'get_proxy_style'):
+            return "" if style is None else style.get_proxy_style(self.config, base_style=base_style)
+        print(f"WARNING: No proxy style constructor found for component type: {component_type.__name__} (variant: {variant})")
+
+    def _get_or_default(self, component_type: Type[QObject], variant: str = None) -> str:
         style = self._stylesheets.get((component_type, variant))
         if style is None:
             print(f"WARNING: No style found for component type: {component_type.__name__} (variant: {variant})")

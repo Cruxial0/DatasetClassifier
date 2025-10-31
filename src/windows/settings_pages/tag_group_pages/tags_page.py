@@ -10,7 +10,7 @@ from src.widgets.tag_widget import TagListItem
 class TagListPage(SettingsWidget):
     tagsReordered = pyqtSignal(list)
     tagAdded = pyqtSignal(int, Tag)
-    tagRenamed = pyqtSignal(TagGroup, int, str)
+    tagRenamed = pyqtSignal(int, int, str)
     tagDeleted = pyqtSignal(int)
     doneClicked = pyqtSignal()
     
@@ -100,7 +100,7 @@ class TagListPage(SettingsWidget):
 
     def rename_tag(self, tag_id: int, new_name: str):
         if self.selected_group:
-            self.tagRenamed.emit(self.selected_group, tag_id, new_name)
+            self.tagRenamed.emit(self.selected_group.id, tag_id, new_name)
         else:
             print("Could not rename tag: no selected group")
             

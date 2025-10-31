@@ -15,6 +15,7 @@ from src.windows.settings_pages.export_settings import ExportSettingsPage
 from src.windows.settings_pages.keybind_settings import KeybindSettingsPage
 from src.windows.settings_pages.scoring_settings import ScoringSettingsPage
 from src.windows.settings_pages.privacy_settings import PrivacySettingsPage
+from src.windows.settings_pages.export_conditions_settings import ExportTagRulesSettings
 
 class SettingsWindow(QMainWindow):
     def __init__(self, parent, path: str = None):
@@ -52,7 +53,8 @@ class SettingsWindow(QMainWindow):
             "colors": lambda: ColorsSettingsPage(self),
             "scoring": lambda: ScoringSettingsPage(self),
             "privacy": lambda: PrivacySettingsPage(self),
-            "tag_groups": lambda: TagGroupSettings(self)
+            "tag_groups": lambda: TagGroupSettings(self),
+            "export_conditions": lambda: ExportTagRulesSettings(self)
         }
         
         # Add navigation buttons

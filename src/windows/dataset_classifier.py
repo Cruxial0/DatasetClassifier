@@ -137,7 +137,13 @@ class DatasetClassifier(QMainWindow):
         self.settings_window.show()
 
     def open_export_window(self):
-        self.export_popup = ExportPopup(self.export_callback, self.db.images.get_unique_categories(self.active_project.id), self.config_handler, self.style_manager)
+        self.export_popup = ExportPopup(
+            export_callback=self.export_callback,
+            categories=self.db.images.get_unique_categories(self.active_project.id),
+            project_id=self.active_project.id,
+            config=self.config_handler,
+            style_manager= self.style_manager
+        )
         self.export_popup.show()
 
     # Callbacks

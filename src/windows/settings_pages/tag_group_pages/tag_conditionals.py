@@ -63,7 +63,7 @@ class TagConditionalsPage(SettingsWidget):
         self.condition_input = QTextEdit()
         self.condition_input.setPlaceholderText(self._get_placeholder_text())
         self.condition_input.setMaximumHeight(120)
-        self.condition_input.setStyleSheet(self._get_text_edit_style())
+        self.condition_input.setStyleSheet(self.style_manager.get_stylesheet(QTextEdit))
         self.condition_input.textChanged.connect(self._on_text_changed)
         layout.addWidget(self.condition_input)
         
@@ -141,23 +141,6 @@ class TagConditionalsPage(SettingsWidget):
         """Clear validation message when user starts typing"""
         self.validation_label.clear()
         self.validation_label.setStyleSheet("")
-    
-    def _get_text_edit_style(self) -> str:
-        """Get stylesheet for QTextEdit matching LineEdit style"""
-        background_color = self.config_handler.get_value('colors.button_color')
-        border_color = self.config_handler.get_value('colors.button_border_color')
-        text_color = self.config_handler.get_value('colors.text_color_overlay')
-        
-        return f"""
-            QTextEdit {{
-                background-color: {background_color};
-                border: 1px solid {border_color};
-                color: {text_color};
-                padding: 5px 10px;
-                border-radius: 3px;
-                font-family: monospace;
-            }}
-        """
     
     def _set_validation_message(self, message: str, status: str):
         """

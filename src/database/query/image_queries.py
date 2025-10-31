@@ -127,21 +127,67 @@ class ImageQueries:
         self.conn.commit()
 
     def get_export_images(self, project_id: int) -> list[ExportImage]:
+        """
+        Get all images for export with their scores, categories, and tag IDs.
+        
+        Args:
+            project_id: The project ID to get images from
+            
+        Returns:
+            List of ExportImage objects with tag_ids populated
+        """
         cursor = self.conn.cursor()
 
-        # Need images.image_id, images.source_path, scores.score, scores.categories
-        query = """
+        # Get all images with their data in one query
+        images_query = """
         SELECT images.image_id, images.source_path, scores.score, scores.categories
         FROM images
         LEFT JOIN scores ON images.image_id = scores.image_id
         WHERE images.project_id = ?
+        ORDER BY images.image_id
         """
-
-        result = cursor.execute(query, (project_id,)).fetchall()
         
+        cursor.execute(images_query, (project_id,))
+        image_data = cursor.fetchall()
+        
+        # Get all tag IDs for all images in the project in one query
+        tags_query = """
+        SELECT it.image_id, it.tag_id
+        FROM image_tags it
+        INNER JOIN images i ON it.image_id = i.image_id
+        WHERE i.project_id = ?
+        ORDER BY it.image_id, it.tag_id
+        """
+        
+        cursor.execute(tags_query, (project_id,))
+        tag_data = cursor.fetchall()
+        
+        # Group tags by image_id
+        tags_by_image = {}
+        for image_id, tag_id in tag_data:
+            if image_id not in tags_by_image:
+                tags_by_image[image_id] = []
+            tags_by_image[image_id].append(tag_id)
+        
+        # Build ExportImage objects
         output = []
-        for image_id, source_path, score, categories in result:
+        for image_id, source_path, score, categories in image_data:
+            # Parse categories
             categories = [] if categories is None else json.loads(categories)
-            output.append(ExportImage(id=image_id, source_path=source_path, dest_path=None, score=score, categories=categories))
+            
+            # Get tag IDs for this image (empty list if none)
+            tag_ids = tags_by_image.get(image_id, [])
+            
+            # Create ExportImage with all required fields
+            output.append(ExportImage(
+                id=image_id,
+                source_path=source_path,
+                dest_path=None,
+                score=score,
+                categories=categories,
+                tag_ids=tag_ids,
+                additional_tags=[]
+            ))
         
+        cursor.close()
         return output

@@ -14,6 +14,7 @@ class TagListItem(QWidget):
     def __init__(self, tag: Tag, style_manager: StyleManager, parent=None):
         self.tag = tag
         self.style_manager: StyleManager = style_manager
+        self.current_name = ''
 
         super().__init__(parent)
 
@@ -73,6 +74,7 @@ class TagListItem(QWidget):
         self.deleteButton.clicked.connect(self._delete_tag)
 
     def rename_tag(self, new_name: str):
+        print(f"renaming to {new_name}")
         name = self.old_name if new_name == '' else new_name
         self.nameLabel.setText(name)
         self.nameInput.setText(name)
@@ -85,16 +87,18 @@ class TagListItem(QWidget):
         self.name_stack.setCurrentIndex(1)
         self.button_stack.setCurrentIndex(1)
 
-        self.old_name = self.nameInput.text()
+        self.old_name = self.nameLabel.text()
 
         self.nameInput.setFocus()
 
     def _confirm_tag(self):
+        # The focused signal resets the name, so we need to get it before then
+        new_name = self.nameInput.text()
         self.focused.emit(self)
 
         self.name_stack.setCurrentIndex(0)
         self.button_stack.setCurrentIndex(0)
-        self.rename_tag(self.nameInput.text())
+        self.rename_tag(new_name)
 
     def _delete_tag(self):
         self.focused.emit(self)

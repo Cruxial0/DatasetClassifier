@@ -1,4 +1,6 @@
 from PyQt6.QtGui import QFont, QFontDatabase
+from PyQt6.QtWidgets import QMessageBox
+from src.styling.style_manager import StyleManager
 
 EMOJI_FONT_FAMILIES = [
     "Segoe UI",           # Windows base font
@@ -19,3 +21,21 @@ def create_emoji_font(base_size=None):
 
 def inline_emoji(emoji: str) -> str:
     return f'<span style="{EMOJI_STYLE}">{emoji}</span>'
+
+def styled_information_box(parent, title: str, text: str, style_manager: StyleManager):
+    message_box = QMessageBox(parent)
+    message_box.setStyleSheet(style_manager.get_stylesheet(QMessageBox))
+    message_box.setIcon(QMessageBox.Icon.Information)
+    message_box.setWindowTitle(title)
+    message_box.setText(text)
+    message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+    return message_box.exec()
+
+def styled_warning_box(parent, title: str, text: str, style_manager: StyleManager):
+    message_box = QMessageBox(parent)
+    message_box.setStyleSheet(style_manager.get_stylesheet(QMessageBox))
+    message_box.setIcon(QMessageBox.Icon.Warning)
+    message_box.setWindowTitle(title)
+    message_box.setText(text)
+    message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+    return message_box.exec()

@@ -153,6 +153,7 @@ class TagGroupSettings(SettingsWidget):
         tag = group.get_tag(tag_id)
         tag.name = new_name
         self.db.tags.update_tag(tag)
+        self.update_list_item(group)
 
     def update_list_item(self, tag_group: TagGroup):
         for i in range(self.list_widget.count()):
@@ -244,7 +245,7 @@ class TagGroupSettings(SettingsWidget):
             tag_page.doneClicked.connect(lambda: self.switch_page("tag_groups"))
             tag_page.tagAdded.connect(self.add_tag)
             tag_page.tagDeleted.connect(self.delete_tag)
-            tag_page.tagRenamed.connect(self.update_list_item)
+            tag_page.tagRenamed.connect(self.rename_tag)
             tag_page.tagsReordered.connect(self.update_tag_order)
 
         elif page_name == "conditionals":

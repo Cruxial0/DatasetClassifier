@@ -4,11 +4,12 @@ from src.styling.style import Style
 
 STYLE = """
     QLineEdit {{
-        background-color: {};
+        background: {};
         border: 1px solid {};
         color: {};
         padding: 5px 10px;
         border-radius: 3px;
+        font-family: monospace;
     }}
     """
 

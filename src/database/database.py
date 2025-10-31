@@ -7,6 +7,7 @@ from src.database.migrate.db_migration import migrations
 from src.database.query.tag_queries import TagQueries
 from src.database.query.project_queries import ProjectQueries
 from src.database.query.image_queries import ImageQueries
+from src.database.query.tag_rule_queries import ExportTagRuleQueries
 
 class Database:
     def __init__(self, db_path="./db/dataset_classifier.db"):
@@ -19,6 +20,7 @@ class Database:
         self.images = ImageQueries(self.connection)
         self.projects = ProjectQueries(self.connection)
         self.tags = TagQueries(self.connection)
+        self.export_rules = ExportTagRuleQueries(self.connection)
 
     def connect(self):
         if os.path.exists(self.db_path):

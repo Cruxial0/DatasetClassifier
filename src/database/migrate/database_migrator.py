@@ -56,6 +56,26 @@ class DatabaseMigration:
             conn.close()
         return result if result is not None else 0
 
+    def is_migration_applied(self, version: int) -> bool:
+        """Check if a specific migration version has already been applied."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM schema_migrations WHERE version = ?", (version,))
+        result = cursor.fetchone()[0]
+        if self.should_close_connection():
+            conn.close()
+        return result > 0
+
+    def column_exists(self, table_name: str, column_name: str) -> bool:
+        """Check if a column exists in a table."""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f"PRAGMA table_info({table_name})")
+        columns = [row[1] for row in cursor.fetchall()]
+        if self.should_close_connection():
+            conn.close()
+        return column_name in columns
+
     def apply_migration(self, version: int, name: str, up_sql: str, down_sql: str) -> bool:
         """Apply a single migration."""
         conn = self.get_connection()
@@ -79,12 +99,26 @@ class DatabaseMigration:
 
         except sqlite3.Error as e:
             # Check if the error is about something that can be skipped
-            if "already exists" in str(e):
-                self.logger.warning(f"Migration {version} skipped: {str(e)}")
-                if self.should_close_connection():
-                    conn.commit()
-                    conn.close()
-                return True  # Return True because we’re treating it as "applied"
+            if "already exists" in str(e).lower() or "duplicate column name" in str(e).lower():
+                self.logger.warning(f"Migration {version} entities already exist: {str(e)}")
+                
+                # Insert the migration record if it doesn't exist
+                try:
+                    cursor.execute(
+                        "INSERT OR IGNORE INTO schema_migrations (version, name) VALUES (?, ?)",
+                        (version, name)
+                    )
+                    if self.should_close_connection():
+                        conn.commit()
+                        conn.close()
+                except sqlite3.Error as insert_error:
+                    self.logger.error(f"Failed to record migration {version}: {str(insert_error)}")
+                    if self.should_close_connection():
+                        conn.rollback()
+                        conn.close()
+                    return False
+                
+                return True  # Return True because we're treating it as "applied"
             else:
                 self.logger.error(f"Failed to apply migration {version}: {str(e)}")
                 if self.should_close_connection():
@@ -125,14 +159,7 @@ class DatabaseMigration:
         """
         self.init_migration_table()
         current_version = self.get_current_version()
-        print(f"current version: {current_version}")
-        print(f"migration count: {len(migrations)}")
-        
-        print(f"migration versions: {[m[0] for m in migrations]}")
-        print(f"migration versions types: {[type(m[0]) for m in migrations]}")
         target_version = max(m[0] for m in migrations)
-
-        print(f"target version: {target_version}")
             
         # Sort migrations by version
         migrations.sort(key=lambda x: x[0])
@@ -140,11 +167,18 @@ class DatabaseMigration:
         if target_version > current_version:
             # Apply forward migrations
             for version, name, up_sql, down_sql in migrations:
-                print(f"Migration {version}")
+                print(f"Checking migration {version}")
+                
+                # Skip if already applied
+                if self.is_migration_applied(version):
+                    print(f"Migration {version} already applied, skipping")
+                    continue
+                
+                # Only apply if within range
                 if current_version < version <= target_version:
                     if not self.apply_migration(version, name, up_sql, down_sql):
                         return False
-                    print(f"Applied migration")
+                    print(f"Applied migration {version}")
                     
         elif target_version < current_version:
             # Apply rollback migrations

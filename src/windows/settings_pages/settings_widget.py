@@ -101,6 +101,7 @@ class SettingsWidget(QWidget):
         if setting is None:
             return layout
         
+        checkbox.setStyleSheet(self.style_manager.get_stylesheet(QCheckBox))
         checkbox.setChecked(self.config_handler.get_value(setting))
         checkbox.checkStateChanged.connect(on_change)
         return layout
