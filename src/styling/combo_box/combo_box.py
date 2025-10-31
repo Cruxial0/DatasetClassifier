@@ -1,10 +1,11 @@
+from pathlib import Path
 from src.config_handler import ConfigHandler
 from src.styling.color_helper import ColorHelper
 from src.styling.style import Style
 from src.utils import get_resource_path
 
-icon_path = get_resource_path('../icons/chevron-down.svg')
-
+# Get the icon path and convert to Qt-compatible format
+icon_path = Path(get_resource_path('../icons/chevron-down.svg')).as_posix()
 
 STYLE = """
     QComboBox {{
@@ -39,7 +40,7 @@ STYLE = """
         outline: 0;
     }}
     QComboBox::down-arrow {{
-        image: url("%s");
+        image: url("{}");
         width: 15px;
         height: 15px;
     }}
@@ -47,7 +48,7 @@ STYLE = """
         top: 1px;
         left: 1px;
     }}
-""" % icon_path.replace('\\', '/')
+"""
 
 class ComboBoxStyle(Style):
     def get_style(self, config: ConfigHandler):
@@ -58,5 +59,6 @@ class ComboBoxStyle(Style):
             colors['active'],
             config.get_color("disabled_color"), config.get_color("text_color_disabled"),
             config.get_color("button_border_color"), 
-            colors['primary'], config.get_color("text_color_overlay")
+            colors['primary'], config.get_color("text_color_overlay"),
+            icon_path  # Added this parameter
         )

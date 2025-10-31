@@ -160,16 +160,16 @@ def get_resource_path(relative_path: str) -> str:
     Get absolute path to a resource, works for dev and for PyInstaller.
     
     Args:
-        relative_path: Path relative to the project root, e.g. 'icons/chevron-down.png'
+        relative_path: Path relative to the project root, e.g. 'icons/chevron-down.svg'
     
     Returns:
         Absolute path to the resource
     """
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
+        base_path = Path(sys._MEIPASS)
     except Exception:
-        # If not running as bundled exe, use the script's directory
-        base_path = os.path.dirname(os.path.abspath(__file__)).replace("\\src", "")
+        # If not running as bundled exe, use the script's directory parent
+        base_path = Path(__file__).parent.parent
     
-    return os.path.normpath(os.path.join(base_path, relative_path))
+    return str(base_path / relative_path)

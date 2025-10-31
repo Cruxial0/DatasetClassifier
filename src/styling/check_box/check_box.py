@@ -1,10 +1,10 @@
 import os
 import tempfile
+from pathlib import Path
 
 from src.config_handler import ConfigHandler
 from src.styling.style import Style
 
-# Define the SVG template with a placeholder for fill color
 CHECKMARK_SVG_TEMPLATE = """
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
   <path fill="{}" d="M13.5 4.5L6 12l-4-4 1.5-1.5L6 9.586l6-6L13.5 4.5z"/>
@@ -42,9 +42,12 @@ class CheckBoxStyle(Style):
         
         customized_svg = CHECKMARK_SVG_TEMPLATE.format(icon_color)
         
-        # Create a temporary file for the SVG. This is fucking disgusting, but I can't find a proper way to do it.
-        with tempfile.NamedTemporaryFile(suffix='.svg', delete=False) as temp_file:
-            temp_file.write(customized_svg.encode('utf-8'))
-            checkmark_url = os.path.abspath(temp_file.name)
+        # Create a temporary file for the SVG
+        with tempfile.NamedTemporaryFile(suffix='.svg', delete=False, mode='w', encoding='utf-8') as temp_file:
+            temp_file.write(customized_svg)
+            temp_path = temp_file.name
+        
+        # Convert to Qt-compatible URL format (forward slashes, proper escaping)
+        checkmark_url = Path(temp_path).as_posix()
         
         return STYLE.format(text_color, border_color, text_color, border_color, checkmark_url)
