@@ -1,4 +1,5 @@
 import src.database.migrate.migrations.create_database as init
+from src.database.migrate.migrations import migration_004_categories
 
 migrations = [
     (
@@ -27,6 +28,12 @@ migrations = [
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (project_id) REFERENCES projects(project_id) ON DELETE CASCADE
         )""",
+        None
+    ),
+    (
+        4,
+        "Refactor categories to dedicated tables",
+        migration_004_categories.create_categories_migration(),
         None
     )
 ]

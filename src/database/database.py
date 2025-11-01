@@ -8,8 +8,9 @@ from src.database.query.tag_queries import TagQueries
 from src.database.query.project_queries import ProjectQueries
 from src.database.query.image_queries import ImageQueries
 from src.database.query.tag_rule_queries import ExportTagRuleQueries
+from src.database.query.category_queries import CategoryQueries
 
-DB_VERSION = 3
+DB_VERSION = 4
 class Database:
     def __init__(self, db_path="./db/dataset_classifier.db"):
         self.db_path = db_path
@@ -22,6 +23,7 @@ class Database:
         self.projects = ProjectQueries(self.connection)
         self.tags = TagQueries(self.connection)
         self.export_rules = ExportTagRuleQueries(self.connection)
+        self.categories = CategoryQueries(self.connection)
 
     def connect(self):
         if os.path.exists(self.db_path):

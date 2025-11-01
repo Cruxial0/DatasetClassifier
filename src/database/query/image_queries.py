@@ -15,7 +15,7 @@ class ImageQueries:
         Args:
             source_path: Path to the image file
             score: Score value to assign
-            categories: List of categories to assign
+            categories: List of category names to assign
             
         Returns:
             bool: True if the score was successfully added/updated, False otherwise
@@ -32,16 +32,17 @@ class ImageQueries:
                 raise ValueError(f"No image found with source path: {source_path}")
             
             image_id, project_id = result
-            categories_json = json.dumps(categories)
 
+            # Update or insert score (without categories JSON)
             cursor.execute("""
                 INSERT INTO scores (image_id, project_id, score, categories)
-                VALUES (?, ?, ?, ?)
+                VALUES (?, ?, ?, '[]')
                 ON CONFLICT(image_id) 
-                DO UPDATE SET score=?, categories=?, timestamp=CURRENT_TIMESTAMP
-            """, (image_id, project_id, score, categories_json, score, categories_json))
+                DO UPDATE SET score=?, timestamp=CURRENT_TIMESTAMP
+            """, (image_id, project_id, score, score))
             
             self.conn.commit()
+            cursor.close()
             return True
             
         except Exception as e:
@@ -62,34 +63,44 @@ class ImageQueries:
     
     def get_score(self, source_path: str) -> tuple[str | None, list[str]]:
         cursor = self.conn.cursor()
+        
+        # Get the image_id and score
         query = """
-        SELECT s.score, s.categories
+        SELECT i.image_id, s.score
         FROM images i
-        JOIN scores s ON i.image_id = s.image_id
+        LEFT JOIN scores s ON i.image_id = s.image_id
         WHERE i.source_path = ?;
         """
-
         result = cursor.execute(query, (source_path,)).fetchone()
-        if result:
-            return result[0], json.loads(result[1])
-        return None, []
+        
+        if not result:
+            return None, []
+        
+        image_id, score = result
+        
+        # Get category names from the new table
+        category_query = """
+        SELECT c.category_name
+        FROM image_categories ic
+        JOIN categories c ON ic.category_id = c.category_id
+        WHERE ic.image_id = ?
+        ORDER BY c.display_order
+        """
+        categories = [row[0] for row in cursor.execute(category_query, (image_id,)).fetchall()]
+        
+        return score, categories
     
     def get_unique_categories(self, project_id: int) -> list[str]:
         cursor = self.conn.cursor()
         query = """
-        SELECT categories
-        FROM scores
-        WHERE project_id = ?;
+        SELECT category_name
+        FROM categories
+        WHERE project_id = ?
+        ORDER BY display_order;
         """
-
-        all_categories = cursor.execute(query, (project_id,)).fetchall()
         
-        unique_categories = set()
-        for categories_json in all_categories:
-            categories = json.loads(categories_json[0])
-            unique_categories.update(categories)
-        
-        return list(unique_categories)
+        result = cursor.execute(query, (project_id,)).fetchall()
+        return [row[0] for row in result]
     
     def get_project_scores(self, project_id: int) -> list[tuple[int, str, str, list[str]]]:
         """
@@ -99,17 +110,34 @@ class ImageQueries:
             project_id (int): The id of the project to query.
 
         Returns:
-            list[str]: A list of strings, each being the score of an image in the project.
+            list[tuple[int, str, str, list[str]]]: List of tuples containing 
+                (image_id, source_path, score, [category_names])
         """
         cursor = self.conn.cursor()
+        
+        # Get all scored images
         query = """
-        SELECT s.image_id, i.source_path, s.score, s.categories
+        SELECT s.image_id, i.source_path, s.score
         FROM images i
         JOIN scores s ON i.image_id = s.image_id
         WHERE i.project_id = ?;
         """
-
-        result = cursor.execute(query, (project_id,)).fetchall()
+        
+        images = cursor.execute(query, (project_id,)).fetchall()
+        
+        result = []
+        for image_id, source_path, score in images:
+            # Get categories for this image
+            category_query = """
+            SELECT c.category_name
+            FROM image_categories ic
+            JOIN categories c ON ic.category_id = c.category_id
+            WHERE ic.image_id = ?
+            ORDER BY c.display_order
+            """
+            categories = [row[0] for row in cursor.execute(category_query, (image_id,)).fetchall()]
+            result.append((image_id, source_path, score, categories))
+        
         return result
     
     def get_latest_image_id(self, project_id: int) -> int:
@@ -134,13 +162,13 @@ class ImageQueries:
             project_id: The project ID to get images from
             
         Returns:
-            List of ExportImage objects with tag_ids populated
+            List of ExportImage objects with tag_ids and category names populated
         """
         cursor = self.conn.cursor()
 
         # Get all images with their data in one query
         images_query = """
-        SELECT images.image_id, images.source_path, scores.score, scores.categories
+        SELECT images.image_id, images.source_path, scores.score
         FROM images
         LEFT JOIN scores ON images.image_id = scores.image_id
         WHERE images.project_id = ?
@@ -162,6 +190,19 @@ class ImageQueries:
         cursor.execute(tags_query, (project_id,))
         tag_data = cursor.fetchall()
         
+        # Get all categories for all images in one query
+        categories_query = """
+        SELECT ic.image_id, c.category_name
+        FROM image_categories ic
+        INNER JOIN categories c ON ic.category_id = c.category_id
+        INNER JOIN images i ON ic.image_id = i.image_id
+        WHERE i.project_id = ?
+        ORDER BY ic.image_id, c.display_order
+        """
+        
+        cursor.execute(categories_query, (project_id,))
+        category_data = cursor.fetchall()
+        
         # Group tags by image_id
         tags_by_image = {}
         for image_id, tag_id in tag_data:
@@ -169,14 +210,21 @@ class ImageQueries:
                 tags_by_image[image_id] = []
             tags_by_image[image_id].append(tag_id)
         
+        # Group categories by image_id
+        categories_by_image = {}
+        for image_id, category_name in category_data:
+            if image_id not in categories_by_image:
+                categories_by_image[image_id] = []
+            categories_by_image[image_id].append(category_name)
+        
         # Build ExportImage objects
         output = []
-        for image_id, source_path, score, categories in image_data:
-            # Parse categories
-            categories = [] if categories is None else json.loads(categories)
-            
+        for image_id, source_path, score in image_data:
             # Get tag IDs for this image (empty list if none)
             tag_ids = tags_by_image.get(image_id, [])
+            
+            # Get categories for this image (empty list if none)
+            categories = categories_by_image.get(image_id, [])
             
             # Create ExportImage with all required fields
             output.append(ExportImage(
@@ -186,7 +234,7 @@ class ImageQueries:
                 score=score,
                 categories=categories,
                 tag_ids=tag_ids,
-                additional_tags=None
+                additional_tags=[]
             ))
         
         cursor.close()

@@ -1,3 +1,13 @@
+"""
+Updated scoring_page.py with improved category button widget and fixed keybind handling.
+
+Key changes:
+1. Uses new CategoryButtonWidget for better visual clarity
+2. Fixed Alt+number keybind toggling for categories
+3. Simplified category button management
+4. Better state management for active categories
+"""
+
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QProgressBar
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPixmap, QTransform, QShortcut, QKeySequence
@@ -14,6 +24,8 @@ from src.ui_components import UIComponents
 from src.utils import key_to_unicode
 from src.update_poller import UpdatePoller
 from src.styling.style_manager import StyleManager
+from src.widgets.category_button_widget import CategoryButtonWidget
+
 
 class ScoringPage(QWidget):
     def __init__(self, parent):
@@ -29,6 +41,7 @@ class ScoringPage(QWidget):
         self.image_handler = ImageHandler(self.db, self.config_handler)
         self.default_scores = ['score_0', 'score_1', 'score_2', 'score_3', 'score_4', 'score_5', 'discard']
         self.category_buttons = []
+        self.category_mapping = {}  # Maps category_name -> category_id
         
         self.page_active = True
 
@@ -62,9 +75,7 @@ class ScoringPage(QWidget):
         for i, button in enumerate(self.score_buttons[:-1]):
             self.keybind_page.register_binding(f'key_{i}', lambda s=button.objectName(): self.click_score_button(s))
         
-        # Register category buttons with Alt modifier
-        for i, (button, _, _) in enumerate(self.category_buttons):
-            self.keybind_page.register_binding(f'category_{i}', button)
+        # Category buttons will be registered when created
         
         # Other bindings
         self.keybind_page.register_binding('discard', lambda: self.click_score_button('discard'))
@@ -82,9 +93,16 @@ class ScoringPage(QWidget):
             self.update_button_colors()
 
     def import_categories(self):
-        categories = self.db.images.get_unique_categories(self.active_project.id)
-        for i, category in enumerate(categories):
-            self.add_category_button_from_import(category)
+        """Load categories from database and create buttons"""
+        categories = self.db.categories.get_project_categories(self.active_project.id)
+        self.category_mapping.clear()
+        
+        for category_id, category_name, display_order in categories:
+            self.category_mapping[category_name] = category_id
+            self.add_category_button_from_import(category_name)
+        
+        # Update button states after importing
+        self.update_button_colors()
 
     def update_score_button_labels(self):
         """Update button labels with their keybindings"""
@@ -124,7 +142,7 @@ class ScoringPage(QWidget):
         """Update category button labels with their keybindings"""
         bindings = self.keybind_handler.current_bindings
         
-        for i, (button, _, label) in enumerate(self.category_buttons):
+        for i, widget in enumerate(self.category_buttons):
             key_bindings = bindings.get(f'category_{i}')
             if key_bindings:
                 shortcuts = []
@@ -133,16 +151,16 @@ class ScoringPage(QWidget):
                     unicode = key_to_unicode(key_sequence.toString())
                     shortcuts.append(unicode)
                 shortcut_text = " / ".join(shortcuts)
-                label.setText(f"({shortcut_text})")
+                widget.set_keybind_text(f"({shortcut_text})")
 
     def set_active_project(self, project: Project):
         """Update the active project and refresh UI"""
         self.active_project = project
         self.load_images()
+        self.import_categories()  # Import categories BEFORE updating colors
         self.display_image()
         self.update_button_colors()
         self.update_progress()
-        self.import_categories()
 
         # Enable relevant UI elements
         self.button_states.toggle_button_group(True, 'score')
@@ -153,8 +171,15 @@ class ScoringPage(QWidget):
         """Create a QKeySequence from a KeyBinding"""
         key = binding.key
         if binding.modifiers:
-            modifier_str = "+".join(mod.name.replace('KeyboardModifier.', '') 
-                                  for mod in binding.modifiers)
+            # Map Qt modifier enums to QKeySequence string format
+            modifier_map = {
+                Qt.KeyboardModifier.AltModifier: "Alt",
+                Qt.KeyboardModifier.ControlModifier: "Ctrl",
+                Qt.KeyboardModifier.ShiftModifier: "Shift",
+                Qt.KeyboardModifier.MetaModifier: "Meta"
+            }
+            modifier_strs = [modifier_map.get(mod, mod.name) for mod in binding.modifiers]
+            modifier_str = "+".join(modifier_strs)
             return QKeySequence(f"{modifier_str}+{key}")
         return QKeySequence(key)
 
@@ -165,9 +190,6 @@ class ScoringPage(QWidget):
 
         self.image_handler.score_image(score, None)
         
-        # Update UI before loading next image
-        # self.update_button_colors()
-        
         # Auto-scroll to next image (if enabled)
         if self.config_handler.get_value('behaviour.auto_scroll_scores'):
             if self.image_handler.load_next_image():
@@ -175,13 +197,25 @@ class ScoringPage(QWidget):
         
         self.update_poller.poll_update('update_tagging_images')
 
-    def categorize_image(self, category: str):
-        if not self.active_project:
+    def categorize_image(self, category_name: str):
+        """Toggle a category for the current image"""
+        if not self.active_project or not self.image_handler.current_image_id:
             return
-
-        self.image_handler.score_image(None, category)
         
-        # Update UI before loading next image
+        category_id = self.category_mapping.get(category_name)
+        if category_id is None:
+            print(f"Warning: Category '{category_name}' not found in mapping")
+            return
+        
+        image_id = self.image_handler.current_image_id
+        
+        # Toggle the category
+        if self.db.categories.image_has_category(image_id, category_id):
+            self.db.categories.remove_image_category(image_id, category_id)
+        else:
+            self.db.categories.add_image_category(image_id, category_id)
+        
+        # Update UI
         self.update_button_colors()
 
     def load_next_image(self):
@@ -253,8 +287,6 @@ class ScoringPage(QWidget):
         self.schedule_ui_update('progress')
         self.schedule_ui_update('buttons')
         self.schedule_ui_update('latest')
-
-        # self.update_button_colors()
     
     def load_images(self):
         """Load images for the active project"""
@@ -335,95 +367,134 @@ class ScoringPage(QWidget):
 
     def check_category_button_name(self):
         name = self.category_input.text()
-        if name and any(button[0].text() == name for button in self.category_buttons):
-            self.category_add_button.setStyleSheet(f"background-color: {self.config_handler.get_color('warning_color')}; color: white;")
-        else:
-            self.category_add_button.setStyleSheet(f"background-color: {self.config_handler.get_color('accent_color')}; color: white;")
+        enabled = not (name and any(widget.get_category_name() == name for widget in self.category_buttons))
+        self.category_add_button.setEnabled(enabled)
 
     def add_category_button_from_import(self, name: str):
+        """Add a category button from imported data"""
         self._create_category_button(name)
         self.update_category_button_labels()
 
     def add_category_button(self):
         """Add a new category button with keybinding support"""
         if len(self.category_buttons) < 10:
-            name = self.category_input.text()
-            if name and not any(button[0].text() == name for button in self.category_buttons):
-                self._create_category_button(name)
-                self.category_input.clear()
-                self.update_category_button_labels()
+            name = self.category_input.text().strip()
+            if name and not any(widget.get_category_name() == name for widget in self.category_buttons):
+                # Add to database
+                try:
+                    category_id = self.db.categories.add_category(
+                        self.active_project.id, 
+                        name, 
+                        len(self.category_buttons)
+                    )
+                    self.category_mapping[name] = category_id
+                    
+                    # Create the UI button
+                    self._create_category_button(name)
+                    self.category_input.clear()
+                    self.update_category_button_labels()
+                except Exception as e:
+                    print(f"Error adding category: {e}")
 
     def _create_category_button(self, name: str):
-        button = QPushButton(name)
-        button.clicked.connect(lambda _, s=name: self.categorize_image(s))
-        remove_button = QPushButton("-")
-        remove_button.setMaximumWidth(30)
-        remove_button.clicked.connect(lambda _, b=button: self.remove_category_button(b))
+        """Create a new category button widget"""
+        index = len(self.category_buttons)
         
-        # Add keybinding label
-        keybind_label = QLabel()
-        keybind_label.setAlignment(Qt.AlignmentFlag.AlignRight | 
-                                    Qt.AlignmentFlag.AlignVCenter)
-        keybind_label.setFixedWidth(40)
-        keybind_label.setStyleSheet("min-width: 40px; max-width: 40px;")
+        # Create the custom widget
+        widget = CategoryButtonWidget(name, index, self.style_manager, self)
         
-        button_layout = QHBoxLayout()
-        button_layout.addWidget(keybind_label)
-        button_layout.addWidget(button)
-        button_layout.addWidget(remove_button)
+        # Connect signals
+        widget.clicked.connect(self.categorize_image)
+        widget.removeRequested.connect(self.remove_category_button)
         
-        self.category_button_layout.addLayout(button_layout)
-        self.category_buttons.append((button, remove_button, keybind_label))
+        # Add to layout
+        self.category_button_layout.addWidget(widget)
+        self.category_buttons.append(widget)
         
-            # Register keybinding immediately after creating the button
-        category_index = len(self.category_buttons) - 1
-        self.keybind_page.register_binding(f'category_{category_index}', button)
+        # Register keybinding - the widget's internal button will be triggered
+        self.keybind_page.register_binding(f'category_{index}', widget.get_button())
         
-        # Update keybinding in the handler to apply it
-        self.keybind_handler.update_keybinding(
-            f'category_{category_index}',
-            [KeyBinding(str(category_index), [Qt.KeyboardModifier.AltModifier])]
-        )
+        # Get the key from the corresponding score button (key_0, key_1, etc.)
+        # and add Alt modifier to create the category keybind
+        score_key_bindings = self.keybind_handler.current_bindings.get(f'key_{index}')
+        if score_key_bindings and len(score_key_bindings) > 0:
+            # Use the first score key binding and add Alt modifier
+            base_key = score_key_bindings[0].key
+            category_binding = KeyBinding(base_key, [Qt.KeyboardModifier.AltModifier])
+            
+            # Update in handler's cache
+            self.keybind_handler.current_bindings[f'category_{index}'] = [category_binding]
+            
+            # Apply directly to this page
+            self.keybind_page.apply_keybindings({f'category_{index}': [category_binding]})
+        else:
+            # Fallback to number keys if score keys aren't found
+            fallback_binding = KeyBinding(str(index), [Qt.KeyboardModifier.AltModifier])
+            self.keybind_handler.current_bindings[f'category_{index}'] = [fallback_binding]
+            self.keybind_page.apply_keybindings({f'category_{index}': [fallback_binding]})
+        
+        # Update the label
+        self.update_category_button_labels()
 
-    def remove_category_button(self, button):
+    def remove_category_button(self, widget: CategoryButtonWidget):
         """Remove a category button and its keybinding"""
-        for i, (btn, remove_btn, label) in enumerate(self.category_buttons):
-            if btn == button:
-                # Remove keybinding
-                self.keybind_page.remove_keybinding(f'category_{i}')
-                
-                # Remove UI elements
-                btn.deleteLater()
-                remove_btn.deleteLater()
-                label.deleteLater()
-                layout = btn.parent().layout()
-                if layout:
-                    layout.deleteLater()
-                
-                self.category_buttons.pop(i)
-                
-                # Re-register remaining category buttons with updated indices
-                self._reindex_category_bindings()
-                break
+        if widget in self.category_buttons:
+            index = self.category_buttons.index(widget)
+            category_name = widget.get_category_name()
+            category_id = self.category_mapping.get(category_name)
+            
+            # Remove from database
+            if category_id is not None:
+                try:
+                    self.db.categories.delete_category(category_id)
+                    del self.category_mapping[category_name]
+                except Exception as e:
+                    print(f"Error deleting category: {e}")
+            
+            # Remove keybinding
+            self.keybind_page.remove_keybinding(f'category_{index}')
+            
+            # Remove from list and layout
+            self.category_buttons.remove(widget)
+            self.category_button_layout.removeWidget(widget)
+            widget.deleteLater()
+            
+            # Re-register remaining category buttons with updated indices
+            self._reindex_category_bindings()
 
     def _reindex_category_bindings(self):
         """Update category button indices after removal"""
-        for i, (button, _, _) in enumerate(self.category_buttons):
+        # First, remove all old bindings
+        for i in range(10):  # Max 10 categories
             self.keybind_page.remove_keybinding(f'category_{i}')
-            self.keybind_page.register_binding(f'category_{i}', button)
+        
+        # Re-register with correct indices
+        for i, widget in enumerate(self.category_buttons):
+            widget.index = i  # Update the widget's internal index
+            self.keybind_page.register_binding(f'category_{i}', widget.get_button())
+            
+            # Get the key from the corresponding score button
+            score_key_bindings = self.keybind_handler.current_bindings.get(f'key_{i}')
+            if score_key_bindings and len(score_key_bindings) > 0:
+                # Use the first score key binding and add Alt modifier
+                base_key = score_key_bindings[0].key
+                category_binding = KeyBinding(base_key, [Qt.KeyboardModifier.AltModifier])
+                
+                # Update in handler's cache
+                self.keybind_handler.current_bindings[f'category_{i}'] = [category_binding]
+                
+                # Apply directly to this page
+                self.keybind_page.apply_keybindings({f'category_{i}': [category_binding]})
+            else:
+                # Fallback to number keys
+                fallback_binding = KeyBinding(str(i), [Qt.KeyboardModifier.AltModifier])
+                self.keybind_handler.current_bindings[f'category_{i}'] = [fallback_binding]
+                self.keybind_page.apply_keybindings({f'category_{i}': [fallback_binding]})
+        
         self.update_category_button_labels()
 
     def update_button_colors(self):
-        """
-        Update score button colors based on the current image's score.
-
-        If the current image has a score, change the corresponding button's color to the accent color.
-        If the current image does not have a score, change the 'discard' button's color to the alternate color.
-        If the current image does not have a score and the 'discard' button does not exist, do not change any button colors.
-
-        This function is optimized to use a cache of stylesheet strings to avoid redundant computation.
-        """
-
+        """Update score button colors based on the current image's score."""
         if not self.db or not self.image_handler.current_image_id:
             return
 
@@ -435,8 +506,6 @@ class ScoringPage(QWidget):
         current_score, current_categories = self.image_handler.get_score(current_image)
         
         # Update score buttons
-        style_cache = {}  # Cache stylesheet strings
-        
         for i in range(self.score_layout.count()):
             button = self.score_layout.itemAt(i).widget()
             if not isinstance(button, QPushButton) or not button.isEnabled():
@@ -444,16 +513,11 @@ class ScoringPage(QWidget):
 
             button.setChecked(button.objectName() == current_score)
 
-        # Update category buttons
-        for i in range(self.category_button_layout.count()):
-            button = self.category_button_layout.itemAt(i).layout().itemAt(1).widget()
-            if not isinstance(button, QPushButton) or not button.isEnabled():
-                continue
-
-            if button.text() in current_categories:
-                button.setStyleSheet(f"background-color: {self.config_handler.get_color('warning_color')}; color: white;")
-            else:
-                button.setStyleSheet(f"background-color: {self.config_handler.get_color('alternate_color')}; color: white;")
+        # Update category buttons using the new widget
+        for widget in self.category_buttons:
+            category_name = widget.get_category_name()
+            is_active = category_name in current_categories
+            widget.set_active(is_active)
 
     def set_active(self, active: bool = True):
         self.page_active = active

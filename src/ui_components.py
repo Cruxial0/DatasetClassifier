@@ -78,7 +78,7 @@ class UIComponents:
         category_input.setPlaceholderText('Add category')
         category_input.setStyleSheet(style_manager.get_stylesheet(QLineEdit))
         category_add_button = QPushButton('Add', enabled=state)
-        category_add_button.setStyleSheet(style_manager.get_stylesheet(QPushButton))
+        category_add_button.setStyleSheet(style_manager.get_stylesheet(QPushButton, 'function'))
         category_add_button.setObjectName('category_add_button')
         layout.addWidget(category_input)
         layout.addWidget(category_add_button)

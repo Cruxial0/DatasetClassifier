@@ -38,6 +38,7 @@ default_keybinds = {
     "key_7": "K",
     "key_8": "L",
     "key_9": ";",
+    "modifier": "ALT",
     "discard": "BACKSPACE",
     "continue": "Return",
     "next_image": "Right",
