@@ -9,7 +9,7 @@ from PyQt6.QtCore import pyqtSignal, Qt
 from src.windows.settings_pages.settings_widget import SettingsWidget
 from src.tagging.tag_group import TagGroup
 from src.parser import parse_condition, validate_references, condition_to_string
-from src.styling.styling_utils import inline_emoji
+from src.styling.styling_utils import inline_emoji, styled_information_box, styled_question_box
 
 class TagConditionalsPage(SettingsWidget):
     """
@@ -270,11 +270,12 @@ class TagConditionalsPage(SettingsWidget):
     
     def clear_condition(self):
         """Clear the condition input and validation message"""
-        reply = QMessageBox.question(
+        reply = styled_question_box(
             self,
             "Clear Condition",
             "Are you sure you want to clear the condition? "
             "The group will become always active.",
+            self.style_manager,
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No
         )
@@ -290,11 +291,12 @@ class TagConditionalsPage(SettingsWidget):
         """Save the condition to the tag group"""
         # Validate first
         if not self.validate_condition():
-            reply = QMessageBox.question(
+            reply = styled_question_box(
                 self,
                 "Invalid Condition",
                 "The condition has errors. Do you want to save it anyway?\n\n"
                 "Warning: Invalid conditions will cause the group to be always inactive!",
+                self.style_manager,
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No
             )
@@ -309,10 +311,11 @@ class TagConditionalsPage(SettingsWidget):
         self.conditionSaved.emit(self.selected_group)
         
         # Show confirmation
-        QMessageBox.information(
+        styled_information_box(
             self,
             "Condition Saved",
-            f"Activation condition for '{self.selected_group.name}' has been saved."
+            f"Activation condition for '{self.selected_group.name}' has been saved.",
+            self.style_manager
         )
     
     def _create_help_section(self) -> QWidget:
@@ -404,9 +407,9 @@ class TagConditionalsPage(SettingsWidget):
         """Get placeholder text for the condition input"""
         return (
             "Examples:\n"
-            "  Torso[completed]\n"
-            "  Torso[completed] AND Legs[has:fur-covered shins]\n"
-            "  (Torso[completed] OR Legs[completed]) AND Features[count>=2]\n\n"
+            "  Composition[completed]\n"
+            "  Composition[completed] AND BodyFeatures[has:long ears]\n"
+            "  (Composition[completed] OR BodyFeatures[completed]) AND Extra[count>=2]\n\n"
             "Leave empty for no condition (always active)"
         )
     

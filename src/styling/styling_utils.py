@@ -39,3 +39,15 @@ def styled_warning_box(parent, title: str, text: str, style_manager: StyleManage
     message_box.setText(text)
     message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
     return message_box.exec()
+
+def styled_question_box(parent, title: str, text: str, style_manager: StyleManager,
+                       buttons=QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                       default_button=QMessageBox.StandardButton.No):
+    message_box = QMessageBox(parent)
+    message_box.setStyleSheet(style_manager.get_stylesheet(QMessageBox))
+    message_box.setIcon(QMessageBox.Icon.Question)
+    message_box.setWindowTitle(title)
+    message_box.setText(text)
+    message_box.setStandardButtons(buttons)
+    message_box.setDefaultButton(default_button)
+    return message_box.exec()

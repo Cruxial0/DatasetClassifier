@@ -7,6 +7,7 @@ from src.tagging.tag_group import Tag, TagGroup
 from src.windows.settings_pages.tag_group_pages.tag_group_add_edit import TagGroupAddOrEditPage
 from src.windows.settings_pages.tag_group_pages.tags_page import TagListPage
 from src.windows.settings_pages.tag_group_pages.tag_conditionals import TagConditionalsPage
+from src.styling.styling_utils import styled_question_box
 
 class TagGroupSettings(SettingsWidget):
     def __init__(self, parent=None):
@@ -213,7 +214,13 @@ class TagGroupSettings(SettingsWidget):
 
     def _delete_tag_group(self, group: TagGroup):
         """Opens a confirmation dialog to delete a tag group and it's corresponding UI element and deletes them if confirmed."""
-        dialog = QMessageBox.question(self, "Delete tag group", f"Are you sure you want to delete the tag group '{group.name}'?\nThis action cannot be undone.", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
+        dialog = styled_question_box(
+            self,
+            "Delete tag group",
+            f"Are you sure you want to delete the tag group '{group.name}'?\nThis action cannot be undone.",
+            self.style_manager,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
+            QMessageBox.StandardButton.No)
 
         if dialog == QMessageBox.StandardButton.Yes:
             self.db.tags.delete_tag_group(group.id)

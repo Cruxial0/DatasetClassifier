@@ -11,7 +11,7 @@ from pyqt6_multiselect_combobox import MultiSelectComboBox
 from src.export_image import ExportRule
 from src.config_handler import ConfigHandler
 from src.styling.style_manager import StyleManager
-from src.styling.styling_utils import styled_information_box
+from src.styling.styling_utils import styled_information_box, styled_question_box, styled_warning_box
 
 class RuleComponent(QWidget):
     """Widget for a single category-based export rule"""
@@ -383,20 +383,21 @@ class ExportPopup(QWidget):
         
         # Validation
         if data['output_directory'] == '':
-            QMessageBox.warning(self, 'Invalid Export', 'Please select an output directory.')
+            styled_warning_box(self, 'Invalid Export', 'Please select an output directory.', self.style_manager)
             return
         
         if len(data['scores']) < 1:
-            QMessageBox.warning(self, 'Invalid Export', 'Please select at least one score to export.')
+            styled_warning_box(self, 'Invalid Export', 'Please select at least one score to export.', self.style_manager)
             return
         
         # Confirm if delete is enabled
         if data['delete_images']:
-            reply = QMessageBox.question(
+            reply = styled_question_box(
                 self,
                 'Confirm Deletion',
                 '⚠️ You have selected to delete source images after export.\n\n'
                 'This action cannot be undone. Are you sure you want to continue?',
+                self.style_manager,
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No
             )

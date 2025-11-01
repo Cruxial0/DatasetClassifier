@@ -13,6 +13,7 @@ from src.windows.settings_window import SettingsWindow
 from src.update_poller import UpdatePoller
 from src.utils import open_directory
 from src.styling.style_manager import StyleManager
+from src.styling.styling_utils import styled_question_box, styled_information_box
 
 # dataset_classifier.py
 class DatasetClassifier(QMainWindow):
@@ -151,7 +152,7 @@ class DatasetClassifier(QMainWindow):
     def export_callback(self, data):
         # Check if there is anything to export
         if not self.db.projects.has_scores(self.active_project.id) and not self.db.projects.has_tags(self.active_project.id):
-            QMessageBox.information(self, "Export", "There are no images to export.")
+            styled_information_box(self, "Export", "There are no images to export.", self.style_manager)
             return
         
         exporter = Exporter(data, self.db, self.config_handler)
@@ -159,7 +160,7 @@ class DatasetClassifier(QMainWindow):
         export_items = exporter.process_export(self.db.images.get_export_images(self.active_project.id)).items()
 
         if len(export_items) == 0:
-            QMessageBox.information(self, "Export", "No images found matching the export criteria.")
+            styled_information_box(self, "Export", "No images found matching the export criteria.", self.style_manager)
             return
 
         # Display summary
@@ -167,17 +168,19 @@ class DatasetClassifier(QMainWindow):
         for key, value in export_items:
             summary += f"\n - {value} images exported to '{key}'"
 
-        confirm = QMessageBox.question(self, 'Export summary', 
-                                         f"{summary}\n\nConfirm?",
-                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
-                                         QMessageBox.StandardButton.No)
+        confirm = styled_question_box(self, 'Export summary', 
+            f"{summary}\n\nConfirm?",
+            self.style_manager,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
+            QMessageBox.StandardButton.No)
         
         if confirm == QMessageBox.StandardButton.Yes:
-            dir_confirm = QMessageBox.question(self, 'Confirm deleting directory', 
-                                 'All files in the output directory will be deleted.\n\nConfirm?',
-                                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
-                                 QMessageBox.StandardButton.No)
+            dir_confirm = styled_question_box(self, 'Confirm deleting directory', 
+                'All files in the output directory will be deleted.\n\nConfirm?',
+                self.style_manager,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
+                QMessageBox.StandardButton.No)
             if dir_confirm == QMessageBox.StandardButton.Yes:
                 exporter.export()
-                QMessageBox.information(self, "Workspace", "The workspace has been exported.")
+                styled_information_box(self, "Workspace", "The workspace has been exported.", self.style_manager)
                 open_directory(exporter.output_dir)

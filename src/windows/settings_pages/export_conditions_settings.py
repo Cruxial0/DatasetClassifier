@@ -6,7 +6,7 @@ from PyQt6.QtCore import Qt
 from src.windows.settings_pages.settings_widget import SettingsWidget
 from src.tagging.tag_group import TagGroup
 from src.parser import parse_condition, validate_references
-from src.styling.styling_utils import styled_information_box, styled_warning_box
+from src.styling.styling_utils import styled_information_box, styled_warning_box, styled_question_box
 
 class ExportTagRule:
     """Represents a rule for adding tags during export based on conditions"""
@@ -391,10 +391,11 @@ class ExportTagRulesSettings(SettingsWidget):
     
     def delete_rule(self, rule: ExportTagRule):
         """Delete a rule"""
-        reply = QMessageBox.question(
+        reply = styled_question_box(
             self,
             "Delete Rule",
             f"Are you sure you want to delete the rule '{rule.name}'?",
+            self.style_manager,
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         

@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QLabel, QLineEdit, 
-                             QScrollArea, QSizePolicy, QProgressBar, QMessageBox, QSpacerItem)
+                             QScrollArea, QSizePolicy, QProgressBar, QSpacerItem)
 from PyQt6.QtGui import QPixmap, QKeySequence, QShortcut, QAction
 from PyQt6.QtCore import Qt, QTimer
 
