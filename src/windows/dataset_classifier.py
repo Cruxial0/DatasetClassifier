@@ -183,4 +183,5 @@ class DatasetClassifier(QMainWindow):
             if dir_confirm == QMessageBox.StandardButton.Yes:
                 exporter.export()
                 styled_information_box(self, "Workspace", "The workspace has been exported.", self.style_manager)
+                self.export_popup.close()
                 open_directory(exporter.output_dir)

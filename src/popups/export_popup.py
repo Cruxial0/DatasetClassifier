@@ -405,7 +405,6 @@ class ExportPopup(QWidget):
                 return
 
         self.export_callback(data)
-        self.close()
 
     # Drag and drop methods
     def drag_started(self, component):

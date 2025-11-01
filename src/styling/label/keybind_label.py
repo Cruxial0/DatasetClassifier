@@ -8,8 +8,6 @@ STYLE = """
         color: {};
         padding: 5px 5px;
         border-radius: 3px;
-        min-width: 25px;
-        max-width: 25px;
         qproperty-alignment: AlignCenter;
     }}
 """

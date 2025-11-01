@@ -502,8 +502,12 @@ class ScoringPage(QWidget):
         if not current_image:
             return
 
-        # Get score from optimized cache
-        current_score, current_categories = self.image_handler.get_score(current_image)
+        # Get score from cache
+        current_score, _ = self.image_handler.get_score(current_image)
+        
+        # Get categories directly from database (always fresh)
+        image_id = self.image_handler.current_image_id
+        current_categories = self.db.categories.get_image_category_names(image_id)
 
         # Update score buttons
         for i in range(self.score_layout.count()):

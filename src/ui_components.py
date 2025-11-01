@@ -29,7 +29,7 @@ class UIComponents:
 
         container_left = QVBoxLayout()
 
-        prev_button = QPushButton('<',self, enabled=state)
+        prev_button = QPushButton('<', enabled=state)
         prev_button.setStyleSheet(style_manager.get_stylesheet(QPushButton))
         prev_button.setObjectName("prev_button")
         to_latest_button_left = QPushButton('<<', enabled=state)
