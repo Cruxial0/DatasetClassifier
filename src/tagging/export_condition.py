@@ -1,12 +1,11 @@
 from dataclasses import dataclass, field
-from typing import List, Optional, Set
-from enum import Enum
+from typing import List, Set
 
 @dataclass
 class ExportCondition:
     """
     Represents a condition-based rule for adding tags during export.
-    
+
     When the condition is met, the specified tags will be added to the image's caption.
     """
     id: int
@@ -16,7 +15,7 @@ class ExportCondition:
     tags_to_add: List[str]  # Tags to add when condition is met
     priority: int = 0  # Higher priority rules are evaluated first
     enabled: bool = True
-    
+
     def __post_init__(self):
         """Ensure tags_to_add is always a list"""
         if isinstance(self.tags_to_add, str):
@@ -30,11 +29,11 @@ class ExportConditionResult:
     original_tags: Set[str]
     added_tags: Set[str] = field(default_factory=set)
     applied_conditions: List[str] = field(default_factory=list)  # Names of applied conditions
-    
+
     def get_all_tags(self) -> Set[str]:
         """Get combined original and added tags"""
         return self.original_tags | self.added_tags
-    
+
     def add_tags(self, tags: List[str], condition_name: str):
         """Add tags from a condition"""
         self.added_tags.update(tags)

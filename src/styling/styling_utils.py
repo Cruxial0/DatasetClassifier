@@ -1,4 +1,4 @@
-from PyQt6.QtGui import QFont, QFontDatabase
+from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QMessageBox
 from src.styling.style_manager import StyleManager
 

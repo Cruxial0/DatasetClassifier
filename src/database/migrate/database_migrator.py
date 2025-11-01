@@ -1,20 +1,19 @@
 import sqlite3
-from datetime import datetime
 import logging
-from typing import List, Tuple, Optional, Union
+from typing import List, Tuple, Union
 
 class DatabaseMigration:
     def __init__(self, connection: Union[str, sqlite3.Connection]):
         """
         Initialize migration system with either a database path or an existing connection.
-        
+
         Args:
             connection: Either a path to the database or an existing SQLite connection
         """
         self.connection = connection if isinstance(connection, sqlite3.Connection) else None
         self.db_path = connection if isinstance(connection, str) else None
         self.setup_logging()
-        
+
     def setup_logging(self):
         logging.basicConfig(
             level=logging.INFO,
@@ -45,7 +44,7 @@ class DatabaseMigration:
         conn.commit()
         if self.should_close_connection():
             conn.close()
-            
+
     def get_current_version(self) -> int:
         """Get the latest applied migration version."""
         conn = self.get_connection()
@@ -85,7 +84,7 @@ class DatabaseMigration:
         try:
             self.logger.info(f"Applying migration {version}: {name}")
             cursor.executescript(up_sql)
-            
+
             cursor.execute(
                 "INSERT INTO schema_migrations (version, name) VALUES (?, ?)",
                 (version, name)
@@ -101,7 +100,7 @@ class DatabaseMigration:
             # Check if the error is about something that can be skipped
             if "already exists" in str(e).lower() or "duplicate column name" in str(e).lower():
                 self.logger.warning(f"Migration {version} entities already exist: {str(e)}")
-                
+
                 # Insert the migration record if it doesn't exist
                 try:
                     cursor.execute(
@@ -117,7 +116,7 @@ class DatabaseMigration:
                         conn.rollback()
                         conn.close()
                     return False
-                
+
                 return True  # Return True because we're treating it as "applied"
             else:
                 self.logger.error(f"Failed to apply migration {version}: {str(e)}")
@@ -133,21 +132,21 @@ class DatabaseMigration:
             conn = self.get_connection()
             conn.execute("PRAGMA foreign_keys = ON")
             cursor = conn.cursor()
-            
+
             self.logger.info(f"Rolling back migration {version}")
             cursor.executescript(down_sql)
-            
+
             cursor.execute(
                 "DELETE FROM schema_migrations WHERE version = ?",
                 (version,)
             )
-            
+
             if self.should_close_connection():
                 conn.commit()
                 conn.close()
-            
+
             return True
-                
+
         except sqlite3.Error as e:
             self.logger.error(f"Failed to rollback migration {version}: {str(e)}")
             return False
@@ -160,31 +159,31 @@ class DatabaseMigration:
         self.init_migration_table()
         current_version = self.get_current_version()
         target_version = max(m[0] for m in migrations)
-            
+
         # Sort migrations by version
         migrations.sort(key=lambda x: x[0])
-        
+
         if target_version > current_version:
             # Apply forward migrations
             for version, name, up_sql, down_sql in migrations:
                 print(f"Checking migration {version}")
-                
+
                 # Skip if already applied
                 if self.is_migration_applied(version):
                     print(f"Migration {version} already applied, skipping")
                     continue
-                
+
                 # Only apply if within range
                 if current_version < version <= target_version:
                     if not self.apply_migration(version, name, up_sql, down_sql):
                         return False
                     print(f"Applied migration {version}")
-                    
+
         elif target_version < current_version:
             # Apply rollback migrations
             for version, name, up_sql, down_sql in reversed(migrations):
                 if target_version < version <= current_version:
                     if not self.rollback_migration(version, down_sql):
                         return False
-                    
+
         return True

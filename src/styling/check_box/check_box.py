@@ -1,4 +1,3 @@
-import os
 import tempfile
 from pathlib import Path
 
@@ -39,15 +38,15 @@ class CheckBoxStyle(Style):
         text_color = config.get_value(self.text_color)
         icon_color = config.get_value(self.icon_color)
         border_color = config.get_value(self.border_color)
-        
+
         customized_svg = CHECKMARK_SVG_TEMPLATE.format(icon_color)
-        
+
         # Create a temporary file for the SVG
         with tempfile.NamedTemporaryFile(suffix='.svg', delete=False, mode='w', encoding='utf-8') as temp_file:
             temp_file.write(customized_svg)
             temp_path = temp_file.name
-        
+
         # Convert to Qt-compatible URL format (forward slashes, proper escaping)
         checkmark_url = Path(temp_path).as_posix()
-        
+
         return STYLE.format(text_color, border_color, text_color, border_color, checkmark_url)
