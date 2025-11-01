@@ -16,25 +16,25 @@ class TagItemWidget(QFrame):
     def setup_ui(self):
         layout = QVBoxLayout()
         self.setLayout(layout)
-        
+
         if isinstance(self.item, Tag):
             self.setup_tag_ui()
         elif isinstance(self.item, TagGroup):
             self.setup_taggroup_ui()
         else:
             print(f"Unknown item type: {type(self.item)}")
-        
+
         self.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Raised)
         self.setAutoFillBackground(True)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        
+
     def setup_tag_ui(self):
         layout = self.layout()
         name_label = QLabel(f"<b>{self.item.name}</b>")
         order_label = QLabel(f"Order: {self.item.display_order}")
         layout.addWidget(name_label)
         layout.addWidget(order_label)
-        
+
         palette = self.palette()
         palette.setColor(QPalette.ColorRole.Window, QColor("#f0f0ff"))
         self.setPalette(palette)
@@ -48,11 +48,11 @@ class TagItemWidget(QFrame):
             f"Multiple: {'Yes' if self.item.allow_multiple else 'No'}, "
             f"Min Tags: {self.item.min_tags}"
         )
-        
+
         layout.addWidget(name_label)
         layout.addWidget(tags_label)
         layout.addWidget(info_label)
-        
+
         palette = self.palette()
         palette.setColor(QPalette.ColorRole.Window, QColor("#fff0f0"))
         self.setPalette(palette)
@@ -71,11 +71,11 @@ class TagCompleterPopup(QWidget):
         self.setWindowFlags(Qt.WindowType.Popup)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        
+
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(2, 2, 2, 2)
         self.main_layout.setSpacing(0)
-        
+
         self.container = QFrame()
         self.container.setObjectName("completerContainer")
         self.container.setStyleSheet("""
@@ -114,13 +114,6 @@ class TagCompleterPopup(QWidget):
         super().focusOutEvent(event)
         self.hide()
 
-from PyQt6.QtWidgets import QFrame, QWidget, QVBoxLayout, QLineEdit, QLabel
-from PyQt6.QtCore import Qt, pyqtSignal, QEvent, QRect, QPoint
-from PyQt6.QtGui import QColor, QPalette
-from typing import List, Union
-from PyQt6.QtWidgets import QApplication
-from src.tagging.tag_group import Tag, TagGroup
-
 class TagSearchWidget(QWidget):
     item_selected = pyqtSignal(object)
 
@@ -148,7 +141,7 @@ class TagSearchWidget(QWidget):
             return
 
         items = self.db_query_func(text)
-        
+
         if items:
             self.popup.update_items(items)
             pos = self.search_input.mapToGlobal(self.search_input.rect().bottomLeft())
@@ -161,7 +154,7 @@ class TagSearchWidget(QWidget):
     def on_item_selected(self, item):
         if item is None:
             return
-            
+
         self.search_input.setText(item.name)
         self.popup.hide()
         self.item_selected.emit(item)

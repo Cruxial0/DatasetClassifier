@@ -2,7 +2,6 @@ from sqlite3 import Connection
 
 from src.tagging.tag_group import TagGroup, Tag
 
-
 class TagQueries:
     def __init__(self, db: Connection):
         self.db = db
@@ -18,7 +17,7 @@ class TagQueries:
             list[TagGroup]: A list of TagGroups, each containing a list of Tags.
         """
         cursor = self.db.cursor()
-        
+
         # First, get all tag groups for the project
         cursor.execute("""
             SELECT group_id, project_id, group_name, is_required, allow_multiple, min_tags, prevent_auto_scroll, display_order, condition
@@ -26,10 +25,10 @@ class TagQueries:
             WHERE project_id = ?
             ORDER BY display_order
         """, (project_id,))
-        
+
         tag_groups = []
         group_mapping = {}  # Maps group_id to its index in tag_groups list
-        
+
         # Create TagGroup objects
         for row in cursor.fetchall():
             tag_group = TagGroup(
@@ -45,7 +44,7 @@ class TagQueries:
             )
             tag_groups.append(tag_group)
             group_mapping[tag_group.id] = len(tag_groups) - 1
-        
+
         # Then get all tags for these groups
         if tag_groups:
             cursor.execute("""
@@ -53,9 +52,9 @@ class TagQueries:
                 FROM tags
                 WHERE group_id IN ({})
                 ORDER BY display_order
-            """.format(','.join('?' * len(tag_groups))), 
+            """.format(','.join('?' * len(tag_groups))),
             tuple(group.id for group in tag_groups))
-            
+
             # Group tags by their tag_group_id
             for row in cursor.fetchall():
                 tag_id, group_id, tag_name, tag_order = row
@@ -65,7 +64,7 @@ class TagQueries:
 
         cursor.close()
         return tag_groups
-    
+
     def get_tag_group(self, group_id: int) -> TagGroup:
         """
         Gets the tag group with the given id from the database, alongside its tags.
@@ -80,7 +79,7 @@ class TagQueries:
                 order=result[7],  # display_order is at index 6
                 is_required=result[3],
                 allow_multiple=result[4],
-                min_tags=result[5], 
+                min_tags=result[5],
                 prevent_auto_scroll=result[6],
                 condition=result[8]
             )
@@ -91,7 +90,7 @@ class TagQueries:
             group.verify_self()
         cursor.close()
         return group
-        
+
     def add_tag(self, name: str, group_id: int, order: int) -> int:
         """
         Adds a new tag to the specified group in the database.
@@ -153,7 +152,7 @@ class TagQueries:
         """
         tag_group.verify_self()
         cursor = self.db.cursor()
-        cursor.execute("UPDATE tag_groups SET group_name = ?, display_order = ?, is_required = ?, allow_multiple = ?, min_tags = ?, prevent_auto_scroll = ?, condition = ? WHERE group_id = ?", 
+        cursor.execute("UPDATE tag_groups SET group_name = ?, display_order = ?, is_required = ?, allow_multiple = ?, min_tags = ?, prevent_auto_scroll = ?, condition = ? WHERE group_id = ?",
             (tag_group.name, tag_group.order, tag_group.is_required, tag_group.allow_multiple, tag_group.min_tags, tag_group.prevent_auto_scroll, tag_group.condition, tag_group.id))
         self.db.commit()
         cursor.close()
@@ -201,13 +200,13 @@ class TagQueries:
         """
         Deletes the tag group with the given id from the database. This will also delete all tags
         in the tag group, as the deletion is cascaded.
-        
+
         Args:
             group_id (int): The id of the tag group to delete.
         """
 
         cursor = self.db.cursor()
-        
+
         # Tag Group deletion is cascaded, so we only need to delete the tag group itself
         # All tags will be deleted automatically
         cursor.execute("DELETE FROM tag_groups WHERE group_id = ?", (group_id,))
@@ -231,15 +230,15 @@ class TagQueries:
         result = cursor.fetchone()
         cursor.close()
         return result is not None
-    
+
     def tag_group_name_exists(self, group_name: str, project_id: int) -> bool:
         """
         Checks if a tag group with the given name exists within a specific project.
-        
+
         Args:
             group_name (str): The name of the tag group to check.
             project_id (int): The ID of the project to which the tag group belongs.
-        
+
         Returns:
             bool: True if the tag group exists in the project, False otherwise.
         """
@@ -248,7 +247,7 @@ class TagQueries:
         result = cursor.fetchone()
         cursor.close()
         return result is not None
-    
+
     def image_has_tag(self, image_id: int, tag_id: int) -> bool:
         """
         Checks if an image has been tagged with a specific tag.
@@ -265,11 +264,11 @@ class TagQueries:
         result = cursor.fetchone()
         cursor.close()
         return result is not None
-    
+
     def add_image_tag(self, image_id: int, tag_id: int):
         """
         Adds a tag to an image. If the image already has the tag, this does nothing.
-        
+
         Args:
             image_id (int): The id of the image to add the tag to.
             tag_id (int): The id of the tag to add to the image.
@@ -307,7 +306,7 @@ class TagQueries:
         cursor = self.db.cursor()
         cursor.execute("SELECT tag_id FROM image_tags WHERE image_id = ?", (image_id,))
         return [row[0] for row in cursor.fetchall()]
-    
+
     def get_tags_from_ids(self, tag_id: list[int]) -> list[tuple[int, int, str, int, int]]:
         """Returns a list of tuples of tag_id and tag_name for the given list of tag_ids."""
         cursor = self.db.cursor()
@@ -321,7 +320,7 @@ class TagQueries:
             WHERE tags.tag_id IN ({})
             """.format(','.join('?' * len(tag_id))), tag_id)
         return cursor.fetchall()
-    
+
     def get_image_tag_count(self, image_id: int) -> int:
         """
         Gets the number of tags assigned to the given image id.
@@ -335,7 +334,7 @@ class TagQueries:
         cursor = self.db.cursor()
         cursor.execute("SELECT COUNT(*) FROM image_tags WHERE image_id = ?", (image_id,))
         return cursor.fetchone()[0]
-    
+
     def get_latest_unfinished_image_group(self, project_id: int, strict: bool = False) -> tuple[int, int, int] | None:
         """
         Retrieves the first image group that has not met its minimum tagging requirements.
@@ -358,7 +357,7 @@ class TagQueries:
             f"""
             WITH tagged_counts AS (
                 -- Get the count of tags per image per group
-                SELECT 
+                SELECT
                     i.image_id,
                     i.project_id,
                     tg.group_id,
@@ -369,20 +368,20 @@ class TagQueries:
                 FROM images i
                 INNER JOIN scores s ON s.image_id = i.image_id
                 CROSS JOIN tag_groups tg ON tg.project_id = i.project_id
-                LEFT JOIN image_tags it ON it.image_id = i.image_id 
+                LEFT JOIN image_tags it ON it.image_id = i.image_id
                 LEFT JOIN tags t ON t.group_id = tg.group_id AND it.tag_id = t.tag_id
                 WHERE i.project_id = ?
                 AND s.score != 'discard'
                 GROUP BY i.image_id, tg.group_id, tg.display_order, tg.min_tags, tg.is_required
             )
-            SELECT 
+            SELECT
                 tc.image_id,
                 tc.group_id,
                 tc.display_order
             FROM tagged_counts tc
-            WHERE 
+            WHERE
                 {f"tc.is_required = 1 AND " if not strict else ""}tc.tag_count < tc.min_tags
-            ORDER BY 
+            ORDER BY
                 tc.image_id ASC,
                 tc.display_order ASC
             LIMIT 1;

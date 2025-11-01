@@ -1,6 +1,5 @@
-from PyQt6.QtWidgets import QListWidgetItem, QWidget, QHBoxLayout, QLabel, QStackedWidget, QLineEdit, QPushButton
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QStackedWidget, QLineEdit, QPushButton
 from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtGui import QFont
 
 from src.tagging.tag_group import Tag
 from src.styling.style_manager import StyleManager

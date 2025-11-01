@@ -1,11 +1,7 @@
-import os
-from pathlib import Path
-import shutil
 from PyQt6.QtGui import QPixmap
 from PIL import Image
 from PIL.ExifTags import TAGS
 from src.database.database import Database
-from src.utils import create_directory
 
 class ImageHandler:
     """
@@ -15,7 +11,7 @@ class ImageHandler:
     def __init__(self, db: Database, config_handler):
         """
         Initialize the ImageHandler with database and configuration.
-        
+
         Args:
             db: Database instance for storing image and project data
             config_handler: Configuration handler for system settings
@@ -30,12 +26,12 @@ class ImageHandler:
         self.path_cache = {}  # Cache for image paths
         self.score_cache = {}  # Cache for image scores
         self.cache_size = 100  # Number of items to keep in cache
-        
+
 
     def set_db(self, db: Database):
         """Update the database instance."""
         self.db = db
-        
+
 
     def set_output_folder(self, folder: str):
         """Set the output folder for scored images."""
@@ -48,23 +44,23 @@ class ImageHandler:
 
         if hide_scored_images and get_scored_only:
             raise ValueError("Cannot hide scored images and get only scored images at the same time.")
-        
+
         # Get image IDs and paths in a single query
         if hide_scored_images:
             query = """
-                SELECT DISTINCT i.image_id, i.source_path, s.score, s.categories 
-                FROM images i 
+                SELECT DISTINCT i.image_id, i.source_path, s.score, s.categories
+                FROM images i
                 LEFT JOIN scores s ON i.image_id = s.image_id AND i.project_id = s.project_id
-                WHERE i.project_id = ? 
+                WHERE i.project_id = ?
                 AND s.image_id IS NULL
                 ORDER BY i.image_id
             """
         elif get_scored_only:
             query = """
-                SELECT DISTINCT i.image_id, i.source_path, s.score, s.categories 
-                FROM images i 
+                SELECT DISTINCT i.image_id, i.source_path, s.score, s.categories
+                FROM images i
                 LEFT JOIN scores s ON i.image_id = s.image_id AND i.project_id = s.project_id
-                WHERE i.project_id = ? 
+                WHERE i.project_id = ?
                 AND s.image_id IS NOT NULL
                 AND s.score IS NOT NULL
                 AND s.score != 'discard'
@@ -75,18 +71,18 @@ class ImageHandler:
                 SELECT DISTINCT i.image_id, i.source_path,
                        (SELECT score FROM scores WHERE image_id = i.image_id AND project_id = i.project_id LIMIT 1) as score,
                        (SELECT categories FROM scores WHERE image_id = i.image_id AND project_id = i.project_id LIMIT 1) as categories
-                FROM images i 
+                FROM images i
                 WHERE i.project_id = ?
                 ORDER BY i.image_id
             """
-            
+
         cursor = self.db.connection.cursor()
         results = cursor.execute(query, (project_id,)).fetchall()
-        
+
         self.image_ids = []
         self.path_cache.clear()
         self.score_cache.clear()
-        
+
         for row in results:
             image_id = row[0]
             self.image_ids.append(image_id)
@@ -111,13 +107,13 @@ class ImageHandler:
         keep_ids = set()
         start = max(0, current_idx - 3)
         end = min(len(self.image_ids), current_idx + 4)
-        
+
         for i in range(start, end):
             keep_ids.add(self.image_ids[i])
-        
+
         # Remove images that are no longer needed
         self.preloaded_images = {
-            k: v for k, v in self.preloaded_images.items() 
+            k: v for k, v in self.preloaded_images.items()
             if k in keep_ids
         }
 
@@ -143,12 +139,12 @@ class ImageHandler:
         """Get image with cache priority"""
         if not self.current_image_id:
             return None
-            
+
         # Try to get from preloaded cache first
         pixmap = self.preloaded_images.get(self.current_image_id)
         if pixmap:
             return pixmap
-        
+
         # Load if not in cache
         image_path = self.get_current_image_path()
         if image_path:
@@ -165,7 +161,7 @@ class ImageHandler:
         """Move to the next image in the sequence."""
         if not self.image_ids or self.current_image_id is None:
             return False
-            
+
         current_idx = self.image_ids.index(self.current_image_id)
         if current_idx < len(self.image_ids) - 1:
             self.current_image_id = self.image_ids[current_idx + 1]
@@ -178,7 +174,7 @@ class ImageHandler:
         """Move to the previous image in the sequence."""
         if not self.image_ids or self.current_image_id is None:
             return False
-            
+
         current_idx = self.image_ids.index(self.current_image_id)
         if current_idx > 0:
             self.current_image_id = self.image_ids[current_idx - 1]
@@ -190,12 +186,12 @@ class ImageHandler:
         if not self.image_ids or self.current_image_id is None:
             return False
         return self.image_ids.index(self.current_image_id) > 0
-    
+
     def next_image_exists(self) -> bool:
         if not self.image_ids or self.current_image_id is None:
             return False
         return self.image_ids.index(self.current_image_id) < len(self.image_ids) - 1
-    
+
     def load_image_from_raw_id(self, image_id: int) -> bool:
         if image_id in self.image_ids:
             idx = self.image_ids.index(image_id) - 1
@@ -203,7 +199,7 @@ class ImageHandler:
             self.preload_images()
             return True
         return False
-    
+
     def get_absolute_index(self) -> int:
         if not self.image_ids or self.current_image_id is None:
             return -1
@@ -213,11 +209,11 @@ class ImageHandler:
         """Get score from cache if available"""
         if self.current_image_id is None:
             return None, []
-        
+
         # Try cache first
         if self.current_image_id in self.score_cache:
             return self.score_cache[self.current_image_id]
-        
+
         # Fall back to database
         score, categories = self.db.images.get_score(image_path)
         self.score_cache[self.current_image_id] = (score, categories)
@@ -227,18 +223,18 @@ class ImageHandler:
     def score_image(self, score: int | None, categories: list[str] | str) -> bool:
         """
         Score the current image and update its categories.
-        
+
         Args:
             score: Numeric score for the image
             categories: List of categories or single category to toggle
-            
+
         Returns:
             bool: True if scoring succeeded, False otherwise
         """
         image_path = self.get_current_image_path()
         if not image_path:
             return False
-            
+
         current_score, current_categories = self.get_score(image_path)
         if type(current_categories) is not list:
             current_categories = []
@@ -256,10 +252,10 @@ class ImageHandler:
                 new_categories.remove(categories)
             else:
                 new_categories.append(categories)
-        
+
         # Update score
         new_score = score if score is not None else current_score
-            
+
         # Try to update database
         try:
             if self.db.images.add_or_update_score(image_path, new_score, new_categories):
@@ -278,13 +274,13 @@ class ImageHandler:
         image_path = self.get_current_image_path()
         if not image_path:
             return "No image loaded"
-            
+
         try:
             with Image.open(image_path) as image:
                 exif = image._getexif()
                 if not exif:
                     return "No orientation data found"
-                    
+
                 for tag_id, value in exif.items():
                     tag = TAGS.get(tag_id, tag_id)
                     if tag == "Orientation":
@@ -294,9 +290,9 @@ class ImageHandler:
                             6: "Rotate 90 CW",
                             8: "Rotate 270 CW"
                         }.get(value, f"Unknown orientation: {value}")
-                        
+
             return "No orientation data found"
-            
+
         except Exception as e:
             print(f"Error reading EXIF data: {e}")
             return "Error reading orientation"
@@ -306,7 +302,7 @@ class ImageHandler:
         """Get the current position and total count of images."""
         if not self.image_ids or self.current_image_id is None:
             return (0, 0)
-            
+
         current_idx = self.image_ids.index(self.current_image_id)
         return (current_idx + 1, len(self.image_ids))
 
@@ -316,7 +312,7 @@ class ImageHandler:
         if not self.image_ids or self.current_image_id is None:
             return -1
         return self.image_ids.index(self.current_image_id)
-    
+
 
     def set_index(self, index: int):
         """Set the current image index."""

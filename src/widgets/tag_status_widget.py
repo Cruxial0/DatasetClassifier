@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QFrame, QPushButton
-from PyQt6.QtCore import Qt, pyqtSignal  # Add this import
+from PyQt6.QtCore import pyqtSignal
 
 from src.config_handler import ConfigHandler
 from src.tagging.tag_group import TagGroup
@@ -103,8 +103,8 @@ class TagStatusWidget(QWidget):
         # Score
         self.score_label = QLabel("score_0")
         self.score_label.setStyleSheet(f"""
-                                  background-color: {self.config_handler.get_color('accent_color')}; 
-                                  color: white; padding: 
+                                  background-color: {self.config_handler.get_color('accent_color')};
+                                  color: white; padding:
                                   5px 10px; border-radius: 8px;
                                   """)
 
@@ -150,7 +150,7 @@ class TagStatusWidget(QWidget):
         for button in [skip_button, options_button, self.prev_button, self.latest_button, self.next_button]:
             button.setFixedHeight(30)
             button.setStyleSheet(button_style)
-        
+
         bottom_row_layout.addLayout(buttons_layout)
 
         tag_group_layout.addLayout(tag_group_stats_layout)
@@ -177,11 +177,11 @@ class TagStatusWidget(QWidget):
     def update_group_ui(self):
         self.tag_group_name_label.setText(self.active_group.name)
         self.tag_group_index_label.setText(f"({self.active_group.order + 1}/{len(self.tag_groups)})")
-        
+
         if self.active_group.allow_multiple:
             self.seleted_tags_label.setText(f"0/{self.active_group.min_tags} selected")
         else:
-            self.seleted_tags_label.setText(f"0/1 selected")
+            self.seleted_tags_label.setText("0/1 selected")
 
     def set_prev_button_enabled(self, enabled: bool):
         self.prev_button.setEnabled(enabled)
@@ -192,10 +192,10 @@ class TagStatusWidget(QWidget):
     def check_group_conditions(self, selected_tags: list[int]) -> bool:
         if self.active_group is None:
             return
-        
+
         # check how many tags exist in current group
         count = self._get_applied_tags(selected_tags)
-        
+
         if self.active_group.allow_multiple:
             condition_met = count >= self.active_group.min_tags
             self.seleted_tags_label.setText(f"{count}/{self.active_group.min_tags} selected")
@@ -225,7 +225,7 @@ class TagStatusWidget(QWidget):
     def can_add_tag(self, selected_tags: list[int]) -> bool:
         if self.active_group is None:
             return False
-        
+
         count = self._get_applied_tags(selected_tags)
         limit = 1 if not self.active_group.allow_multiple else 9999
 
@@ -247,7 +247,7 @@ class TagStatusWidget(QWidget):
         return count
 
     def _set_status_label(self, condition: bool):
-        
+
         if condition and self.active_group.is_required or condition and not self.active_group.is_required:
             self.tag_group_status_label.setText("🟢")
             self.tag_group_status_label.setToolTip("Acceptable")
@@ -268,7 +268,7 @@ class TagStatusWidget(QWidget):
             self.auto_scroll_indicator.setToolTip(f"{self.auto_scroll_indicator_tooltip}\nTemporarily disabled. Click to Enable.")
         else:
             self.auto_scroll_indicator.setToolTip(self.auto_scroll_indicator_tooltip)
-        
+
 
     def _is_condition_met_on_next_add(self, selected_tags: list[int]):
         """Checks whether the next tag added will meet (and not exceed) the conditions of the active group"""
@@ -278,7 +278,7 @@ class TagStatusWidget(QWidget):
             return count + 1 == self.active_group.min_tags
         else:
             return count + 1 == 1
-        
+
     def _auto_scroll_indicator_click_event(self, event):
         temp_disabled = self.parent.auto_scroll_temp_disabled
         self.auto_scroll_indicator_clicked.emit(not temp_disabled)
