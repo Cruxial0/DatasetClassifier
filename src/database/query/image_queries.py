@@ -186,7 +186,7 @@ class ImageQueries:
                 score=score,
                 categories=categories,
                 tag_ids=tag_ids,
-                additional_tags=[]
+                additional_tags=None
             ))
         
         cursor.close()

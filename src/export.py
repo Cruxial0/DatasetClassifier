@@ -86,8 +86,8 @@ class Exporter:
         Args:
             image: The ExportImage to process
         """
-        if not image.tag_ids:
-            return
+        # if not image.tag_ids:
+        #     return
         
         # Initialize additional_tags as set if None
         if image.additional_tags is None:
