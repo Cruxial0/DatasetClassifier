@@ -1,5 +1,7 @@
 # DatasetClassifier
 A new spin on manual dataset curation
+<img width="1257" height="791" alt="image" src="https://github.com/user-attachments/assets/324b67ab-0f56-4406-8992-1be21d8344a0" />
+
 
 ## Introduction
 DatasetClassifier is a customizable tool aimed at speeding up the workflow of manual dataset curation. The idea behind this application is to speed up the process of reviewing and captioning images.
