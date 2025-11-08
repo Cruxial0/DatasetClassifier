@@ -1,5 +1,5 @@
 import src.database.migrate.migrations.create_database as init
-from src.database.migrate.migrations import migration_004_categories
+from src.database.migrate.migrations import migration_001_categories
 
 migrations = [
     (
@@ -33,7 +33,7 @@ migrations = [
     (
         4,
         "Refactor categories to dedicated tables",
-        migration_004_categories.create_categories_migration(),
+        migration_001_categories.create_categories_migration(),
         None
     )
 ]
