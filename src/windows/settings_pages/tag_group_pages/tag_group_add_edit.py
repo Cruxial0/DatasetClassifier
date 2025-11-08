@@ -7,7 +7,7 @@ from src.windows.settings_pages.settings_widget import SettingsWidget
 from src.tagging.tag_group import TagGroup
 
 class TagGroupAddOrEditPage(SettingsWidget):
-    cancelled: pyqtSignal = pyqtSignal()
+    onCancel = pyqtSignal()
     onSave: pyqtSignal = pyqtSignal(TagGroup)
     onCreate: pyqtSignal = pyqtSignal(TagGroup)
     def __init__(self, parent=None, **kwargs):
@@ -16,7 +16,7 @@ class TagGroupAddOrEditPage(SettingsWidget):
         self.is_initialized = False
 
         super().__init__(parent)
-        self.blockSignals(True)
+        self._block_signals(True)
 
     def init_ui(self):
         layout = QVBoxLayout()
@@ -50,6 +50,7 @@ class TagGroupAddOrEditPage(SettingsWidget):
         required_label_layout.addWidget(required_label)
         required_label_layout.addWidget(required_desc)
         self.required_checkbox = QCheckBox()
+        self.required_checkbox.setStyleSheet(self.style_manager.get_stylesheet(QCheckBox))
         required_layout.addLayout(required_label_layout)
         required_layout.addWidget(self.required_checkbox, alignment=Qt.AlignmentFlag.AlignRight)
         layout.addLayout(required_layout)
@@ -64,7 +65,7 @@ class TagGroupAddOrEditPage(SettingsWidget):
         multiple_label_layout.addWidget(multiple_label)
         multiple_label_layout.addWidget(multiple_desc)
         self.multiple_checkbox = QCheckBox()
-        # self.multiple_checkbox.setStyleSheet(self.style_manager.get_stylesheet(QCheckBox))
+        self.multiple_checkbox.setStyleSheet(self.style_manager.get_stylesheet(QCheckBox))
         multiple_layout.addLayout(multiple_label_layout)
         multiple_layout.addWidget(self.multiple_checkbox, alignment=Qt.AlignmentFlag.AlignRight)
         layout.addLayout(multiple_layout)
@@ -83,11 +84,11 @@ class TagGroupAddOrEditPage(SettingsWidget):
         # Buttons
         button_layout = QHBoxLayout()
         button_layout.addStretch(1)
-        self.cancel_button = QPushButton("Cancel")
-        self.cancel_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
+        cancel_button = QPushButton("Cancel")
+        cancel_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
         self.save_button = QPushButton("Save Changes")
         self.save_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'accept'))
-        button_layout.addWidget(self.cancel_button)
+        button_layout.addWidget(cancel_button)
         button_layout.addWidget(self.save_button)
         layout.addLayout(button_layout)
         
@@ -100,7 +101,7 @@ class TagGroupAddOrEditPage(SettingsWidget):
         self.multiple_checkbox.stateChanged.connect(self._edit_group)
 
         # Connect signals
-        self.cancel_button.clicked.connect(self.cancelled)
+        cancel_button.clicked.connect(self.onCancel)
         self.save_button.clicked.connect(self._on_save_clicked)
 
     def set_group(self, group: TagGroup):
@@ -142,11 +143,7 @@ class TagGroupAddOrEditPage(SettingsWidget):
 
     def _on_save_clicked(self):
         if self.mode == 'add':
-            self.onCreate.emit(TagGroup(
-                name=self.name_input.text(), 
-                is_required=self.required_checkbox.isChecked(), 
-                allow_multiple=self.multiple_checkbox.isChecked(), 
-                min_tags=self.min_tags_spin.value()))
+            self.onCreate.emit(self.selected_group)
         else:
             self.onSave.emit(self.selected_group)
 
@@ -168,10 +165,10 @@ class TagGroupAddOrEditPage(SettingsWidget):
         self._block_signals(False)
 
         if self.mode == 'edit':
-            self.title = "Edit Tag Group"
+            self.title.setText("Edit Tag Group")
             self.save_button.setText("Save Changes")
         else:
-            self.title = "New Tag Group"
+            self.title.setText("New Tag Group")
             self.save_button.setText("Create Tag Group")
 
         # Update enabled states

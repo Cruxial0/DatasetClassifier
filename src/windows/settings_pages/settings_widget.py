@@ -1,6 +1,7 @@
 from typing import Any, Callable
 from PyQt6.QtWidgets import QWidget, QCheckBox, QHBoxLayout, QVBoxLayout, QComboBox, QLabel, QSpinBox, QSpacerItem, QPushButton, QSizePolicy
 from PyQt6.QtGui import QFont
+from PyQt6.QtCore import Qt
 from abc import abstractmethod
 
 from src.database.database import Database
@@ -85,6 +86,7 @@ class SettingsWidget(QWidget):
         layout.addWidget(checkbox)
 
         lbl = QLabel(text)
+        lbl.setTextFormat(Qt.TextFormat.RichText)
         lbl.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'subtext'))
         layout.addWidget(lbl)
         
@@ -99,6 +101,7 @@ class SettingsWidget(QWidget):
         if setting is None:
             return layout
         
+        checkbox.setStyleSheet(self.style_manager.get_stylesheet(QCheckBox))
         checkbox.setChecked(self.config_handler.get_value(setting))
         checkbox.checkStateChanged.connect(on_change)
         return layout

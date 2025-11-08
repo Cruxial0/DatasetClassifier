@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Callable, Dict, Optional, Union, List
 from PyQt6.QtWidgets import QWidget, QPushButton
 from PyQt6.QtGui import QKeySequence, QShortcut
@@ -10,7 +9,7 @@ class KeyBinding:
     """Represents a single key combination with optional modifiers"""
     key: int | str
     modifiers: List[Qt.KeyboardModifier] = None
-    
+
     def __post_init__(self):
         if self.modifiers is None:
             self.modifiers = []
@@ -29,7 +28,7 @@ class KeybindHandler:
     def __init__(self, config_handler):
         self.config_handler = config_handler
         self.registered_pages: Dict[str, 'KeybindPage'] = {}
-        
+
         # Define all possible keybindings with their config paths and defaults
         self.binding_definitions = {
             'next_image': ConfigBinding(
@@ -77,10 +76,10 @@ class KeybindHandler:
                 default_value=KeyBinding(str(i), [Qt.KeyboardModifier.AltModifier])
             ) for i in range(10)
         })
-        
+
         # Current bindings cache
         self.current_bindings: Dict[str, List[KeyBinding]] = self._load_keybindings()
-    
+
     def _load_keybindings(self) -> Dict[str, List[KeyBinding]]:
         """Load keybindings from config"""
         bindings = {}
@@ -94,7 +93,7 @@ class KeybindHandler:
                 # Implementation depends on how you store keybindings in config
                 bindings[action] = self._parse_config_value(value)
         return bindings
-    
+
     def _parse_config_value(self, value) -> List[KeyBinding]:
         """Convert stored config value to KeyBinding objects"""
         # Implement based on your config storage format
@@ -107,12 +106,12 @@ class KeybindHandler:
         """Register a page to receive keybinding updates"""
         self.registered_pages[page_id] = page
         page.apply_keybindings(self.current_bindings)
-    
+
     def unregister_page(self, page_id: str):
         """Unregister a page"""
         if page_id in self.registered_pages:
             del self.registered_pages[page_id]
-    
+
     def update_keybinding(self, action: str, new_bindings: List[KeyBinding]):
         """Update a keybinding and propagate changes to all pages"""
         if action in self.binding_definitions:
@@ -138,7 +137,7 @@ class KeybindPage:
             self.bindings[f"{action}_alt"] = target
         else:
             self.bindings[action] = target
-        
+
     def apply_keybindings(self, bindings: Dict[str, List[KeyBinding]]):
         """Apply keybindings to this page's buttons or functions"""
         # Clear existing shortcuts for the actions we're updating
@@ -148,14 +147,14 @@ class KeybindPage:
                     shortcut.setEnabled(False)
                     shortcut.deleteLater()
                 del self.shortcuts[action]
-        
+
         for action, key_bindings in bindings.items():
             if action not in self.bindings or self.bindings[action] is None:
                 continue
-                
+
             target = self.bindings[action]
             self.shortcuts[action] = []
-            
+
             for binding in key_bindings:
                 if binding.key is None:
                     continue

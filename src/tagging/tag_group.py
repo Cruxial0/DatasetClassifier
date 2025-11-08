@@ -1,48 +1,62 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List, Optional
+from src.parser import parse_condition, validate_references
 
 @dataclass
 class Tag:
-    def __init__(self, id: int, name: str, order: int):
-        self.id = id
-        self.name = name
-        self.display_order = order
-
+    id: int
+    name: str
+    display_order: int
 
 @dataclass
 class TagGroup:
-    def __init__(self, id: int, project_id: int, name: str, order: int, is_required: int = 1, allow_multiple: int = 0, prevent_auto_scroll: int = 0, min_tags: int = 1):
-        self.id = id
-        self.project_id = project_id
-        self.name = name
-        self.is_required = bool(is_required)
-        self.allow_multiple = bool(allow_multiple)
-        self.min_tags = min_tags
-        self.tags: list[Tag] = None
-        self.prevent_auto_scroll = bool(prevent_auto_scroll)
-        self.order = order
+    id: int
+    project_id: int
+    name: str
+    order: int
+    is_required: bool = True
+    allow_multiple: bool = False
+    min_tags: int = 1
+    prevent_auto_scroll: bool = False
+    tags: List[Tag] = field(default_factory=list)
+    condition: Optional[str] = None 
 
-    def add_tags(self, tags: list[tuple[int, str, int]]):
-        if self.tags is None:
-            self.tags = []
-
+    def add_tags(self, tags: List[tuple[int, str, int]]):
         for tag in tags:
             self.tags.append(Tag(tag[0], tag[1], tag[2]))
 
-    def verify_self(self):
+    def get_tag(self, tag_id: int) -> Optional[Tag]:
+        for tag in self.tags:
+            if tag.id == tag_id:
+                return tag
+        return None
+
+    def verify_self(self, all_groups: List['TagGroup'] = None):
         """
-        Ensures that the tag group is valid
+        Ensures that the tag group is valid, including condition validation.
+        :param all_groups: Optional list of all tag groups in the project for cross-validation.
         """
-        if self.tags is None:
-            self.tags = []
-        
+
         if self.min_tags < 1:
             self.min_tags = 1
 
-        # Ensure there are no gaps in tags display order
+        # Sort tags by display_order and fix gaps
         self.tags.sort(key=lambda x: x.display_order)
         for i in range(len(self.tags) - 1):
             if self.tags[i + 1].display_order - self.tags[i].display_order != 1:
                 self.tags[i + 1].display_order = self.tags[i].display_order + 1
 
+        # Validate condition if provided (and all_groups is given for context)
+        if self.condition and all_groups:
+            try:
+                # Parse to validate syntax
+                parsed = parse_condition(self.condition)
+                # Validate references: ensure groups/tags exist and are prior
+                validate_references(parsed, self, all_groups)
+            except ValueError as e:
+                raise ValueError(f"Invalid condition for group '{self.name}': {e}")
+
     def __repr__(self) -> str:
-        return f"TagGroup(id={self.id}, name={self.name}, tags={self.tags}, order={self.order}) {{required:{self.is_required}, allow_multiple:{self.allow_multiple}, min_tags:{self.min_tags}}}"
+        return (f"TagGroup(id={self.id}, name={self.name}, tags={self.tags}, order={self.order}) "
+                f"{{required:{self.is_required}, allow_multiple:{self.allow_multiple}, min_tags:{self.min_tags}, "
+                f"condition:{self.condition}}}")

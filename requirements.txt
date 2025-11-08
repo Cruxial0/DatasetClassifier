@@ -4,3 +4,4 @@ PyYAML==6.0.2
 Pillow==10.4.0
 pytz==2024.2
 tzlocal==5.2
+pyparsing==3.2.3

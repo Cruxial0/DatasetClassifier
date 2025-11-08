@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from os import path
 from pathlib import Path
 from typing import List, Self, Set
@@ -25,22 +25,27 @@ class ExportImage:
     dest_path: str
     score: str
     categories: List[str]
+    tag_ids: List[int] = field(default_factory=list)
+    additional_tags: Set[str] = field(default_factory=set)
     
-    def __init__(self, id: int, source_path: str, dest_path: str, score: str, categories: List[str]):
+    def __init__(self, id: int, source_path: str, dest_path: str, score: str, categories: List[str], tag_ids: List[int] = None, additional_tags: Set[str] = None):
         self.id = id
         self.source_path = source_path
         self.dest_path = dest_path
         self.score = score
         self.categories = categories
+        self.tag_ids = tag_ids
+        self.additional_tags = additional_tags
 
     def apply_rule(self, rule: ExportRule, output_dir, seperate_by_score: bool, config: ConfigHandler) -> Self:
-        
         return ExportImage(
             id=self.id,
             source_path=self.source_path,
             dest_path=self.create_path(rule, output_dir, seperate_by_score, config),
             score=self.score,
-            categories=self.categories
+            categories=self.categories,
+            tag_ids=self.tag_ids,
+            additional_tags=self.additional_tags
         )
     
     def create_path(self, rule: ExportRule, output_dir, seperate_by_score: bool, config: ConfigHandler) -> str:

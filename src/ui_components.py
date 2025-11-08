@@ -1,7 +1,7 @@
-from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QLabel, QLineEdit, 
-                             QScrollArea, QSizePolicy, QProgressBar, QMessageBox, QSpacerItem)
-from PyQt6.QtGui import QPixmap, QKeySequence, QShortcut, QAction
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QLineEdit,
+                             QScrollArea, QSizePolicy, QProgressBar, QSpacerItem)
+from PyQt6.QtGui import QAction
+from PyQt6.QtCore import Qt
 
 from src.config_handler import ConfigHandler
 from src.styling.style_manager import StyleManager
@@ -10,7 +10,7 @@ class UIComponents:
     @staticmethod
     def create_project_selection(state: bool):
         layout = QVBoxLayout()
-        
+
         input_layout = QHBoxLayout()
 
         input_path = QLineEdit()
@@ -18,7 +18,7 @@ class UIComponents:
 
         input_layout.addWidget(input_path)
         input_layout.addWidget(input_button)
-        
+
         layout.addLayout(input_layout)
 
         return layout, input_path, input_button
@@ -26,9 +26,9 @@ class UIComponents:
     @staticmethod
     def create_image_viewer(state: bool, style_manager: StyleManager):
         layout = QHBoxLayout()
-        
+
         container_left = QVBoxLayout()
-        
+
         prev_button = QPushButton('<', enabled=state)
         prev_button.setStyleSheet(style_manager.get_stylesheet(QPushButton))
         prev_button.setObjectName("prev_button")
@@ -54,7 +54,7 @@ class UIComponents:
         layout.addWidget(scroll_area)
 
         container_right = QVBoxLayout()
-        
+
         next_button = QPushButton('>', enabled=state)
         next_button.setStyleSheet(style_manager.get_stylesheet(QPushButton))
         next_button.setObjectName("next_button")
@@ -78,7 +78,7 @@ class UIComponents:
         category_input.setPlaceholderText('Add category')
         category_input.setStyleSheet(style_manager.get_stylesheet(QLineEdit))
         category_add_button = QPushButton('Add', enabled=state)
-        category_add_button.setStyleSheet(style_manager.get_stylesheet(QPushButton))
+        category_add_button.setStyleSheet(style_manager.get_stylesheet(QPushButton, 'function'))
         category_add_button.setObjectName('category_add_button')
         layout.addWidget(category_input)
         layout.addWidget(category_add_button)
@@ -102,7 +102,7 @@ class UIComponents:
                 button = QPushButton(config.get_score(score), enabled=state)
                 button.setCheckable(True)
                 button.setStyleSheet(style_manager.get_stylesheet(QPushButton, 'score_button'))
-            
+
             button.setObjectName(score)
             score_layout.addWidget(button)
             score_buttons.append(button)

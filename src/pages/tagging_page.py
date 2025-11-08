@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QScrollArea, QSizePolicy, QProgressBar
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QTransform, QKeySequence
+from PyQt6.QtGui import QTransform, QKeySequence
 
 from src.blur_manager import BlurManager
 from src.keybinds.keybind_manager import KeyBinding, KeybindHandler
@@ -66,7 +66,7 @@ class TaggingPage(QWidget):
         self.main_layout = QHBoxLayout(self)
         self._create_image_viewer()
         self._create_tagging_interface()
-        
+
     def _create_image_viewer(self):
         image_viewer_layout = QVBoxLayout()
         self.image_label = QLabel()
@@ -101,7 +101,7 @@ class TaggingPage(QWidget):
 
         nav_button_layout.addWidget(prev_button)
         nav_button_layout.addWidget(next_button)
-        
+
         image_viewer_layout.addWidget(self.image_label)
         image_viewer_layout.addLayout(nav_button_layout)
 
@@ -141,7 +141,7 @@ class TaggingPage(QWidget):
         # Controls
         controls_layout = QHBoxLayout()
         controls_layout.setContentsMargins(7, 7, 7, 7)
-        
+
         # Progress bar
         progress_layout = QHBoxLayout()
 
@@ -169,7 +169,7 @@ class TaggingPage(QWidget):
         self.parent.open_settings_window(f'tag_groups.{group_name}')
 
     def tag_button_click(self, tag_id: int):
-        
+
         if self.current_image_id is None:
             return
 
@@ -186,7 +186,7 @@ class TaggingPage(QWidget):
             tag_added = True
             if tag_id not in self.image_tags:
                 self.image_tags.append(tag_id)
-        
+
         condition_met = self.status_widget.check_group_conditions(self.image_tags) and will_be_valid
 
         # Auto-scroll when TagGroup condition is met (if enabled) (and not overridden by TagGroup)
@@ -217,12 +217,12 @@ class TaggingPage(QWidget):
             btn = first_item.widget()
             if not isinstance(btn, QPushButton):
                 continue
-            
+
             # Reset button state
             btn.setEnabled(True)
 
             tag_id = int(btn.objectName().split('_')[-1])
-            
+
             if self.db.tags.image_has_tag(self.current_image_id, tag_id):
                 btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'accent'))
                 if has_label:
@@ -241,7 +241,7 @@ class TaggingPage(QWidget):
 
     def create_tag_button(self, tag: Tag) -> QHBoxLayout:
         btn_layout = QHBoxLayout()
-        
+
         btn = QPushButton(tag.name)
         btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
         btn.setText(tag.name)
@@ -254,13 +254,13 @@ class TaggingPage(QWidget):
             hotkey_label = QLabel()
             hotkey_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'keybind'))
             hotkey_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
-            
+
             btn_layout.addWidget(hotkey_label, 0, Qt.AlignmentFlag.AlignVCenter)
             btn_layout.addWidget(btn, 0, Qt.AlignmentFlag.AlignVCenter)
 
             # Register the button for this key binding
             self.keybind_page.register_binding(key, btn)
-            
+
             # Get and display all key combinations
             bindings = self.keybind_handler.current_bindings.get(key, [])
             shortcuts = []
@@ -269,13 +269,13 @@ class TaggingPage(QWidget):
                     key_sequence = self._create_key_sequence(binding)
                     unicode = key_to_unicode(key_sequence.toString())
                     shortcuts.append(unicode)
-            
+
             shortcut_text = " / ".join(shortcuts) if shortcuts else ""
             hotkey_label.setText(f"({shortcut_text})")
-            
+
             # Store reference to hotkey label for updates
             btn.setProperty("hotkey_label", hotkey_label)
-            
+
             return btn_layout
 
         btn_layout.addWidget(btn, 0, Qt.AlignmentFlag.AlignVCenter)
@@ -285,7 +285,7 @@ class TaggingPage(QWidget):
         if self.page_active is False:
             self.tag_update_due = True
             return
-        
+
         if not skip_update:
             prev_group_id = 0
             if self.current_group is not None:
@@ -294,9 +294,9 @@ class TaggingPage(QWidget):
 
             self.tag_groups = self.db.tags.get_project_tags(self.active_project.id)
 
-            if self.tag_groups is None or len(self.tag_groups) == 0: 
+            if self.tag_groups is None or len(self.tag_groups) == 0:
                 return
-            
+
             for i in range(len(self.tag_groups)):
                 if self.tag_groups[i].id == prev_group_id:
                     self.current_group = self.tag_groups[i]
@@ -306,17 +306,17 @@ class TaggingPage(QWidget):
                 self.current_group = self.tag_groups[0]
 
             self.status_widget.set_tag_groups(self.tag_groups)
-        
+
         if self.current_group.tags is None:
             self.current_group.tags = []
-        
+
         # Unregister all tagging keybinds
         for i in range(10):
             self.keybind_page.remove_keybinding(f'key_{i}')
 
         # Remove all items in the tags layout
         self._clear_layout(self.tag_buttons_layout)
-        
+
         for tag in self.current_group.tags:
             btn_layout = self.create_tag_button(tag)
             self.tag_buttons_layout.addLayout(btn_layout)
@@ -330,46 +330,98 @@ class TaggingPage(QWidget):
         if self.tag_groups is None or len(self.tag_groups) < 1 or self.current_group is None:
             return
 
-        if self.current_group.order + 1 >= len(self.tag_groups):
-            # check if there are more images
+        # Start searching from the next group
+        start_index = self.current_group.order + 1
+
+        # If we're at the end, try to load next image
+        if start_index >= len(self.tag_groups):
             if not self.load_next_image():
                 return
             return
-        
-        index = self.current_group.order + 1
-        self.current_group = self.tag_groups[index]
 
-        self.status_widget.set_prev_button_enabled(True)
+        # Search for the next available group (condition met)
+        while start_index < len(self.tag_groups):
+            candidate = self.tag_groups[start_index]
 
-        self.auto_scroll_temp_disabled = False
-        self.update_tag_groups(skip_update=True)
+            # Check if this group's activation condition is met
+            if candidate.condition:
+                # Import here to avoid circular imports
+                from src.parser import parse_condition, evaluate_condition
+                try:
+                    parsed = parse_condition(candidate.condition)
+                    if parsed and not evaluate_condition(parsed, self.image_tags, self.tag_groups):
+                        # Condition not met, skip this group
+                        start_index += 1
+                        continue
+                except Exception as e:
+                    # If condition parsing fails, show the group anyway (fail open)
+                    print(f"Warning: Failed to evaluate condition for '{candidate.name}': {e}")
 
-        if index == len(self.tag_groups) - 1 and not self.image_handler.next_image_exists():
-            self.status_widget.set_next_button_enabled(False)
+            # Found an available group!
+            self.current_group = candidate
+            self.status_widget.set_prev_button_enabled(True)
+            self.auto_scroll_temp_disabled = False
+            self.update_tag_groups(skip_update=True)
+
+            # Check if we can go further
+            if start_index == len(self.tag_groups) - 1 and not self.image_handler.next_image_exists():
+                self.status_widget.set_next_button_enabled(False)
+
+            return
+
+        # No available groups found, load next image
+        if not self.load_next_image():
+            return
 
     def previous_group(self):
         if self.tag_groups is None or len(self.tag_groups) < 1 or self.current_group is None:
             return
 
-        if self.current_group.order - 1 < 0:
-            # check if there are more images
+        # Start searching from the previous group
+        start_index = self.current_group.order - 1
+
+        # If we're at the beginning, try to load previous image
+        if start_index < 0:
             if not self.load_previous_image():
                 return
             return
-        
-        index = self.current_group.order - 1
-        self.current_group = self.tag_groups[index]
-        self.auto_scroll_temp_disabled = False
 
-        if index == 0 and not self.image_handler.previous_image_exists():
-            self.status_widget.set_prev_button_enabled(False)
+        # Search backwards for an available group (condition met)
+        while start_index >= 0:
+            candidate = self.tag_groups[start_index]
 
-        self.update_tag_groups(skip_update=True)
+            # Check if this group's activation condition is met
+            if candidate.condition:
+                from src.parser import parse_condition, evaluate_condition
+                try:
+                    parsed = parse_condition(candidate.condition)
+                    if parsed and not evaluate_condition(parsed, self.image_tags, self.tag_groups):
+                        # Condition not met, skip this group
+                        start_index -= 1
+                        continue
+                except Exception as e:
+                    # If condition parsing fails, show the group anyway
+                    print(f"Warning: Failed to evaluate condition for '{candidate.name}': {e}")
+
+            # Found an available group!
+            self.current_group = candidate
+            self.auto_scroll_temp_disabled = False
+
+            # Check if we can go further back
+            if start_index == 0 and not self.image_handler.previous_image_exists():
+                self.status_widget.set_prev_button_enabled(False)
+
+            self.update_tag_groups(skip_update=True)
+            return
+
+        # No available groups found, load previous image
+        if not self.load_previous_image():
+            return
 
     def to_latest(self):
         if not self.image_handler.current_image_id:
             return
-        
+
         result = self.db.tags.get_latest_unfinished_image_group(self.active_project.id, self.config_handler.get_value('behaviour.to_latest_strict_mode'))
         if result is None:
             return
@@ -381,6 +433,18 @@ class TaggingPage(QWidget):
             self.display_image()
 
             self.current_group = self.tag_groups[group_order]
+
+            if self.current_group.condition:
+                from src.parser import parse_condition, evaluate_condition
+                try:
+                    parsed = parse_condition(self.current_group.condition)
+                    if parsed and not evaluate_condition(parsed, self.image_tags, self.tag_groups):
+                        # The "latest" group's condition isn't met anymore
+                        # This shouldn't happen, but handle gracefully
+                        print(f"Warning: Latest group condition not met for '{self.current_group.name}'")
+                except Exception as e:
+                    print(f"Warning: Failed to evaluate condition: {e}")
+
             self.image_tags = self.db.tags.get_image_tags(self.current_image_id)
             self.update_tag_groups(skip_update=True)
 
@@ -402,13 +466,13 @@ class TaggingPage(QWidget):
         # Cache the orientation for the current image
         if not hasattr(self, '_cached_orientation'):
             self._cached_orientation = {}
-            
+
         image_id = self.image_handler.current_image_id
         if image_id not in self._cached_orientation:
             self._cached_orientation[image_id] = self.image_handler.get_orientation()
 
         orientation = self._cached_orientation[image_id]
-        
+
         # Only create transform if needed
         transform = None
         if orientation != "Normal":
@@ -421,15 +485,15 @@ class TaggingPage(QWidget):
             }
             if orientation in rotations:
                 transform.rotate(rotations[orientation])
-        
+
         # Apply transform if needed
         if transform:
             pixmap = pixmap.transformed(transform, Qt.TransformationMode.SmoothTransformation)
-        
+
         # Scale and display
         scaled_pixmap = pixmap.scaled(
-            self.image_label.size(), 
-            Qt.AspectRatioMode.KeepAspectRatio, 
+            self.image_label.size(),
+            Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation
         )
         self.image_label.setPixmap(scaled_pixmap)
@@ -442,7 +506,7 @@ class TaggingPage(QWidget):
         """Create a QKeySequence from a KeyBinding"""
         key = binding.key
         if binding.modifiers:
-            modifier_str = "+".join(mod.name.replace('KeyboardModifier.', '') 
+            modifier_str = "+".join(mod.name.replace('KeyboardModifier.', '')
                                   for mod in binding.modifiers)
             return QKeySequence(f"{modifier_str}+{key}")
         return QKeySequence(key)
@@ -530,15 +594,15 @@ class TaggingPage(QWidget):
     def _clear_layout(self, layout):
         while layout.count():
             item = layout.takeAt(0)
-            
+
             # Handle nested layouts
             if item.layout():
                 self._clear_layout(item.layout())
-                
+
             # Handle widgets
             if item.widget():
                 item.widget().deleteLater()
-                
+
             # Delete the item itself
             del item
 

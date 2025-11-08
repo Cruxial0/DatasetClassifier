@@ -64,12 +64,37 @@ def create_image_tags_schema():
         FOREIGN KEY (tag_id) REFERENCES tags(tag_id)
     );"""
 
+def create_categories_schema():
+    return """
+    CREATE TABLE categories (
+        category_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL,
+        category_name TEXT NOT NULL,
+        display_order INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(project_id),
+        UNIQUE(project_id, category_name)
+    );"""
+
+def create_image_categories_schema():
+    return """
+    CREATE TABLE image_categories (
+        image_id INTEGER NOT NULL,
+        category_id INTEGER NOT NULL,
+        PRIMARY KEY (image_id, category_id),
+        FOREIGN KEY (image_id) REFERENCES images(image_id) ON DELETE CASCADE,
+        FOREIGN KEY (category_id) REFERENCES categories(category_id) ON DELETE CASCADE
+    );"""
+
 def create_indexes():
     return """
     CREATE INDEX idx_images_project ON images(project_id);
     CREATE INDEX idx_tag_groups_project ON tag_groups(project_id);
     CREATE INDEX idx_tags_group ON tags(group_id);
     CREATE INDEX idx_image_tags_image ON image_tags(image_id);
+    CREATE INDEX idx_categories_project ON categories(project_id);
+    CREATE INDEX idx_image_categories_image ON image_categories(image_id);
+    CREATE INDEX idx_image_categories_category ON image_categories(category_id);
     """
 
 def create_update_date_triggers():
@@ -174,6 +199,8 @@ def create_database():
     {create_tag_groups_schema()}
     {create_tags_schema()}
     {create_image_tags_schema()}
+    {create_categories_schema()}
+    {create_image_categories_schema()}
     {create_indexes()}
     {create_update_date_triggers()}
     {create_tag_deletion_triggers()}

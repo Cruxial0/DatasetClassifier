@@ -1,31 +1,37 @@
-import sys
-from typing import List, Set
-from PyQt6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
-                             QPushButton, QLineEdit, QFileDialog, QScrollArea, 
-                             QCheckBox, QComboBox, QSpacerItem, QLabel, QMessageBox)
-from PyQt6.QtCore import Qt, QMimeData, QPoint, pyqtSignal
-from PyQt6.QtGui import QDrag, QPalette, QColor
+from typing import List
+from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout,
+                             QPushButton, QLineEdit, QFileDialog, QScrollArea,
+                             QCheckBox, QComboBox, QLabel, QMessageBox,
+                             QGroupBox, QFrame)
+from PyQt6.QtCore import Qt, QMimeData, pyqtSignal
+from PyQt6.QtGui import QDrag, QPalette, QColor, QFont
 from pyqt6_multiselect_combobox import MultiSelectComboBox
 
 from src.export_image import ExportRule
 from src.config_handler import ConfigHandler
 from src.styling.style_manager import StyleManager
+from src.styling.styling_utils import styled_information_box, styled_question_box, styled_warning_box
 
 class RuleComponent(QWidget):
+    """Widget for a single category-based export rule"""
     deleteRequested = pyqtSignal(object)
     dragStarted = pyqtSignal(object)
 
     def __init__(self, categories: List[str], rule: ExportRule, style_manager: StyleManager, editable: bool = True, parent=None):
         super().__init__(parent)
         layout = QHBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(5, 5, 5, 5)
         self.rule = rule
         self.editable = editable
         self.style_manager = style_manager
 
+        # Priority label
         self.priority_label = QLabel(str(self.rule.priority))
-        self.priority_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'subtext'))
+        self.priority_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'bold'))
+        self.priority_label.setMinimumWidth(30)
+        self.priority_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
+        # Category selector
         self.combo_box = MultiSelectComboBox()
         self.combo_box.setStyleSheet(self.style_manager.get_stylesheet(QComboBox))
         self.combo_box.addItems(categories)
@@ -38,20 +44,22 @@ class RuleComponent(QWidget):
             self.combo_box.setCurrentText("DEFAULT")
         self.combo_box.setEnabled(editable)
 
+        # File path
         self.file_path = QLineEdit(self.rule.destination)
         self.file_path.setStyleSheet(self.style_manager.get_stylesheet(QLineEdit))
-        self.file_path.setPlaceholderText("File path...")
+        self.file_path.setPlaceholderText("Subdirectory path...")
         self.file_path.setEnabled(editable)
 
-        layout.addWidget(self.priority_label, 1)
-        layout.addWidget(self.combo_box, 7)
-        layout.addWidget(self.file_path, 2)
+        layout.addWidget(self.priority_label, 0)
+        layout.addWidget(self.combo_box, 6)
+        layout.addWidget(self.file_path, 3)
 
         if editable:
-            self.delete_button = QPushButton("X")
+            self.delete_button = QPushButton("✕")
             self.delete_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'warning'))
+            self.delete_button.setMaximumWidth(35)
             self.delete_button.clicked.connect(self.request_delete)
-            layout.addWidget(self.delete_button)
+            layout.addWidget(self.delete_button, 0)
 
         self.setLayout(layout)
         self.setAcceptDrops(True)
@@ -87,109 +95,257 @@ class RuleComponent(QWidget):
         self.setPalette(palette)
         self.setAutoFillBackground(highlight)
 
+
 class ExportPopup(QWidget):
-    def __init__(self, export_callback: callable, categories, config: ConfigHandler, style_manager: StyleManager):
+    """Redesigned export popup with better organization and tag rules support"""
+
+    def __init__(self, export_callback: callable, categories, config: ConfigHandler,
+                 style_manager: StyleManager, project_id: int = None):
         super().__init__()
         self.categories = categories
         self.export_callback = export_callback
         self.config = config
         self.style_manager = style_manager
+        self.project_id = project_id
 
         self.setStyleSheet(self.style_manager.get_stylesheet(QWidget))
+        self.setWindowTitle('Export Settings')
+        self.setMinimumSize(800, 600)
 
         self.initUI()
         self.drag_component = None
 
     def initUI(self):
+        main_layout = QVBoxLayout()
+        main_layout.setSpacing(15)
+        main_layout.setContentsMargins(20, 20, 20, 20)
+
+        # Title
+        title_label = QLabel("Export Configuration")
+        title_font = QFont()
+        title_font.setPointSize(16)
+        title_font.setBold(True)
+        title_label.setFont(title_font)
+        title_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel))
+        main_layout.addWidget(title_label)
+
+        # Add a separator
+        separator = QFrame()
+        separator.setFrameShape(QFrame.Shape.HLine)
+        separator.setFrameShadow(QFrame.Shadow.Sunken)
+        main_layout.addWidget(separator)
+
+        # Output directory section
+        main_layout.addWidget(self._create_output_section())
+
+        # Category rules section
+        main_layout.addWidget(self._create_category_rules_section())
+
+        # Score selection section
+        main_layout.addWidget(self._create_score_section())
+
+        # Export options section
+        main_layout.addWidget(self._create_options_section())
+
+        main_layout.addStretch()
+
+        # Action buttons
+        main_layout.addWidget(self._create_action_buttons())
+
+        self.setLayout(main_layout)
+
+    def _create_output_section(self) -> QGroupBox:
+        """Create the output directory selection section"""
+        group = QGroupBox("Output Directory")
+        group.setStyleSheet(self.style_manager.get_stylesheet(QGroupBox))
         layout = QVBoxLayout()
 
-        # Output directory selector
         dir_layout = QHBoxLayout()
-        self.dir_input = QLineEdit(self)
+        self.dir_input = QLineEdit()
         self.dir_input.setStyleSheet(self.style_manager.get_stylesheet(QLineEdit))
-        dir_button = QPushButton("Select output path")
-        dir_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
+        self.dir_input.setPlaceholderText("Select an output directory...")
+
+        dir_button = QPushButton("Browse...")
+        dir_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'accent'))
         dir_button.clicked.connect(self.select_directory)
-        dir_layout.addWidget(self.dir_input)
+
+        dir_layout.addWidget(self.dir_input, 1)
         dir_layout.addWidget(dir_button)
         layout.addLayout(dir_layout)
 
-        # Add button
-        add_button = QPushButton("Add Rule")
-        add_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
+        group.setLayout(layout)
+        return group
+
+    def _create_category_rules_section(self) -> QGroupBox:
+        """Create the category-based export rules section"""
+        group = QGroupBox("Category Rules (Drag to reorder by priority)")
+        group.setStyleSheet(self.style_manager.get_stylesheet(QGroupBox))
+        layout = QVBoxLayout()
+
+        # Info label
+        info_label = QLabel(
+            "Define where images with specific categories should be exported. "
+            "Higher priority rules are matched first."
+        )
+        info_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'subtext'))
+        info_label.setWordWrap(True)
+        layout.addWidget(info_label)
+
+        # Add rule button
+        add_button = QPushButton("+ Add Category Rule")
+        add_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'function_accent'))
         add_button.clicked.connect(self.add_rule)
         layout.addWidget(add_button)
 
-        # Scrollable area for category components
+        # Scrollable area for rules
         self.scroll_area = QScrollArea()
-        self.scroll_area.setContentsMargins(0,0,0,0)
+        self.scroll_area.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+        self.scroll_area.setContentsMargins(0, 0, 0, 0)
         self.scroll_widget = QWidget()
         self.scroll_layout = QVBoxLayout(self.scroll_widget)
-        self.scroll_layout.setSpacing(10)
-        self.scroll_layout.setContentsMargins(10, 10, 10, 10)
+        self.scroll_layout.setSpacing(5)
+        self.scroll_layout.setContentsMargins(0, 0, 0, 0)
         self.category_components = []
 
         self.scroll_area.setWidget(self.scroll_widget)
         self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setMinimumHeight(150)
         layout.addWidget(self.scroll_area)
 
         # Default rule (non-editable)
         default_rule = ExportRule(categories=None, destination='.', priority=0)
         self.add_rule_component(default_rule, editable=False)
 
-        # Enable drag and drop for the layout
+        # Enable drag and drop
         self.scroll_widget.setAcceptDrops(True)
 
-        # Checkboxes
-        check_layout = QHBoxLayout()
+        group.setLayout(layout)
+        return group
+
+    def _create_score_section(self) -> QGroupBox:
+        """Create the score selection section"""
+        group = QGroupBox("Score Filter")
+        group.setStyleSheet(self.style_manager.get_stylesheet(QGroupBox))
+        layout = QVBoxLayout()
+
+        info_label = QLabel("Select which scores to include in the export:")
+        info_label.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'subtext'))
+        layout.addWidget(info_label)
+
+        # Create checkboxes in a grid
+        score_layout = QHBoxLayout()
+        score_layout.setSpacing(10)
+
         self.checkboxes = {}
         preset, scores = self.config.get_scores()
+
         for name, label in scores.items():
-            checkbox = self.create_checkbox(label, check_layout)
+            checkbox = QCheckBox(label)
             checkbox.setObjectName(name)
+            checkbox.setStyleSheet(self.style_manager.get_stylesheet(QCheckBox))
             self.checkboxes[name] = checkbox
-            check_layout.addWidget(checkbox)
-        layout.addLayout(check_layout)
-        layout.addSpacerItem(QSpacerItem(0, 10))
+            score_layout.addWidget(checkbox)
 
-        options_layout = QHBoxLayout()
-        self.export_captions = self.create_checkbox('Export captions', options_layout)
-        self.seperate_by_score = self.create_checkbox('Seperate by score', options_layout)
-        self.delete_images = self.create_checkbox('Delete images from source directory', options_layout)
+        score_layout.addStretch()
+        layout.addLayout(score_layout)
+
+        group.setLayout(layout)
+        return group
+
+    def _create_options_section(self) -> QGroupBox:
+        """Create the export options section"""
+        group = QGroupBox("Export Options")
+        group.setStyleSheet(self.style_manager.get_stylesheet(QGroupBox))
+        layout = QVBoxLayout()
+        layout.setSpacing(8)
+
+        # Caption options
+        self.export_captions = QCheckBox("Export caption files (.txt)")
         self.export_captions.setChecked(self.config.get_export_option('export_captions'))
-        self.seperate_by_score.setChecked(self.config.get_export_option('seperate_by_score'))
-        self.delete_images.setChecked(self.config.get_export_option('delete_images'))
-        options_layout.addWidget(self.export_captions)
-        options_layout.addWidget(self.seperate_by_score)
-        options_layout.addWidget(self.delete_images)
-        layout.addLayout(options_layout)
+        self.export_captions.setStyleSheet(self.style_manager.get_stylesheet(QCheckBox))
+        layout.addWidget(self.export_captions)
 
-        # Buttons
-        button_layout = QHBoxLayout()
-        export_button = QPushButton("Export")
+        # Separate by score
+        self.seperate_by_score = QCheckBox("Separate images by score (create subdirectories)")
+        self.seperate_by_score.setChecked(self.config.get_export_option('seperate_by_score'))
+        self.seperate_by_score.setStyleSheet(self.style_manager.get_stylesheet(QCheckBox))
+        layout.addWidget(self.seperate_by_score)
+
+        # Apply tag rules
+        self.apply_tag_rules = QCheckBox("Apply export tag rules (add tags based on conditions)")
+        self.apply_tag_rules.setChecked(True)
+        self.apply_tag_rules.setStyleSheet(self.style_manager.get_stylesheet(QCheckBox))
+
+        # Add tooltip/info
+        tag_rules_layout = QHBoxLayout()
+        tag_rules_layout.addWidget(self.apply_tag_rules)
+
+        info_btn = QPushButton(" ℹ ")
+        info_btn.setMaximumWidth(25)
+        info_btn.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'function'))
+        info_btn.clicked.connect(self._show_tag_rules_info)
+        tag_rules_layout.addWidget(info_btn)
+        tag_rules_layout.addStretch()
+
+        layout.addLayout(tag_rules_layout)
+
+        # Delete images warning
+        self.delete_images = QCheckBox("⚠️ Delete source images after export")
+        self.delete_images.setChecked(self.config.get_export_option('delete_images'))
+        self.delete_images.setStyleSheet(self.style_manager.get_stylesheet(QCheckBox, 'warning'))
+        layout.addWidget(self.delete_images)
+
+        group.setLayout(layout)
+        return group
+
+    def _create_action_buttons(self) -> QWidget:
+        """Create the action buttons section"""
+        widget = QWidget()
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        export_button = QPushButton("Export Images")
         export_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'accept'))
+        export_button.setMinimumHeight(40)
         export_button.clicked.connect(self.export_data)
+
         cancel_button = QPushButton("Cancel")
         cancel_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
+        cancel_button.setMinimumHeight(40)
         cancel_button.clicked.connect(self.close)
-        button_layout.addWidget(export_button)
-        button_layout.addWidget(cancel_button)
-        layout.addLayout(button_layout)
 
-        self.setLayout(layout)
-        self.setWindowTitle('Export Rules')
-        self.setGeometry(300, 300, 600, 400)
+        layout.addStretch()
+        layout.addWidget(cancel_button)
+        layout.addWidget(export_button)
+
+        widget.setLayout(layout)
+        return widget
+
+    def _show_tag_rules_info(self):
+        """Show information about export tag rules"""
+        styled_information_box(
+            self,
+            "Export Tag Rules",
+            "Export tag rules allow you to automatically add tags during export based on conditions.\n\n"
+            "For example, if an image has tags 'from above' AND 'from side', "
+            "you can create a rule to automatically add the tag 'mixed perspectives'.\n\n"
+            "Configure these rules in Settings → Export Conditions.",
+            self.style_manager
+        )
 
     def select_directory(self):
+        """Open directory selection dialog"""
         directory = QFileDialog.getExistingDirectory(self, "Select Output Directory")
         if directory:
             self.dir_input.setText(directory)
 
     def add_rule(self):
+        """Add a new category rule"""
         new_rule = ExportRule(categories=set(), destination='', priority=len(self.category_components))
         self.add_rule_component(new_rule)
 
     def add_rule_component(self, rule: ExportRule, editable: bool = True):
+        """Add a rule component to the list"""
         component = RuleComponent(self.categories, rule, self.style_manager, editable, parent=self.scroll_widget)
         component.deleteRequested.connect(self.delete_rule)
         component.dragStarted.connect(self.drag_started)
@@ -197,21 +353,8 @@ class ExportPopup(QWidget):
         self.scroll_layout.insertWidget(0, component)
         self.update_priorities()
 
-    def create_checkbox(self, label, container: QHBoxLayout) -> QCheckBox:
-        layout = QHBoxLayout()
-        checkbox = QCheckBox()
-
-        lbl = QLabel(label)
-        lbl.setStyleSheet(self.style_manager.get_stylesheet(QLabel, 'subtext'))
-        
-        layout.addWidget(checkbox)
-        layout.addSpacerItem(QSpacerItem(5, 0))
-        layout.addWidget(lbl)
-        container.addLayout(layout)
-        
-        return checkbox
-
     def delete_rule(self, component):
+        """Delete a category rule"""
         if component.rule.priority != 0:  # Prevent deleting the default rule
             self.scroll_layout.removeWidget(component)
             component.deleteLater()
@@ -219,28 +362,51 @@ class ExportPopup(QWidget):
             self.update_priorities()
 
     def update_priorities(self):
+        """Update priority labels after reordering"""
         for i, component in enumerate(reversed(self.category_components)):
             component.rule.priority = i
             component.priority_label.setText(str(i))
 
     def export_data(self):
+        """Validate and export data"""
         data = {
             'output_directory': self.dir_input.text(),
             'rules': [component.get_data() for component in reversed(self.category_components)],
             'scores': [name for name, checkbox in self.checkboxes.items() if checkbox.isChecked()],
             'seperate_by_score': self.seperate_by_score.isChecked(),
             'export_captions': self.export_captions.isChecked(),
-            'delete_images': self.delete_images.isChecked()
+            'delete_images': self.delete_images.isChecked(),
+            'apply_tag_rules': self.apply_tag_rules.isChecked(),
+            'project_id': self.project_id
         }
-        if data['output_directory'] == '':
-            QMessageBox.warning(self, 'Invalid export', 'Select an output path before exporting')
-            return
-        if len(data['scores']) < 1:
-            QMessageBox.warning(self, 'Invalid export', 'Select at least one score before exporting')
-            return
-        self.export_callback(data)
-        self.close()
 
+        # Validation
+        if data['output_directory'] == '':
+            styled_warning_box(self, 'Invalid Export', 'Please select an output directory.', self.style_manager)
+            return
+
+        if len(data['scores']) < 1:
+            styled_warning_box(self, 'Invalid Export', 'Please select at least one score to export.', self.style_manager)
+            return
+
+        # Confirm if delete is enabled
+        if data['delete_images']:
+            reply = styled_question_box(
+                self,
+                'Confirm Deletion',
+                '⚠️ You have selected to delete source images after export.\n\n'
+                'This action cannot be undone. Are you sure you want to continue?',
+                self.style_manager,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
+            )
+
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+
+        self.export_callback(data)
+
+    # Drag and drop methods
     def drag_started(self, component):
         self.drag_component = component
 

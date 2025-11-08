@@ -1,4 +1,4 @@
-from typing import Literal, Any, Optional
+from typing import Any
 import yaml
 import os
 
@@ -14,7 +14,7 @@ default_behaviours = {
 default_colors = {
     "accent_color": "#5a9bd8",
     "alternate_color": "#b08463",
-    "warning_color": "#d93f00",
+    "warning_color": "#963535",
     "button_color": "#353535",
     "button_border_color": "#444444",
     "button_color_overlay": "#5a9bd8",
@@ -22,7 +22,7 @@ default_colors = {
     "disabled_color": "#353535",
     "text_color": "#ffffff",
     "text_color_disabled": "#545454",
-    "text_color_overlay": "#2d2d2d",
+    "text_color_overlay": "#c8c8c8",
     "background_color": "#1e1e1e",
     "panel_color": '#292929'
 }
@@ -38,6 +38,7 @@ default_keybinds = {
     "key_7": "K",
     "key_8": "L",
     "key_9": ";",
+    "modifier": "ALT",
     "discard": "BACKSPACE",
     "continue": "Return",
     "next_image": "Right",
@@ -87,24 +88,24 @@ class ConfigHandler:
             # Create new config file with default values
             self._create_default_config()
             return DEFAULT_VALUES.copy()
-        
+
         try:
             with open(self.config_file, 'r') as f:
                 loaded_config = yaml.safe_load(f)
                 if loaded_config is None:
                     loaded_config = {}
-                
+
                 # Update config with any missing fields
                 updated_config = self._update_missing_fields(loaded_config, DEFAULT_VALUES)
-                
+
                 # If we added any missing fields, save the updated config
                 if updated_config != loaded_config:
                     with open(self.config_file, 'w') as f:
                         yaml.dump(updated_config, f, sort_keys=False)
                     print(f"Updated config file with missing fields at: {self.config_file}")
-                    
+
                 return updated_config
-            
+
         except Exception as e:
             print(f"Error loading config file: {e}")
             return DEFAULT_VALUES.copy()
@@ -113,7 +114,7 @@ class ConfigHandler:
         """Get a value from config using dot notation with fallback to defaults"""
         current = self.config
         default = DEFAULT_VALUES
-        
+
         for key in path.split('.'):
             # Try to get from actual config first
             if isinstance(current, dict) and key in current:
@@ -123,30 +124,30 @@ class ConfigHandler:
                 current = default[key]
             else:
                 return None
-            
+
             # Update default fallback path
             default = default.get(key, {}) if isinstance(default, dict) else {}
-            
+
         return current
 
     def set_value(self, path: str, value: Any):
         """Set a value in config using dot notation"""
         current = self.config
         keys = path.split('.')
-        
+
         # Navigate to the correct nested level
         for key in keys[:-1]:
             if key not in current:
                 current[key] = {}
             current = current[key]
-            
+
         # Set the value
         current[keys[-1]] = value
 
     # Updated convenience methods using dot notation
     def get_keybindings(self):
         return self.get_value('keybindings') or default_keybinds
-    
+
     def set_keybind(self, key: str, value: str):
         self.set_value(f'keybindings.{key}', value)
 
@@ -155,19 +156,19 @@ class ConfigHandler:
 
     def get_color(self, color: str):
         return self.get_value(f'colors.{color}')
-    
+
     def set_color(self, color: str, hex_code: str):
         self.set_value(f'colors.{color}', hex_code)
 
     def get_option(self, option: str):
         return self.get_value(f'options.{option}')
-    
+
     def set_option(self, option: str, value: Any):
         self.set_value(f'options.{option}', value)
 
     def get_export_option(self, export_option: str):
         return self.get_value(f'export_options.{export_option}')
-    
+
     def set_export_option(self, export_option: str, value: Any):
         self.set_value(f'export_options.{export_option}', value)
 
@@ -176,22 +177,22 @@ class ConfigHandler:
         for i in range(6):
             score_key = f'score_{i}'
             score_list[score_key] = self.get_value(f'scores.{score_key}')
-        
+
         return self.get_value('scores.preset'), score_list
-    
+
     def get_score(self, score: str):
         return self.get_value(f'scores.{score}')
-    
+
     def set_scores(self, values: list[str]):
         if len(values) != 6:
             return
-        
+
         for i in range(6):
             self.set_value(f'scores.score_{i}', values[i])
 
     def set_scores_preset(self, preset_name: str):
         preset, values = get_preset(preset_name)
-        
+
         self.set_value('scores.preset', preset)
         for i in range(6):
             self.set_value(f'scores.score_{i}', values[i])
@@ -215,12 +216,12 @@ class ConfigHandler:
     def _update_missing_fields(self, current_config: dict, default_config: dict) -> dict:
         """Recursively update config dictionary with any missing fields from defaults"""
         updated_config = current_config.copy()
-        
+
         for key, default_value in default_config.items():
             if key not in updated_config:
                 updated_config[key] = default_value
             elif isinstance(default_value, dict) and isinstance(updated_config[key], dict):
                 # Recursively update nested dictionaries
                 updated_config[key] = self._update_missing_fields(updated_config[key], default_value)
-                
+
         return updated_config

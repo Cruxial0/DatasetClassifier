@@ -2,7 +2,6 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-import pytz
 from zoneinfo import ZoneInfo
 from typing import Optional
 from tzlocal import get_localzone
@@ -72,21 +71,21 @@ def get_time_ago(timestamp_str: str, timezone: Optional[str] = None) -> str:
     """
     Convert a timestamp string to a human-readable relative time string.
     Uses system timezone by default, with optional timezone override.
-    
+
     Args:
         timestamp_str: ISO format timestamp string
         timezone: Optional timezone name override (e.g. "America/New_York", "Asia/Tokyo")
-        
+
     Returns:
         str: Human readable string like "2 hours ago"
     """
     # Parse the timestamp string to datetime object
     timestamp = datetime.fromisoformat(timestamp_str)
-    
+
     # If timestamp has no timezone, assume UTC
     if timestamp.tzinfo is None:
         timestamp = timestamp.replace(tzinfo=ZoneInfo("UTC"))
-    
+
     # Get system timezone if none specified
     if timezone is None:
         target_tz = get_localzone()
@@ -95,12 +94,12 @@ def get_time_ago(timestamp_str: str, timezone: Optional[str] = None) -> str:
             target_tz = ZoneInfo(timezone)
         except KeyError:
             raise ValueError(f"Invalid timezone: {timezone}")
-        
+
     now = datetime.now(target_tz)
-    
+
     # Convert timestamp to target timezone for comparison
     timestamp = timestamp.astimezone(target_tz)
-    
+
     # Calculate the time difference
     delta = now - timestamp
     seconds = delta.total_seconds()
@@ -128,20 +127,20 @@ def get_time_ago(timestamp_str: str, timezone: Optional[str] = None) -> str:
         months = int(seconds / 2592000)
         unit = "month" if months == 1 else "months"
         return f"{months} {unit} ago"
-    
+
 def open_directory(path):
     """
     Opens the specified directory in the system's default file explorer.
     Works across Windows, macOS, and Linux.
-    
+
     Args:
         path (str): The directory path to open
     """
     # Normalize path separators for the current platform
     path = os.path.normpath(path)
-    
+
     system = platform.system().lower()
-    
+
     try:
         if system == 'windows':
             subprocess.Popen(['explorer', path])
@@ -151,25 +150,25 @@ def open_directory(path):
             subprocess.Popen(['xdg-open', path])
         else:
             raise OSError(f"Unsupported operating system: {system}")
-            
+
     except Exception as e:
         print(f"Error opening directory: {e}")
 
 def get_resource_path(relative_path: str) -> str:
     """
     Get absolute path to a resource, works for dev and for PyInstaller.
-    
+
     Args:
-        relative_path: Path relative to the project root, e.g. 'icons/chevron-down.png'
-    
+        relative_path: Path relative to the project root, e.g. 'icons/chevron-down.svg'
+
     Returns:
         Absolute path to the resource
     """
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
+        base_path = Path(sys._MEIPASS)
     except Exception:
-        # If not running as bundled exe, use the script's directory
-        base_path = os.path.dirname(os.path.abspath(__file__)).replace("\\src", "")
-    
-    return os.path.normpath(os.path.join(base_path, relative_path))
+        # If not running as bundled exe, use the script's directory parent
+        base_path = Path(__file__).parent.parent
+
+    return str(base_path / relative_path)

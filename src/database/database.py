@@ -7,21 +7,23 @@ from src.database.migrate.db_migration import migrations
 from src.database.query.tag_queries import TagQueries
 from src.database.query.project_queries import ProjectQueries
 from src.database.query.image_queries import ImageQueries
+from src.database.query.tag_rule_queries import ExportTagRuleQueries
+from src.database.query.category_queries import CategoryQueries
 
-# Version of the database. Needs to be updated when a new migration is added
-DB_VERSION = 1
-
+DB_VERSION = 4
 class Database:
     def __init__(self, db_path="./db/dataset_classifier.db"):
         self.db_path = db_path
         self.connect()
 
         self.migrator = DatabaseMigration(self.connection)
-        self.migrator.migrate(migrations, target_version=DB_VERSION)
+        self.migrator.migrate(migrations)
         
         self.images = ImageQueries(self.connection)
         self.projects = ProjectQueries(self.connection)
         self.tags = TagQueries(self.connection)
+        self.export_rules = ExportTagRuleQueries(self.connection)
+        self.categories = CategoryQueries(self.connection)
 
     def connect(self):
         if os.path.exists(self.db_path):

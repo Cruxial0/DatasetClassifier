@@ -1,5 +1,5 @@
 import os
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QListWidget, QFileDialog
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QFileDialog
 
 from src.database.database import Database
 from src.project import Project
@@ -59,7 +59,7 @@ class MigrateProjectPopup(QWidget):
         self.migrate_button = QPushButton("Migrate")
         self.migrate_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton, 'accept'))
         self.migrate_button.clicked.connect(self.migrate_project)
-        
+
         cancel_button = QPushButton("Cancel")
         cancel_button.setStyleSheet(self.style_manager.get_stylesheet(QPushButton))
         cancel_button.clicked.connect(self.close)

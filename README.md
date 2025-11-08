@@ -72,42 +72,60 @@ Exports work with priorities. It starts with the highest priority, then works it
 Say you have these categories: `needs editing, needs cropping, complete`
 
 You may want to export images that need a large amount of manual edits to it's own folder, while still storing other files to their respective output paths. This can be done by selecting multiple categories.
-However, in this case, the ordering of your rules is important. Here is a general rule of thumb:
+Note however that the first valid rule an image meets, is what it's going to use, meaning that if you have a rule for `edit` above a rule for `edit, crop`, the second rule will never be reached. When ordering, you generally want to keep simple rules near the bottom, and rules with more complex combinations near the top. Here is a general rule of thumb:
 ```yaml
 - Category Combinations
 - Single Categories
-- Fallback Rule
+- Fallback Rule (always present)
 ```
 In short, more specific rules need to have a higher priority. If you have a rule that require three categories, it should almost always be over a rule that require two or less.
 
 Here is an example of how you would configure an export for the example above:
 ```yaml
-3.    ['needs editing', 'needs cropping']    './heavy_edits'
-2.    ['needs editing']                      './needs_edits'
-1.    ['needs cropping']                     './needs_cropping'
+3.    ['needs editing', 'needs cropping']    './edit_crop'
+2.    ['needs editing']                      './edit'
+1.    ['needs cropping']                     './crop'
 0.    []                                     '.'
 ```
 
+### Conditions
+There are two types of conditions in DatasetClassifier which can help you speed up your workflow. The first ones are `Activation Condition`s, which are rules that can be applied to a `TagGroup` to limit when it shows up. You can create custom conditions to say that "Hey, I only want you to show up if group `X` is completed, group `Y` has more than 3 tags and group `Z` has the `from_above` tag. When working with large datasets and a large array of `TagGroup`s, it is recommended to spend some time creating good conditions. It can potentially save you hours of work.
+
+The second kind are `Export Conditions`, which basically just allow you to add new tags during export. It uses the same custom expressions as `Activation Conditions`. The purpose of this is to let you add tags you realized you missed halfway through the tagging process. Let's say that you have a `perspectives` group with the tags: `from_above, from_below, from_side`, and you realized you want an additional tags for mixed perspectives, what you can do is specify a rule that says "If the perspectives group has more than one tag, add the `mixed perspectives` tag". Note that currently this will be added *in addition* to the existing tags used in the condition, but I plan on adding a feature to let you set the mode (e.g. replace, append) instead.
+
 In this example, all images with both the `needs editing` and `needs cropping` categories will be exported to `./heavy_edits`, while images that only contain either `needs editing` or `needs cropping` will be exported to their respective folders. Images with the `completed` category, or without categories will be exported to the root of the export directory.
 
+#### Syntax Examples
+#### Group completed
+```
+GroupName[completed]
+```
+#### Has Tag
+```
+GroupName[has:tag_1]
+OR
+GroupName2[has_all:tag_2, tag_3]
+```
+#### Advanced Example
+```
+(Perspectives[has:from_above] AND NOT Style[completed]) OR Style[count >= 2]
+```
 ## Plans
-- [ ] **Conditional TagGroups:** TagGroups that can only be accessed if a certain condition is met, for example if `X` tag has been added or `Y` TagGroup is finished
-- [ ] **Conditional Tags:** Tags that will automatically be added on export. Conditions will be customizable.
-- [ ] **Export Window Rework:** The export window is not in a good state (but usable for now). It needs a full rewrite.
-- [ ] **Project Export/Import:** A feature to import/export a project with all it's TagGroups, images and tag data.
+- [x] **Conditional TagGroups:** TagGroups that can only be accessed if a certain condition is met, for example if `X` tag has been added or `Y` TagGroup is finished
+- [x] **Conditional Tags:** Tags that will automatically be added on export. Conditions will be customizable.
+- [x] **Export Window Rework:** The export window is not in a good state (but usable for now). It needs a full rewrite.
+- [x] **Project Export/Import:** A feature to import/export a project with all it's TagGroups, images and tag data.
 
 ## Installation
 ### Windows
 1. Install Python (version 3.8 or greater)
 2. Clone the repository with `git clone https://github.com/Cruxial0/DatasetClassifier.git`
 3. Run `run-win.bat`
-### Mac
+### Mac & Linux
 1. Install Python (version 3.8 or greater)
 2. Clone the repository with `git clone https://github.com/Cruxial0/DatasetClassifier.git`
 3. Open a terminal in the cloned folder
-4. Run command: `sh run-mac.sh`
-### Linux
-Not tested
+4. Run command: `sh run-unix.sh`
 
 ## Contributing
 Contributions are welcome and encouraged!
