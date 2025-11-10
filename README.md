@@ -4,7 +4,7 @@ A new spin on manual dataset curation
 
 
 ## Introduction
-DatasetClassifier is a customizable tool aimed at speeding up the workflow of manual dataset curation. The idea behind this application is to speed up the process of reviewing and captioning images.
+DatasetClassifier is a customizable tool aimed at speeding up the workflow of manual dataset curation.
 
 ### Motivations
 I'll admit, I might be a bit crazy. I like to create datasets of a broad concept, so what I often do is I boot up [Grabber](https://github.com/Bionus/imgbrd-grabber), type in some tags, and suddenly I am left with a dataset of tens of thousands of images. Obviously, not all these images are worth keeping, so manual review is needed. The first time around, I painstakingly drag/dropped images in Windows File Explorer into different folders to sort them. Never again, I said to myself, then a few weeks later I was back at it again, with an even larger dataset...
@@ -66,7 +66,7 @@ Here is an explanation of each property of a TagGroup:
 With rule based export, you can define your own rules.
 
 Here is an example of how the export window might look:
-![image](https://github.com/user-attachments/assets/26bdcf0d-728b-4866-93a0-10c6be9a92ce)
+<img width="800" height="850" alt="image" src="https://github.com/user-attachments/assets/d76458ce-8542-4215-882a-e596b9d2a2c1" />
 
 Exports work with priorities. It starts with the highest priority, then works it's way down the list. All images that don't meet a rule will be exported to the base directory.
 
