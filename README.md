@@ -1,10 +1,11 @@
 # DatasetClassifier
 A new spin on manual dataset curation
-<img width="1257" height="791" alt="image" src="https://github.com/user-attachments/assets/324b67ab-0f56-4406-8992-1be21d8344a0" />
 
+![image](https://github.com/user-attachments/assets/324b67ab-0f56-4406-8992-1be21d8344a0)
+*The scoring interface - quickly assign quality scores to images*
 
 ## Introduction
-DatasetClassifier is a customizable tool aimed at speeding up the workflow of manual dataset curation.
+DatasetClassifier is a customizable tool aimed at speeding up the workflow of manual dataset curation. It is written using Python with Qt for the frontend, providing a native experience no matter what Operating System you use.
 
 ### Motivations
 I'll admit, I might be a bit crazy. I like to create datasets of a broad concept, so what I often do is I boot up [Grabber](https://github.com/Bionus/imgbrd-grabber), type in some tags, and suddenly I am left with a dataset of tens of thousands of images. Obviously, not all these images are worth keeping, so manual review is needed. The first time around, I painstakingly drag/dropped images in Windows File Explorer into different folders to sort them. Never again, I said to myself, then a few weeks later I was back at it again, with an even larger dataset...
@@ -13,22 +14,38 @@ I think you see where I'm going with this. Dragging/Dropping images in Windows F
 
 Surprisingly, there were no good options for manual dataset review that met my criteria, so that's where the idea came from.
 
-### Structure
-DatasetClassifier has two main parts:
-1. **The Scoring Part** - This is where you sift through images. You can assign a score to each image, or discard it completely. You can also add categories to images, which will be explained more in detail later.
-2. **The Tagging Part** - This is a reimagined tagging process based around my personal needs. You can define your own checklist which you will have to step through for each image.
+### Recommended Workflow
+This application is not meant to be a replacement for existing tagging/captioning tools, but rather something you can add to your pipeline to improve both your efficiency and the quality of your final dataset. DatasetClassifier is designed to be the first step in the captioning process, generally right after grabbing or deduping images. Here is how I would recommend structuring your workflow:
 
-#### Scoring
-The scoring process is relatively straight-forward. You see an image, you determine how good that image is for your dataset, and you apply the corresponding score. In my own testing, I am able to get through about 2-3k images per hour using this approach (this rate is without any categorization).
+1. Dataset retrieval via [Grabber](https://github.com/Bionus/imgbrd-grabber)
+2. Deduplication using [DupeGuru](https://github.com/arsenetar/dupeguru/)
+3. **Structured dataset filtration and captioning using DatasetClassifier**
+4. More refined tagging using CLIP interrogation (DeepDanbooru, etc.) or LLM-driven captions (if needed)
 
-Categories are a way to provide additional information to your images, which can later be used to seperate them into their own directories based on category combinations. Here's an example of how you might use them:
+## How It Works
+DatasetClassifier has two main phases: **Scoring** and **Tagging**. When creating a new project, you start by scoring images, and when that's done (or when you've scored enough to start working with), you move on to tagging. You can only tag images that have already been scored.
 
-Let's say you define two categories, based on how much manual work they need: `needs_editing` and `needs_cropping`. For each image, you can apply the relevant categories. Later when you export these images, you can define rules that export images with the `needs_editing` category into it's own subfolder, and `needs_cropping` into another subfolder. You can also define a rule to export images with both categories into a third subfolder.
+### Scoring
+The scoring process is relatively straight-forward. You see an image, you determine how good that image is for your dataset, and you apply the corresponding score.
 
-#### Tagging
-The tagging process has a little bit of a learning curve to understand correctly. It works using `Tags` and `TagGroups`. A `TagGroup` is essentially a collection of tags, as the name suggests. It allows you to define conditions that must be met before moving on to tagging the next image. Here's an example of how you may configure your `TagGroups` (using booru tags as an example):
+Scores use a 1-5 scale. What each number means is up to you—the numbers themselves don't affect anything except how your images get filtered during export. You can configure how these scores are displayed in the settings to match whatever system you're used to. For example, you could use a booru-styled format (masterpiece, high quality, low quality, etc.), or a PonyV6 specification (score_9_up, score_8_up, etc.). There's also a special `discard` option which removes the image from export and hides it from the tagging page.
+
+In my own testing, I can get through about 2-3k images per hour using this approach (without any categorization).
+
+#### Categories
+While scoring, you can also apply **categories** to images. Categories are metadata flags you define yourself—they're used for organizing your export, not for captioning. Think of them as workflow labels.
+
+Here's an example: let's say you define two categories based on how much manual work images need: `needs_editing` and `needs_cropping`. As you score, you can flag images with the relevant categories. Later when you export, you can set up rules that put images with `needs_editing` into one subfolder, `needs_cropping` into another, and images with both into a third subfolder. This makes it easy to batch your post-processing work.
+
+### Tagging
+After scoring some or all images, you move on to tagging. This is where you apply the actual captions that will end up in your training data.
+
+The tagging process has a bit of a learning curve. Instead of free-form tagging, it uses **TagGroups**—collections of related tags that you step through in order. The idea is to enforce consistency: by working through a checklist for every image, you won't accidentally forget to tag certain aspects.
+
+Here's an example of how you might configure your TagGroups:
+
 ```
-# Subjects:
+Subject Count:
 - 1girl
 - 2girls
 - 3girls
@@ -44,45 +61,55 @@ Composition:
 - overview
 ```
 
-In this example, you would first select one or more tags from the "# Subjects" group, then move on to the "Background" group and select the relevant tag for that group. This process repeats for every image.
+In this example, you would first select one or more tags from the "Subject Count" group, then move on to "Background" and select the relevant tag, then "Composition", and so on. This process repeats for every image.
 
-Each group is customizable, so if we wanted the "Composition" group to be optional, we could do that. If we want to enforce **at least** two tags for the "Background" group, we can do that too.
+Each group is customizable. If you want the "Composition" group to be optional, you can do that. If you want to enforce at least two tags for the "Background" group, you can do that too.
+
+### Export
+When you're done, DatasetClassifier exports your images along with a `.txt` (or `.caption`) file for each one containing that image's tags. This structure is compatible with most dataset tools out there, so if you need to make changes later, you can import it into your software of choice.
+
+Images are filtered by score during export—you choose which score levels to include. Categories are used to route images into different folders based on rules you define.
 
 ## Customization
-DatasetClassifier is built around the principle of customization. Most things can be customized, including: App Behaviour, Theme Colors, Keybinds, etc.
+DatasetClassifier is built around the principle of customization. Most things can be tweaked, including app behaviour, theme colors, keybinds, and more.
 
-Some of the more advanced customizations will be explained here.
+Some of the more advanced customizations are explained below.
 
-### Tag Groups
+### TagGroup Settings
 TagGroups are created on a per-project basis. Each group can contain practically unlimited tags.
 
-Here is an explanation of each property of a TagGroup:
-- **Required:** Whether or not the TagGroup has to be completed in order to proceed
-- **Allow Multiple:** Whether or not the TagGroup allows multiple tags to be selected
-- **Minimum Tags:** Minimum amount of tags required to proceed
-- **Prevent Auto Scroll:** Whether or not to automatically scroll to the next TagGroup when the current TagGroup's condition is met
+Here's what each property does:
 
-### Rule-based export
-With rule based export, you can define your own rules.
+- **Required:** Whether the TagGroup must be completed before you can proceed to the next image
+- **Allow Multiple:** Whether multiple tags can be selected from the group
+- **Minimum Tags:** Minimum number of tags required to proceed
+- **Prevent Auto Scroll:** Whether to disable automatic scrolling to the next TagGroup when the current one's conditions are met
 
-Here is an example of how the export window might look:
-<img width="800" height="850" alt="image" src="https://github.com/user-attachments/assets/d76458ce-8542-4215-882a-e596b9d2a2c1" />
+### Rule-Based Export
+With rule-based export, you can define your own rules for organizing output.
 
-Exports work with priorities. It starts with the highest priority, then works it's way down the list. All images that don't meet a rule will be exported to the base directory.
+![image](https://github.com/user-attachments/assets/d76458ce-8542-4215-882a-e596b9d2a2c1)
+*The export configuration window*
+
+Exports work with priorities. The system starts with the highest priority rule and works its way down. Any images that don't match a rule get exported to the base directory.
 
 #### Rule Ordering
-Say you have these categories: `needs editing, needs cropping, complete`
+Say you have these categories: `needs editing`, `needs cropping`, `complete`
 
-You may want to export images that need a large amount of manual edits to it's own folder, while still storing other files to their respective output paths. This can be done by selecting multiple categories.
-Note however that the first valid rule an image meets, is what it's going to use, meaning that if you have a rule for `edit` above a rule for `edit, crop`, the second rule will never be reached. When ordering, you generally want to keep simple rules near the bottom, and rules with more complex combinations near the top. Here is a general rule of thumb:
+You might want to export images that need a lot of manual work to their own folder, while still routing other files to their respective output paths. You can do this by creating rules with multiple categories.
+
+The catch is that the first valid rule an image matches is the one it uses. So if you have a rule for `edit` above a rule for `edit, crop`, the second rule will never be reached. When ordering, you generally want to keep simple rules near the bottom and rules with more complex combinations near the top:
+
 ```yaml
 - Category Combinations
 - Single Categories
 - Fallback Rule (always present)
 ```
-In short, more specific rules need to have a higher priority. If you have a rule that require three categories, it should almost always be over a rule that require two or less.
 
-Here is an example of how you would configure an export for the example above:
+In short, more specific rules need higher priority. If you have a rule requiring three categories, it should almost always be above a rule requiring two or less.
+
+Here's a concrete example:
+
 ```yaml
 3.    ['needs editing', 'needs cropping']    './edit_crop'
 2.    ['needs editing']                      './edit'
@@ -90,44 +117,62 @@ Here is an example of how you would configure an export for the example above:
 0.    []                                     '.'
 ```
 
+In this setup, images with both categories go to `./edit_crop`, images with only one go to their respective folders, and everything else (including images with the `complete` category or no categories) goes to the root export directory.
+
 ### Conditions
-There are two types of conditions in DatasetClassifier which can help you speed up your workflow. The first ones are `Activation Condition`s, which are rules that can be applied to a `TagGroup` to limit when it shows up. You can create custom conditions to say that "Hey, I only want you to show up if group `X` is completed, group `Y` has more than 3 tags and group `Z` has the `from_above` tag. When working with large datasets and a large array of `TagGroup`s, it is recommended to spend some time creating good conditions. It can potentially save you hours of work.
+There are two types of conditions in DatasetClassifier that can help speed up your workflow.
 
-The second kind are `Export Conditions`, which basically just allow you to add new tags during export. It uses the same custom expressions as `Activation Conditions`. The purpose of this is to let you add tags you realized you missed halfway through the tagging process. Let's say that you have a `perspectives` group with the tags: `from_above, from_below, from_side`, and you realized you want an additional tags for mixed perspectives, what you can do is specify a rule that says "If the perspectives group has more than one tag, add the `mixed perspectives` tag". Note that currently this will be added *in addition* to the existing tags used in the condition, but I plan on adding a feature to let you set the mode (e.g. replace, append) instead.
+#### Activation Conditions
+These are rules you can apply to a TagGroup to control when it appears. You can create custom conditions like "only show this group if group X is completed, group Y has more than 3 tags, and group Z has the `from_above` tag".
 
-In this example, all images with both the `needs editing` and `needs cropping` categories will be exported to `./heavy_edits`, while images that only contain either `needs editing` or `needs cropping` will be exported to their respective folders. Images with the `completed` category, or without categories will be exported to the root of the export directory.
+When working with large datasets and lots of TagGroups, spending some time on strong activation conditions can potentially save you hours of work—you won't have to skip through irrelevant groups manually.
+
+#### Export Conditions
+These let you automatically add new tags during export based on conditions. They use the same syntax as Activation Conditions.
+
+The main use case is adding tags you realized you needed halfway through tagging. Let's say you have a `perspectives` group with the tags `from_above`, `from_below`, `from_side`, and you realize you want a tag for mixed perspectives. You can create an export condition that says "if the perspectives group has more than one tag, add the `mixed perspectives` tag".
+
+Note that currently this adds tags *in addition to* the existing ones used in the condition. I plan on adding a mode setting (replace, append, etc.) in the future.
 
 #### Syntax Examples
-#### Group completed
+
+Group completed:
 ```
 GroupName[completed]
 ```
-#### Has Tag
+
+Has tag:
 ```
 GroupName[has:tag_1]
-OR
+```
+or
+```
 GroupName2[has_all:tag_2, tag_3]
 ```
-#### Advanced Example
+
+Advanced example:
 ```
 (Perspectives[has:from_above] AND NOT Style[completed]) OR Style[count >= 2]
 ```
+
 ## Plans
-- [x] **Conditional TagGroups:** TagGroups that can only be accessed if a certain condition is met, for example if `X` tag has been added or `Y` TagGroup is finished
-- [x] **Conditional Tags:** Tags that will automatically be added on export. Conditions will be customizable.
-- [x] **Export Window Rework:** The export window is not in a good state (but usable for now). It needs a full rewrite.
-- [x] **Project Export/Import:** A feature to import/export a project with all it's TagGroups, images and tag data.
+- [x] **Conditional TagGroups:** TagGroups that only appear if certain conditions are met
+- [x] **Conditional Tags:** Tags that automatically get added on export based on conditions
+- [x] **Export Window Rework:** The export window needed a full rewrite (done!)
+- [ ] **Project Export/Import:** A feature to import/export a project with all its TagGroups, images, and tag data
 
 ## Installation
+
 ### Windows
 1. Install Python (version 3.8 or greater)
 2. Clone the repository with `git clone https://github.com/Cruxial0/DatasetClassifier.git`
 3. Run `run-win.bat`
+
 ### Mac & Linux
 1. Install Python (version 3.8 or greater)
 2. Clone the repository with `git clone https://github.com/Cruxial0/DatasetClassifier.git`
 3. Open a terminal in the cloned folder
-4. Run command: `sh run-unix.sh`
+4. Run: `sh run-unix.sh`
 
 ## Contributing
 Contributions are welcome and encouraged!
